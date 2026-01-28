@@ -185,13 +185,16 @@ export function Canvas({
             )}
             onMouseDown={(e) => {
               e.stopPropagation(); // Prevent canvas click
-              if (!isPreviewMode) onElementSelect(el.id);
+              onElementSelect(el.id);
             }}
           >
-            <div className="w-full h-full relative overflow-hidden">
+            <div className="w-full h-full relative">
                {renderElementContent(el)}
-               {/* Overlay to prevent interaction with inner elements like links/inputs during editing */}
-               {!isPreviewMode && <div className="absolute inset-0 z-20 cursor-move" />}
+               {/* Click capture overlay for all modes to ensure selection works */}
+               <div className={clsx(
+                 "absolute inset-0 z-20",
+                 !isPreviewMode ? "cursor-move" : "cursor-default"
+               )} />
             </div>
           </Rnd>
         );

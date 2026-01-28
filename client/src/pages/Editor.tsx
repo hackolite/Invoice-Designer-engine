@@ -230,9 +230,11 @@ export default function Editor() {
                   elements: [
                     { id: "h1", type: "text", x: 20, y: 20, width: 300, height: 40, content: "DEMO INVOICE", style: { fontSize: 24, fontWeight: "bold" } },
                     { id: "l1", type: "line", x: 20, y: 65, width: 750, height: 2, style: { backgroundColor: "#000" } },
-                    { id: "t1", type: "text", x: 20, y: 80, width: 200, height: 20, content: "From:", style: { fontWeight: "bold" } },
-                    { id: "t2", type: "text", x: 20, y: 100, width: 200, height: 40, binding: "provider.name" },
-                    { id: "t3", type: "table", x: 20, y: 200, width: 750, height: 300, tableConfig: { dataSource: "items", columns: [{ header: "Item", binding: "description", width: "60%" }, { header: "Total", binding: "total", width: "40%", format: "currency" }] } }
+                    { id: "t1", type: "text", x: 20, y: 80, width: 200, height: 20, content: "Date:", style: { fontWeight: "bold" } },
+                    { id: "t2", type: "text", x: 80, y: 80, width: 200, height: 20, binding: "date" },
+                    { id: "t3", type: "text", x: 20, y: 100, width: 200, height: 20, content: "Client:", style: { fontWeight: "bold" } },
+                    { id: "t4", type: "text", x: 80, y: 100, width: 200, height: 40, binding: "client.name" },
+                    { id: "t5", type: "table", x: 20, y: 200, width: 750, height: 300, tableConfig: { dataSource: "items", columns: [{ header: "Item", binding: "description", width: "60%" }, { header: "Total", binding: "total", width: "40%", format: "currency" }] } }
                   ]
                 };
                 setLayout(demoLayout as any);
