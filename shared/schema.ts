@@ -31,8 +31,7 @@ export type Template = typeof templates.$inferSelect;
 export type InsertTemplate = z.infer<typeof insertTemplateSchema>;
 
 // Element Types for the WYSIWYG Editor
-// This defines the structure inside the 'layout' JSONB column
-export type ElementType = 'text' | 'image' | 'table' | 'box';
+export type ElementType = 'text' | 'image' | 'table' | 'box' | 'line';
 
 export interface TemplateElement {
   id: string;
@@ -41,15 +40,14 @@ export interface TemplateElement {
   y: number;
   width: number;
   height: number;
-  // Static content (e.g., fixed label) or binding key (e.g., "provider.address")
   content?: string; 
   binding?: string; 
-  // For tables: config for columns and data source
+  orientation?: 'horizontal' | 'vertical'; // For lines
   tableConfig?: {
-    dataSource: string; // e.g., "items"
+    dataSource: string; 
     columns: {
       header: string;
-      binding: string; // e.g., "description", "quantity", "price"
+      binding: string; 
       width?: string;
       format?: 'currency' | 'number' | 'text';
     }[];

@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   ChevronLeft, Save, Type, Image as ImageIcon, Table as TableIcon, 
-  Square, Layout, Eye, EyeOff, RotateCcw 
+  Square, Layout, Eye, EyeOff, RotateCcw, Minus, Play
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { TemplateElement, TemplateLayout } from "@shared/schema";
@@ -54,12 +54,15 @@ export default function Editor() {
       type,
       x: 50,
       y: 50,
-      width: type === 'table' ? 400 : 200,
-      height: type === 'table' ? 150 : 50,
+      width: type === 'table' ? 400 : (type === 'line' ? 200 : 200),
+      height: type === 'table' ? 150 : (type === 'line' ? 2 : 50),
       style: { color: '#000000', fontSize: 14 },
     };
 
-    if (type === 'table') {
+    if (type === 'line') {
+      newElement.orientation = 'horizontal';
+      newElement.style = { ...newElement.style, backgroundColor: '#000000' };
+    } else if (type === 'table') {
       newElement.tableConfig = {
         dataSource: 'items',
         columns: [
@@ -170,7 +173,7 @@ export default function Editor() {
               onClick={() => setIsPreviewMode(true)}
               className="h-7 text-xs"
             >
-              <Eye className="w-3 h-3 mr-1.5" /> Preview
+              <Play className="w-3 h-3 mr-1.5" /> Play / Generate
             </Button>
           </div>
           
@@ -210,6 +213,33 @@ export default function Editor() {
                <Square className="w-6 h-6" />
                <span className="text-xs">Box</span>
              </Button>
+             <Button variant="outline" className="h-20 flex flex-col gap-2 hover:border-primary hover:text-primary transition-colors" onClick={() => handleAddElement('line')}>
+               <Minus className="w-6 h-6" />
+               <span className="text-xs">Line</span>
+             </Button>
+          </div>
+
+          <div className="p-4 border-t">
+            <Button 
+              variant="outline" 
+              className="w-full flex items-center justify-center gap-2"
+              onClick={() => {
+                const demoLayout = {
+                  pageSize: "A4",
+                  orientation: "portrait",
+                  elements: [
+                    { id: "h1", type: "text", x: 20, y: 20, width: 300, height: 40, content: "DEMO INVOICE", style: { fontSize: 24, fontWeight: "bold" } },
+                    { id: "l1", type: "line", x: 20, y: 65, width: 750, height: 2, style: { backgroundColor: "#000" } },
+                    { id: "t1", type: "text", x: 20, y: 80, width: 200, height: 20, content: "From:", style: { fontWeight: "bold" } },
+                    { id: "t2", type: "text", x: 20, y: 100, width: 200, height: 40, binding: "provider.name" },
+                    { id: "t3", type: "table", x: 20, y: 200, width: 750, height: 300, tableConfig: { dataSource: "items", columns: [{ header: "Item", binding: "description", width: "60%" }, { header: "Total", binding: "total", width: "40%", format: "currency" }] } }
+                  ]
+                };
+                setLayout(demoLayout as any);
+              }}
+            >
+              Load Demo Template
+            </Button>
           </div>
 
           <div className="mt-auto border-t">

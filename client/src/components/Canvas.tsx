@@ -80,12 +80,12 @@ export function Canvas({
       );
     }
 
-    if (el.type === 'box') {
+    if (el.type === 'box' || el.type === 'line') {
       return (
         <div 
           className="w-full h-full"
           style={{
-            backgroundColor: el.style?.backgroundColor as string || '#eee',
+            backgroundColor: el.style?.backgroundColor as string || (el.type === 'line' ? '#000' : '#eee'),
             border: el.style?.border as string || 'none',
           }}
         />

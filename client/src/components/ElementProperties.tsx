@@ -301,19 +301,19 @@ export function ElementProperties({ element, onChange, onDelete }: ElementProper
               </div>
             </div>
 
-            {element.type === 'box' && (
+            {(element.type === 'box' || element.type === 'line') && (
                <div className="space-y-2">
-               <Label>Background Color</Label>
+               <Label>{element.type === 'line' ? 'Line Color' : 'Background Color'}</Label>
                <div className="flex gap-2">
                  <Input 
                    type="color" 
                    className="w-12 p-1 h-10"
-                   value={element.style?.backgroundColor as string || '#ffffff'}
+                   value={element.style?.backgroundColor as string || (element.type === 'line' ? '#000000' : '#ffffff')}
                    onChange={(e) => handleStyleChange('backgroundColor', e.target.value)}
                  />
                  <Input 
                    type="text"
-                   value={element.style?.backgroundColor as string || '#ffffff'}
+                   value={element.style?.backgroundColor as string || (element.type === 'line' ? '#000000' : '#ffffff')}
                    onChange={(e) => handleStyleChange('backgroundColor', e.target.value)}
                    className="flex-1 font-mono"
                  />
