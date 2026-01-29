@@ -2,7 +2,6 @@ import { Rnd } from "react-rnd";
 import { type TemplateElement, type TemplateLayout } from "@shared/schema";
 import { clsx } from "clsx";
 import { useState, useRef, useEffect } from "react";
-import { get } from "lodash"; // We might not have lodash, I'll write a simple getter
 
 // Simple lodash.get alternative for binding resolution
 function getValue(obj: any, path: string, defaultValue?: any) {
