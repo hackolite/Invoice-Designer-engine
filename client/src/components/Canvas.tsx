@@ -194,17 +194,19 @@ export function Canvas({
               !isPreviewMode && !isSelected && "hover:element-hovered"
             )}
             onMouseDown={(e) => {
-              e.stopPropagation(); // Prevent canvas click
+              e.stopPropagation();
               onElementSelect(el.id);
             }}
           >
             <div className="w-full h-full relative">
                {renderElementContent(el)}
-               {/* Click capture overlay for all modes to ensure selection works */}
-               <div className={clsx(
-                 "absolute inset-0 z-20",
-                 !isPreviewMode ? "cursor-move" : "cursor-default"
-               )} />
+               {/* Translucent overlay during editing for visual feedback and certain selection */}
+               {!isPreviewMode && (
+                 <div className={clsx(
+                   "absolute inset-0 z-30 cursor-move border-2",
+                   isSelected ? "border-primary/50 bg-primary/5" : "border-transparent hover:border-primary/30 hover:bg-primary/5"
+                 )} />
+               )}
             </div>
           </Rnd>
         );

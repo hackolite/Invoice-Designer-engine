@@ -31,7 +31,7 @@ export type Template = typeof templates.$inferSelect;
 export type InsertTemplate = z.infer<typeof insertTemplateSchema>;
 
 // Element Types for the WYSIWYG Editor
-export type ElementType = 'text' | 'image' | 'table' | 'box' | 'line';
+export type ElementType = 'text' | 'image' | 'table' | 'box' | 'line' | 'qr' | 'signature' | 'badge';
 
 export interface TemplateElement {
   id: string;
