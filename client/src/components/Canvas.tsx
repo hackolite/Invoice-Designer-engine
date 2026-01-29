@@ -69,26 +69,36 @@ export function Canvas({
       );
     }
 
-    if (el.type === 'image') {
-      const src = el.content || "https://placehold.co/400?text=Image";
+    if (el.type === 'image' || el.type === 'qr' || el.type === 'signature') {
+      let src = el.content || "https://placehold.co/400?text=Image";
+      if (el.type === 'qr') src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(el.content || 'https://replit.com')}`;
+      if (el.type === 'signature') src = "https://placehold.co/200x100?text=Signature";
+
       return (
         <img 
           src={src} 
-          alt="Element" 
-          className="w-full h-full object-cover pointer-events-none" 
+          alt={el.type} 
+          className="w-full h-full object-contain pointer-events-none" 
         />
       );
     }
 
-    if (el.type === 'box' || el.type === 'line') {
+    if (el.type === 'box' || el.type === 'line' || el.type === 'badge') {
       return (
         <div 
-          className="w-full h-full"
+          className={clsx(
+            "w-full h-full flex items-center justify-center overflow-hidden",
+            el.type === 'badge' && "rounded-full"
+          )}
           style={{
-            backgroundColor: el.style?.backgroundColor as string || (el.type === 'line' ? '#000' : '#eee'),
+            backgroundColor: el.style?.backgroundColor as string || (el.type === 'line' ? '#000' : (el.type === 'badge' ? '#3b82f6' : '#eee')),
             border: el.style?.border as string || 'none',
+            color: el.style?.color as string || '#fff',
+            fontSize: el.style?.fontSize ? `${el.style.fontSize}px` : '12px',
           }}
-        />
+        >
+          {el.type === 'badge' && (el.content || (el.binding ? getValue(sampleData, el.binding, `{{${el.binding}}}`) : "PAID"))}
+        </div>
       );
     }
 

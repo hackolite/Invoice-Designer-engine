@@ -127,6 +127,38 @@ export function ElementProperties({ element, onChange, onDelete }: ElementProper
               </div>
             )}
 
+            {element.type === 'qr' && (
+              <div className="space-y-2">
+                <Label>QR Data / URL</Label>
+                <Input 
+                  value={element.content || ''} 
+                  onChange={(e) => handleChange('content', e.target.value)}
+                  placeholder="e.g. payment link"
+                />
+              </div>
+            )}
+
+            {element.type === 'badge' && (
+              <>
+                <div className="space-y-2">
+                  <Label>Badge Text</Label>
+                  <Input 
+                    value={element.content || ''} 
+                    onChange={(e) => handleChange('content', e.target.value)}
+                    placeholder="e.g. PAID"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Data Binding (Optional)</Label>
+                  <Input 
+                    value={element.binding || ''} 
+                    onChange={(e) => handleChange('binding', e.target.value)}
+                    placeholder="e.g. status"
+                  />
+                </div>
+              </>
+            )}
+
             {element.type === 'table' && element.tableConfig && (
               <div className="space-y-4">
                 <div className="space-y-2">

@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   ChevronLeft, Save, Type, Image as ImageIcon, Table as TableIcon, 
-  Square, Layout, Eye, EyeOff, RotateCcw, Minus, Play
+  Square, Layout, Eye, EyeOff, RotateCcw, Minus, Play, QrCode, PenTool, Award
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { TemplateElement, TemplateLayout } from "@shared/schema";
@@ -216,6 +216,18 @@ export default function Editor() {
              <Button variant="outline" className="h-20 flex flex-col gap-2 hover:border-primary hover:text-primary transition-colors" onClick={() => handleAddElement('line')}>
                <Minus className="w-6 h-6" />
                <span className="text-xs">Line</span>
+             </Button>
+             <Button variant="outline" className="h-20 flex flex-col gap-2 hover:border-primary hover:text-primary transition-colors" onClick={() => handleAddElement('qr')}>
+               <QrCode className="w-6 h-6" />
+               <span className="text-xs">QR Code</span>
+             </Button>
+             <Button variant="outline" className="h-20 flex flex-col gap-2 hover:border-primary hover:text-primary transition-colors" onClick={() => handleAddElement('signature')}>
+               <PenTool className="w-6 h-6" />
+               <span className="text-xs">Signature</span>
+             </Button>
+             <Button variant="outline" className="h-20 flex flex-col gap-2 hover:border-primary hover:text-primary transition-colors" onClick={() => handleAddElement('badge')}>
+               <Award className="w-6 h-6" />
+               <span className="text-xs">Badge</span>
              </Button>
           </div>
 
