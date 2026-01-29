@@ -344,7 +344,12 @@ export default function Editor() {
            </div>
 
            {/* The actual canvas */}
-           <div className="shadow-2xl">
+           <div 
+             className="shadow-2xl"
+             onMouseDown={(e) => {
+               e.stopPropagation();
+             }}
+           >
              <Canvas 
                 layout={layout}
                 sampleData={JSON.parse(sampleData || '{}')}

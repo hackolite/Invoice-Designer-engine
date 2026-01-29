@@ -117,10 +117,21 @@ export function Canvas({
         ? getValue(sampleData, config.dataSource, []) 
         : [1, 2, 3]; // Dummy rows for editor
 
+      const tableStyle = (el.style?.tableVariant as string) || 'default';
+      
       return (
-        <div className="w-full h-full overflow-hidden border border-gray-200">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-gray-100 text-gray-700 font-medium">
+        <div className={clsx(
+          "w-full h-full overflow-hidden",
+          tableStyle === 'default' && "border border-gray-200",
+          tableStyle === 'minimal' && "border-0",
+          tableStyle === 'modern' && "border border-primary/20 rounded-lg shadow-sm"
+        )}>
+          <table className="w-full text-sm text-left border-collapse">
+            <thead className={clsx(
+              tableStyle === 'default' && "bg-gray-100 text-gray-700 font-medium",
+              tableStyle === 'minimal' && "border-b-2 border-gray-900 text-gray-900 font-bold",
+              tableStyle === 'modern' && "bg-primary text-primary-foreground font-semibold"
+            )}>
               <tr>
                 {config.columns.map((col, idx) => (
                   <th key={idx} className="p-2 border-b" style={{ width: col.width }}>
@@ -131,7 +142,11 @@ export function Canvas({
             </thead>
             <tbody>
               {Array.isArray(data) && data.map((row, rIdx) => (
-                <tr key={rIdx} className="border-b last:border-0">
+                <tr key={rIdx} className={clsx(
+                  "border-b last:border-0",
+                  tableStyle === 'default' && "hover:bg-gray-50",
+                  tableStyle === 'modern' && rIdx % 2 === 0 ? "bg-primary/5" : "bg-white"
+                )}>
                   {config.columns.map((col, cIdx) => {
                     let cellValue;
                     if (isPreviewMode) {
@@ -215,17 +230,29 @@ export function Canvas({
             )}
             onMouseDown={(e) => {
               e.stopPropagation();
+              e.preventDefault(); // Extra prevention for click-away bugs
               onElementSelect(el.id);
             }}
           >
-            <div className="w-full h-full relative">
+            <div 
+              className="w-full h-full relative"
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                onElementSelect(el.id);
+              }}
+            >
                {renderElementContent(el)}
-               {/* Translucent overlay during editing for visual feedback and certain selection */}
                {!isPreviewMode && (
-                 <div className={clsx(
-                   "absolute inset-0 z-30 cursor-move border-2",
-                   isSelected ? "border-primary/50 bg-primary/5" : "border-transparent hover:border-primary/30 hover:bg-primary/5"
-                 )} />
+                 <div 
+                   className={clsx(
+                     "absolute inset-0 z-30 cursor-move border-2",
+                     isSelected ? "border-primary bg-primary/5" : "border-transparent hover:border-primary/30 hover:bg-primary/5"
+                   )}
+                   onMouseDown={(e) => {
+                     e.stopPropagation();
+                     onElementSelect(el.id);
+                   }}
+                 />
                )}
             </div>
           </Rnd>
