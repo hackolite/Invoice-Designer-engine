@@ -3,6 +3,7 @@ import { useRoute } from "wouter";
 import { useTemplate, useUpdateTemplate } from "@/hooks/use-templates";
 import { Canvas } from "@/components/Canvas";
 import { ElementProperties } from "@/components/ElementProperties";
+import { TextPresets } from "@/components/TextPresets";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   ChevronLeft, Save, Type, Image as ImageIcon, Table as TableIcon, 
   Square, Layout, Eye, EyeOff, RotateCcw, Minus, Play, QrCode, PenTool, Award, Download
@@ -240,73 +242,98 @@ export default function Editor() {
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Components */}
+        {/* Left Sidebar - Components and Text Presets */}
         <aside className="w-64 border-r bg-white flex flex-col shrink-0 z-10 shadow-sm">
-          <div className="p-4 border-b">
-            <h3 className="font-semibold text-sm text-foreground/80">Components</h3>
-          </div>
-          <div className="p-4 grid grid-cols-2 gap-3">
-             <Button variant="outline" className="h-20 flex flex-col gap-2 hover:border-primary hover:text-primary transition-colors" onClick={() => handleAddElement('text')}>
-               <Type className="w-6 h-6" />
-               <span className="text-xs">Text</span>
-             </Button>
-             <Button variant="outline" className="h-20 flex flex-col gap-2 hover:border-primary hover:text-primary transition-colors" onClick={() => handleAddElement('image')}>
-               <ImageIcon className="w-6 h-6" />
-               <span className="text-xs">Image</span>
-             </Button>
-             <Button variant="outline" className="h-20 flex flex-col gap-2 hover:border-primary hover:text-primary transition-colors" onClick={() => handleAddElement('table')}>
-               <TableIcon className="w-6 h-6" />
-               <span className="text-xs">Table</span>
-             </Button>
-             <Button variant="outline" className="h-20 flex flex-col gap-2 hover:border-primary hover:text-primary transition-colors" onClick={() => handleAddElement('box')}>
-               <Square className="w-6 h-6" />
-               <span className="text-xs">Box</span>
-             </Button>
-             <Button variant="outline" className="h-20 flex flex-col gap-2 hover:border-primary hover:text-primary transition-colors" onClick={() => handleAddElement('line')}>
-               <Minus className="w-6 h-6" />
-               <span className="text-xs">Line</span>
-             </Button>
-             <Button variant="outline" className="h-20 flex flex-col gap-2 hover:border-primary hover:text-primary transition-colors" onClick={() => handleAddElement('qr')}>
-               <QrCode className="w-6 h-6" />
-               <span className="text-xs">QR Code</span>
-             </Button>
-             <Button variant="outline" className="h-20 flex flex-col gap-2 hover:border-primary hover:text-primary transition-colors" onClick={() => handleAddElement('signature')}>
-               <PenTool className="w-6 h-6" />
-               <span className="text-xs">Signature</span>
-             </Button>
-             <Button variant="outline" className="h-20 flex flex-col gap-2 hover:border-primary hover:text-primary transition-colors" onClick={() => handleAddElement('badge')}>
-               <Award className="w-6 h-6" />
-               <span className="text-xs">Badge</span>
-             </Button>
-          </div>
+          <Tabs defaultValue="components" className="flex-1 flex flex-col">
+            <TabsList className="grid w-full grid-cols-2 rounded-none border-b">
+              <TabsTrigger value="components">Components</TabsTrigger>
+              <TabsTrigger value="presets">Text Presets</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="components" className="flex-1 flex flex-col m-0">
+              <div className="p-4 grid grid-cols-2 gap-3">
+                <Button variant="outline" className="h-20 flex flex-col gap-2 hover:border-primary hover:text-primary transition-colors" onClick={() => handleAddElement('text')}>
+                  <Type className="w-6 h-6" />
+                  <span className="text-xs">Text</span>
+                </Button>
+                <Button variant="outline" className="h-20 flex flex-col gap-2 hover:border-primary hover:text-primary transition-colors" onClick={() => handleAddElement('image')}>
+                  <ImageIcon className="w-6 h-6" />
+                  <span className="text-xs">Image</span>
+                </Button>
+                <Button variant="outline" className="h-20 flex flex-col gap-2 hover:border-primary hover:text-primary transition-colors" onClick={() => handleAddElement('table')}>
+                  <TableIcon className="w-6 h-6" />
+                  <span className="text-xs">Table</span>
+                </Button>
+                <Button variant="outline" className="h-20 flex flex-col gap-2 hover:border-primary hover:text-primary transition-colors" onClick={() => handleAddElement('box')}>
+                  <Square className="w-6 h-6" />
+                  <span className="text-xs">Box</span>
+                </Button>
+                <Button variant="outline" className="h-20 flex flex-col gap-2 hover:border-primary hover:text-primary transition-colors" onClick={() => handleAddElement('line')}>
+                  <Minus className="w-6 h-6" />
+                  <span className="text-xs">Line</span>
+                </Button>
+                <Button variant="outline" className="h-20 flex flex-col gap-2 hover:border-primary hover:text-primary transition-colors" onClick={() => handleAddElement('qr')}>
+                  <QrCode className="w-6 h-6" />
+                  <span className="text-xs">QR Code</span>
+                </Button>
+                <Button variant="outline" className="h-20 flex flex-col gap-2 hover:border-primary hover:text-primary transition-colors" onClick={() => handleAddElement('signature')}>
+                  <PenTool className="w-6 h-6" />
+                  <span className="text-xs">Signature</span>
+                </Button>
+                <Button variant="outline" className="h-20 flex flex-col gap-2 hover:border-primary hover:text-primary transition-colors" onClick={() => handleAddElement('badge')}>
+                  <Award className="w-6 h-6" />
+                  <span className="text-xs">Badge</span>
+                </Button>
+              </div>
 
-          <div className="p-4 border-t">
-            <Button 
-              variant="outline" 
-              className="w-full flex items-center justify-center gap-2"
-              onClick={() => {
-                const demoLayout = {
-                  pageSize: "A4",
-                  orientation: "portrait",
-                  elements: [
-                    { id: "h1", type: "text", x: 20, y: 20, width: 300, height: 40, content: "DEMO INVOICE", style: { fontSize: 24, fontWeight: "bold" } },
-                    { id: "b1", type: "badge", x: 650, y: 20, width: 100, height: 30, content: "PAID", style: { backgroundColor: "#22c55e", color: "#ffffff", fontSize: 14, fontWeight: "bold" } },
-                    { id: "l1", type: "line", x: 20, y: 65, width: 750, height: 2, style: { backgroundColor: "#000" } },
-                    { id: "t1", type: "text", x: 20, y: 80, width: 200, height: 20, content: "Date:", style: { fontWeight: "bold" } },
-                    { id: "t2", type: "text", x: 80, y: 80, width: 200, height: 20, binding: "date" },
-                    { id: "t3", type: "text", x: 20, y: 100, width: 200, height: 20, content: "Client:", style: { fontWeight: "bold" } },
-                    { id: "t4", type: "text", x: 80, y: 100, width: 200, height: 40, binding: "client.name" },
-                    { id: "t5", type: "table", x: 20, y: 200, width: 750, height: 300, tableConfig: { dataSource: "items", columns: [{ header: "Item", binding: "description", width: "60%" }, { header: "Total", binding: "total", width: "40%", format: "currency" }] } },
-                    { id: "q1", type: "qr", x: 20, y: 550, width: 100, height: 100, content: "https://pay.example.com/inv-001" },
-                    { id: "s1", type: "signature", x: 550, y: 550, width: 200, height: 80 }
-                  ]
-                };
-                setLayout(demoLayout as any);
-              }}
-            >
-              Load Demo Template
-            </Button>
-          </div>
+              <div className="p-4 border-t">
+                <Button 
+                  variant="outline" 
+                  className="w-full flex items-center justify-center gap-2"
+                  onClick={() => {
+                    const demoLayout = {
+                      pageSize: "A4",
+                      orientation: "portrait",
+                      elements: [
+                        { id: "h1", type: "text", x: 20, y: 20, width: 300, height: 40, content: "DEMO INVOICE", style: { fontSize: 24, fontWeight: "bold" } },
+                        { id: "b1", type: "badge", x: 650, y: 20, width: 100, height: 30, content: "PAID", style: { backgroundColor: "#22c55e", color: "#ffffff", fontSize: 14, fontWeight: "bold" } },
+                        { id: "l1", type: "line", x: 20, y: 65, width: 750, height: 2, style: { backgroundColor: "#000" } },
+                        { id: "t1", type: "text", x: 20, y: 80, width: 200, height: 20, content: "Date:", style: { fontWeight: "bold" } },
+                        { id: "t2", type: "text", x: 80, y: 80, width: 200, height: 20, binding: "date" },
+                        { id: "t3", type: "text", x: 20, y: 100, width: 200, height: 20, content: "Client:", style: { fontWeight: "bold" } },
+                        { id: "t4", type: "text", x: 80, y: 100, width: 200, height: 40, binding: "client.name" },
+                        { id: "t5", type: "table", x: 20, y: 200, width: 750, height: 300, tableConfig: { dataSource: "items", columns: [{ header: "Item", binding: "description", width: "60%" }, { header: "Total", binding: "total", width: "40%", format: "currency" }] } },
+                        { id: "q1", type: "qr", x: 20, y: 550, width: 100, height: 100, content: "https://pay.example.com/inv-001" },
+                        { id: "s1", type: "signature", x: 550, y: 550, width: 200, height: 80 }
+                      ]
+                    };
+                    setLayout(demoLayout as any);
+                  }}
+                >
+                  Load Demo Template
+                </Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="presets" className="flex-1 m-0">
+              <TextPresets 
+                onSelectPreset={(preset) => {
+                  if (!layout) return;
+                  const newElement: TemplateElement = {
+                    id: crypto.randomUUID(),
+                    ...preset.element,
+                    x: 50,
+                    y: 50,
+                  };
+                  setLayout(prev => prev ? ({
+                    ...prev,
+                    elements: [...prev.elements, newElement]
+                  }) : null);
+                  setSelectedElementId(newElement.id);
+                }}
+              />
+            </TabsContent>
+          </Tabs>
 
           <div className="mt-auto border-t">
             <div className="p-4 border-b">

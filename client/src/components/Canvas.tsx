@@ -59,6 +59,13 @@ export function Canvas({
         displayContent = el.content || (el.binding ? `{{${el.binding}}}` : "Text");
       }
       
+      // Process content to replace bindings with values in preview mode
+      if (isPreviewMode && displayContent && typeof displayContent === 'string') {
+        displayContent = displayContent.replace(/\{\{([^}]+)\}\}/g, (match, binding) => {
+          return getValue(sampleData, binding.trim(), match);
+        });
+      }
+      
       return (
         <div 
           className="w-full h-full overflow-hidden whitespace-pre-wrap"
@@ -67,6 +74,13 @@ export function Canvas({
             textAlign: (el.style?.textAlign as any) || 'left',
             color: el.style?.color as string || 'inherit',
             fontWeight: el.style?.fontWeight as any || 'normal',
+            lineHeight: el.style?.lineHeight as any || 'normal',
+            fontStyle: el.style?.fontStyle as any || 'normal',
+            textTransform: el.style?.textTransform as any || 'none',
+            letterSpacing: el.style?.letterSpacing ? `${el.style.letterSpacing}px` : 'normal',
+            fontFamily: el.style?.fontFamily as string || 'inherit',
+            borderBottom: el.style?.borderBottom as string || 'none',
+            paddingBottom: el.style?.paddingBottom ? `${el.style.paddingBottom}px` : '0',
           }}
         >
           {displayContent}
@@ -76,8 +90,18 @@ export function Canvas({
 
     if (el.type === 'image' || el.type === 'qr' || el.type === 'signature') {
       let src = el.content || "https://placehold.co/400?text=Image";
-      if (el.type === 'qr') src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(el.content || 'https://replit.com')}`;
-      if (el.type === 'signature') src = "https://placehold.co/200x100?text=Signature";
+      
+      if (el.type === 'qr') {
+        // Support binding for QR codes in preview mode
+        const qrData = (isPreviewMode && el.binding) 
+          ? getValue(sampleData, el.binding, el.content) 
+          : el.content;
+        src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrData || 'https://replit.com')}`;
+      }
+      
+      if (el.type === 'signature') {
+        src = "https://placehold.co/200x100?text=Signature";
+      }
 
       return (
         <img 
