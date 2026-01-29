@@ -2,7 +2,6 @@ import { Rnd } from "react-rnd";
 import { type TemplateElement, type TemplateLayout } from "@shared/schema";
 import { clsx } from "clsx";
 import { useState, useRef, useEffect } from "react";
-import { get } from "lodash"; // We might not have lodash, I'll write a simple getter
 
 // Simple lodash.get alternative for binding resolution
 function getValue(obj: any, path: string, defaultValue?: any) {
@@ -187,7 +186,12 @@ export function Canvas({
         marginBottom: `${PAGE_HEIGHT * (scale - 1)}px` // Compensate for scale affecting flow
       }}
       ref={containerRef}
-      onClick={() => onElementSelect(null)} // Deselect when clicking background
+      onMouseDown={(e) => {
+        // Only deselect if clicking directly on the canvas background
+        if (e.target === e.currentTarget) {
+          onElementSelect(null);
+        }
+      }}
     >
       {/* Grid Rules Background */}
       {!isPreviewMode && (
@@ -225,33 +229,25 @@ export function Canvas({
             enableResizing={!isPreviewMode}
             className={clsx(
               "transition-colors",
+              !isPreviewMode && "cursor-move",
               !isPreviewMode && isSelected && "element-selected z-10",
               !isPreviewMode && !isSelected && "hover:element-hovered"
             )}
             onMouseDown={(e) => {
-              e.stopPropagation();
-              e.preventDefault(); // Extra prevention for click-away bugs
-              onElementSelect(el.id);
-            }}
-          >
-            <div 
-              className="w-full h-full relative"
-              onMouseDown={(e) => {
+              if (!isPreviewMode) {
                 e.stopPropagation();
                 onElementSelect(el.id);
-              }}
-            >
+              }
+            }}
+          >
+            <div className="w-full h-full relative pointer-events-none">
                {renderElementContent(el)}
                {!isPreviewMode && (
                  <div 
                    className={clsx(
-                     "absolute inset-0 z-30 cursor-move border-2",
-                     isSelected ? "border-primary bg-primary/5" : "border-transparent hover:border-primary/30 hover:bg-primary/5"
+                     "absolute inset-0 z-30 border-2 pointer-events-none",
+                     isSelected ? "border-primary bg-primary/5" : "border-transparent"
                    )}
-                   onMouseDown={(e) => {
-                     e.stopPropagation();
-                     onElementSelect(el.id);
-                   }}
                  />
                )}
             </div>
