@@ -90,8 +90,18 @@ export function Canvas({
 
     if (el.type === 'image' || el.type === 'qr' || el.type === 'signature') {
       let src = el.content || "https://placehold.co/400?text=Image";
-      if (el.type === 'qr') src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(el.content || 'https://replit.com')}`;
-      if (el.type === 'signature') src = "https://placehold.co/200x100?text=Signature";
+      
+      if (el.type === 'qr') {
+        // Support binding for QR codes in preview mode
+        const qrData = (isPreviewMode && el.binding) 
+          ? getValue(sampleData, el.binding, el.content) 
+          : el.content;
+        src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrData || 'https://replit.com')}`;
+      }
+      
+      if (el.type === 'signature') {
+        src = "https://placehold.co/200x100?text=Signature";
+      }
 
       return (
         <img 

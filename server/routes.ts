@@ -180,7 +180,7 @@ export async function seedDatabase() {
         registrationNumber: "IMO 1234567",
         flag: "Bahamas",
         tonnage: "142,000 GT",
-        passengerCapacity: 3,
+        passengerCapacity: "3,400 passengers",
         classification: "Luxury Cruise Liner"
       },
       voyage: {

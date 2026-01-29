@@ -101,7 +101,6 @@ export const textPresets: TextPreset[] = [
       width: 200,
       height: 25,
       content: "Date: {{date}}",
-      binding: "date",
       style: {
         fontSize: 12,
         color: "#6b7280"

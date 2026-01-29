@@ -3,7 +3,7 @@ import { useRoute } from "wouter";
 import { useTemplate, useUpdateTemplate } from "@/hooks/use-templates";
 import { Canvas } from "@/components/Canvas";
 import { ElementProperties } from "@/components/ElementProperties";
-import { TextPresets, textPresets } from "@/components/TextPresets";
+import { TextPresets } from "@/components/TextPresets";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,7 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   ChevronLeft, Save, Type, Image as ImageIcon, Table as TableIcon, 
-  Square, Layout, Eye, EyeOff, RotateCcw, Minus, Play, QrCode, PenTool, Award, Download, BookText
+  Square, Layout, Eye, EyeOff, RotateCcw, Minus, Play, QrCode, PenTool, Award, Download
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { TemplateElement, TemplateLayout } from "@shared/schema";
