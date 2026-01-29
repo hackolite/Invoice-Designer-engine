@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   ChevronLeft, Save, Type, Image as ImageIcon, Table as TableIcon, 
-  Square, Layout, Eye, EyeOff, RotateCcw, Minus, Play, QrCode, PenTool, Award
+  Square, Layout, Eye, EyeOff, RotateCcw, Minus, Play, QrCode, PenTool, Award, Download
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { TemplateElement, TemplateLayout } from "@shared/schema";
@@ -176,6 +176,55 @@ export default function Editor() {
               <Play className="w-3 h-3 mr-1.5" /> Play / Generate
             </Button>
           </div>
+          
+          <Separator orientation="vertical" className="h-6" />
+
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => {
+              if (!layout) return;
+              const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { margin: 0; font-family: sans-serif; }
+    .page { width: 794px; height: 1123px; position: relative; background: white; }
+    .element { position: absolute; overflow: hidden; }
+    .line { background: black; }
+    .badge { border-radius: 9999px; display: flex; align-items: center; justify-content: center; color: white; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    ${layout.elements.map(el => {
+      const style = Object.entries(el.style || {}).map(([k, v]) => `${k.replace(/[A-Z]/g, m => "-" + m.toLowerCase())}: ${v}${typeof v === 'number' ? 'px' : ''}`).join('; ');
+      const content = el.type === 'text' ? (el.binding ? `{{${el.binding}}}` : el.content) : 
+                     el.type === 'badge' ? (el.content || `{{${el.binding}}}`) : '';
+      
+      return `
+      <div class="element" style="left: ${el.x}px; top: ${el.y}px; width: ${el.width}px; height: ${el.height}px; ${style}">
+        ${el.type === 'text' || el.type === 'badge' ? content : ''}
+        ${el.type === 'line' || el.type === 'box' ? '' : ''}
+      </div>`;
+    }).join('')}
+  </div>
+</body>
+</html>`;
+              const blob = new Blob([html], { type: 'text/html' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `template-${isPreviewMode ? 'values' : 'attributes'}.html`;
+              a.click();
+            }}
+          >
+            <Download className="w-4 h-4 mr-2" /> Export HTML
+          </Button>
           
           <Separator orientation="vertical" className="h-6" />
 

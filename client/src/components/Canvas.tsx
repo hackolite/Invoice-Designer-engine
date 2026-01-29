@@ -30,6 +30,7 @@ interface CanvasProps {
 // 1mm = 3.78px
 const PAGE_WIDTH = 794;  // 210mm * 3.78
 const PAGE_HEIGHT = 1123; // 297mm * 3.78
+const GRID_SIZE = 10;
 
 export function Canvas({
   layout,
@@ -41,6 +42,11 @@ export function Canvas({
   scale = 1
 }: CanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Magnetic snap helper
+  const snapToGrid = (num: number) => {
+    return Math.round(num / GRID_SIZE) * GRID_SIZE;
+  };
 
   // Helper to render content based on element type and mode
   const renderElementContent = (el: TemplateElement) => {
@@ -79,6 +85,7 @@ export function Canvas({
           src={src} 
           alt={el.type} 
           className="w-full h-full object-contain pointer-events-none" 
+          key={src} // Force re-render when src changes
         />
       );
     }
@@ -167,6 +174,16 @@ export function Canvas({
       ref={containerRef}
       onClick={() => onElementSelect(null)} // Deselect when clicking background
     >
+      {/* Grid Rules Background */}
+      {!isPreviewMode && (
+        <div 
+          className="absolute inset-0 pointer-events-none opacity-[0.03]"
+          style={{
+            backgroundImage: `radial-gradient(circle, #000 1px, transparent 1px)`,
+            backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px`
+          }}
+        />
+      )}
       {layout.elements.map((el) => {
         const isSelected = selectedElementId === el.id;
 
@@ -175,14 +192,17 @@ export function Canvas({
             key={el.id}
             size={{ width: el.width, height: el.height }}
             position={{ x: el.x, y: el.y }}
+            dragGrid={[GRID_SIZE, GRID_SIZE]}
+            resizeGrid={[GRID_SIZE, GRID_SIZE]}
             onDragStop={(e, d) => {
-              onElementUpdate(el.id, { x: d.x, y: d.y });
+              onElementUpdate(el.id, { x: snapToGrid(d.x), y: snapToGrid(d.y) });
             }}
             onResizeStop={(e, direction, ref, delta, position) => {
               onElementUpdate(el.id, {
-                width: parseInt(ref.style.width),
-                height: parseInt(ref.style.height),
-                ...position,
+                width: snapToGrid(parseInt(ref.style.width)),
+                height: snapToGrid(parseInt(ref.style.height)),
+                x: snapToGrid(position.x),
+                y: snapToGrid(position.y),
               });
             }}
             bounds="parent"
