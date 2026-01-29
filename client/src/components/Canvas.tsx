@@ -228,7 +228,8 @@ export function Canvas({
             disableDragging={isPreviewMode}
             enableResizing={!isPreviewMode}
             className={clsx(
-              "transition-colors cursor-move",
+              "transition-colors",
+              !isPreviewMode && "cursor-move",
               !isPreviewMode && isSelected && "element-selected z-10",
               !isPreviewMode && !isSelected && "hover:element-hovered"
             )}
