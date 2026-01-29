@@ -59,6 +59,13 @@ export function Canvas({
         displayContent = el.content || (el.binding ? `{{${el.binding}}}` : "Text");
       }
       
+      // Process content to replace bindings with values in preview mode
+      if (isPreviewMode && displayContent && typeof displayContent === 'string') {
+        displayContent = displayContent.replace(/\{\{([^}]+)\}\}/g, (match, binding) => {
+          return getValue(sampleData, binding.trim(), match);
+        });
+      }
+      
       return (
         <div 
           className="w-full h-full overflow-hidden whitespace-pre-wrap"
@@ -67,6 +74,13 @@ export function Canvas({
             textAlign: (el.style?.textAlign as any) || 'left',
             color: el.style?.color as string || 'inherit',
             fontWeight: el.style?.fontWeight as any || 'normal',
+            lineHeight: el.style?.lineHeight as any || 'normal',
+            fontStyle: el.style?.fontStyle as any || 'normal',
+            textTransform: el.style?.textTransform as any || 'none',
+            letterSpacing: el.style?.letterSpacing ? `${el.style.letterSpacing}px` : 'normal',
+            fontFamily: el.style?.fontFamily as string || 'inherit',
+            borderBottom: el.style?.borderBottom as string || 'none',
+            paddingBottom: el.style?.paddingBottom ? `${el.style.paddingBottom}px` : '0',
           }}
         >
           {displayContent}
