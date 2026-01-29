@@ -3,7 +3,6 @@ import { useRoute } from "wouter";
 import { useTemplate, useUpdateTemplate } from "@/hooks/use-templates";
 import { Canvas } from "@/components/Canvas";
 import { ElementProperties } from "@/components/ElementProperties";
-import { TextPresets } from "@/components/TextPresets";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,7 +10,6 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   ChevronLeft, Save, Type, Image as ImageIcon, Table as TableIcon, 
   Square, Layout, Eye, EyeOff, RotateCcw, Minus, Play, QrCode, PenTool, Award, Download
@@ -242,15 +240,17 @@ export default function Editor() {
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Components and Text Presets */}
+        {/* Left Sidebar - Components */}
         <aside className="w-64 border-r bg-white flex flex-col shrink-0 z-10 shadow-sm">
-          <Tabs defaultValue="components" className="flex-1 flex flex-col">
-            <TabsList className="grid w-full grid-cols-2 rounded-none border-b">
-              <TabsTrigger value="components">Components</TabsTrigger>
-              <TabsTrigger value="presets">Text Presets</TabsTrigger>
-            </TabsList>
+          <div className="flex-1 flex flex-col">
+            <div className="p-4 border-b">
+              <h3 className="font-semibold text-sm text-foreground/80">Components</h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                Add elements to your template
+              </p>
+            </div>
             
-            <TabsContent value="components" className="flex-1 flex flex-col m-0">
+            <ScrollArea className="flex-1">
               <div className="p-4 grid grid-cols-2 gap-3">
                 <Button variant="outline" className="h-20 flex flex-col gap-2 hover:border-primary hover:text-primary transition-colors" onClick={() => handleAddElement('text')}>
                   <Type className="w-6 h-6" />
@@ -313,27 +313,8 @@ export default function Editor() {
                   Load Demo Template
                 </Button>
               </div>
-            </TabsContent>
-
-            <TabsContent value="presets" className="flex-1 m-0">
-              <TextPresets 
-                onSelectPreset={(preset) => {
-                  if (!layout) return;
-                  const newElement: TemplateElement = {
-                    id: crypto.randomUUID(),
-                    ...preset.element,
-                    x: 50,
-                    y: 50,
-                  };
-                  setLayout(prev => prev ? ({
-                    ...prev,
-                    elements: [...prev.elements, newElement]
-                  }) : null);
-                  setSelectedElementId(newElement.id);
-                }}
-              />
-            </TabsContent>
-          </Tabs>
+            </ScrollArea>
+          </div>
 
           <div className="mt-auto border-t">
             <div className="p-4 border-b">
