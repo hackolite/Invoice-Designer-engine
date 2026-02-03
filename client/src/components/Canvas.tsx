@@ -520,7 +520,7 @@ export function Canvas({
                               <Input
                                 autoFocus
                                 className="h-6 text-xs pointer-events-auto"
-                                value={content}
+                                value={cell?.content || ''}
                                 aria-label={`Edit content for cell at row ${rowIdx}, column ${colIdx}`}
                                 onChange={(e) => {
                                   handleCellContentUpdate(el.id, rowIdx, colIdx, e.target.value);
