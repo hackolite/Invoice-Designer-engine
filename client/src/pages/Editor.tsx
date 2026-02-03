@@ -71,6 +71,7 @@ export default function Editor() {
           { header: 'Qty', binding: 'quantity', width: '15%' }
         ]
       };
+      newElement.style = { ...newElement.style, gridBorderColor: '#000000', gridBorderWidth: 1 };
     } else if (type === 'text') {
         newElement.content = "Double click to edit";
     }
@@ -302,7 +303,7 @@ export default function Editor() {
                         { id: "t2", type: "text", x: 80, y: 80, width: 200, height: 20, binding: "date" },
                         { id: "t3", type: "text", x: 20, y: 100, width: 200, height: 20, content: "Client:", style: { fontWeight: "bold" } },
                         { id: "t4", type: "text", x: 80, y: 100, width: 200, height: 40, binding: "client.name" },
-                        { id: "t5", type: "table", x: 20, y: 200, width: 750, height: 300, tableConfig: { dataSource: "items", columns: [{ header: "Item", binding: "description", width: "60%" }, { header: "Total", binding: "total", width: "40%", format: "currency" }] } },
+                        { id: "t5", type: "table", x: 20, y: 200, width: 750, height: 300, tableConfig: { dataSource: "items", columns: [{ header: "Item", binding: "description", width: "60%" }, { header: "Total", binding: "total", width: "40%", format: "currency" }] }, style: { gridBorderColor: "#000000", gridBorderWidth: 1 } },
                         { id: "q1", type: "qr", x: 20, y: 550, width: 100, height: 100, content: "https://pay.example.com/inv-001" },
                         { id: "s1", type: "signature", x: 550, y: 550, width: 200, height: 80 }
                       ]

@@ -173,6 +173,43 @@ export function ElementProperties({ element, onChange, onDelete }: ElementProper
                     <option value="modern">Modern (Primary Color)</option>
                   </select>
                 </div>
+                
+                <Separator />
+                
+                <div className="space-y-2">
+                  <Label>Grid Border Color</Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      type="color" 
+                      className="w-12 p-1 h-10"
+                      value={element.style?.gridBorderColor as string || '#000000'}
+                      onChange={(e) => handleStyleChange('gridBorderColor', e.target.value)}
+                    />
+                    <Input 
+                      type="text"
+                      value={element.style?.gridBorderColor as string || '#000000'}
+                      onChange={(e) => handleStyleChange('gridBorderColor', e.target.value)}
+                      className="flex-1 font-mono"
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Grid Border Thickness</Label>
+                  <div className="flex items-center gap-2">
+                    <Input 
+                      type="number"
+                      value={element.style?.gridBorderWidth as number || 1} 
+                      onChange={(e) => handleStyleChange('gridBorderWidth', parseInt(e.target.value) || 1)} 
+                      min={0}
+                      max={10}
+                    />
+                    <span className="text-sm text-muted-foreground">px</span>
+                  </div>
+                </div>
+                
+                <Separator />
+                
                 <div className="space-y-2">
                   <Label>Data Source (Array)</Label>
                   <Input 
