@@ -65,8 +65,9 @@ export default function Editor() {
     // Limit history size
     if (newHistory.length > MAX_HISTORY_SIZE) {
       newHistory.shift();
+      setHistoryIndex(MAX_HISTORY_SIZE - 1);
     } else {
-      setHistoryIndex(historyIndex + 1);
+      setHistoryIndex(newHistory.length - 1);
     }
     
     setHistory(newHistory);
@@ -107,15 +108,15 @@ export default function Editor() {
       }
 
       // Ctrl+Z / Cmd+Z - Undo
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
         e.preventDefault();
         handleUndo();
         return;
       }
 
       // Ctrl+Y / Cmd+Shift+Z - Redo
-      if (((e.ctrlKey || e.metaKey) && e.key === 'y') || 
-          ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z')) {
+      if (((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') || 
+          ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'z')) {
         e.preventDefault();
         handleRedo();
         return;

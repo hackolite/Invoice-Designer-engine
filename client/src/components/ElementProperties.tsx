@@ -630,23 +630,23 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
 
             <div className="space-y-2">
               <Label>Text Style</Label>
-              <div className="flex gap-2">
+              <div className="flex border rounded-md overflow-hidden divide-x">
                 <button 
-                  className={`flex-1 p-2 border rounded-md hover:bg-muted ${element.style?.fontWeight === 'bold' ? 'bg-muted' : ''}`}
+                  className={`flex-1 p-2 hover:bg-muted ${element.style?.fontWeight === 'bold' ? 'bg-muted' : ''}`}
                   onClick={() => handleStyleChange('fontWeight', element.style?.fontWeight === 'bold' ? 'normal' : 'bold')}
                   title="Bold"
                 >
                   <Bold className="w-4 h-4 mx-auto" />
                 </button>
                 <button 
-                  className={`flex-1 p-2 border rounded-md hover:bg-muted ${element.style?.fontStyle === 'italic' ? 'bg-muted' : ''}`}
+                  className={`flex-1 p-2 hover:bg-muted ${element.style?.fontStyle === 'italic' ? 'bg-muted' : ''}`}
                   onClick={() => handleStyleChange('fontStyle', element.style?.fontStyle === 'italic' ? 'normal' : 'italic')}
                   title="Italic"
                 >
                   <Italic className="w-4 h-4 mx-auto" />
                 </button>
                 <button 
-                  className={`flex-1 p-2 border rounded-md hover:bg-muted ${element.style?.textDecoration === 'underline' ? 'bg-muted' : ''}`}
+                  className={`flex-1 p-2 hover:bg-muted ${element.style?.textDecoration === 'underline' ? 'bg-muted' : ''}`}
                   onClick={() => handleStyleChange('textDecoration', element.style?.textDecoration === 'underline' ? 'none' : 'underline')}
                   title="Underline"
                 >
