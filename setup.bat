@@ -135,11 +135,43 @@ echo ============================================
 echo.
 
 echo [94mPushing database schema to PostgreSQL...[0m
-call npm run db:push
 
-if %errorlevel% neq 0 (
+REM Capture output to a temporary file and check for errors
+set "TEMP_OUTPUT=%TEMP%\db_push_output.txt"
+call npm run db:push > "%TEMP_OUTPUT%" 2>&1
+set DB_PUSH_EXIT_CODE=%errorlevel%
+
+REM Display the output
+type "%TEMP_OUTPUT%"
+
+REM Check for errors in output or non-zero exit code
+REM drizzle-kit may return 0 even with errors, so we check the output too
+findstr /i /c:"error:" /c:"ERROR:" /c:"permission denied" /c:"must be owner" "%TEMP_OUTPUT%" >nul
+if %errorlevel% equ 0 (
+    set DB_HAS_ERROR=1
+) else (
+    set DB_HAS_ERROR=0
+)
+
+REM Clean up temp file
+del "%TEMP_OUTPUT%" 2>nul
+
+if %DB_PUSH_EXIT_CODE% neq 0 (
+    set DB_HAS_ERROR=1
+)
+
+if %DB_HAS_ERROR% equ 1 (
+    echo.
     echo [91mFailed to create database schema.[0m
-    echo [93mYou may need to run 'npm run db:push' manually after fixing database connection.[0m
+    echo [93mDatabase migration encountered errors. Common issues:[0m
+    echo   * Permission errors: Ensure your database user has sufficient privileges
+    echo   * Connection errors: Verify DATABASE_URL in .env is correct
+    echo   * Existing tables: Your database user may not own existing tables
+    echo.
+    echo [93mYou may need to:[0m
+    echo   1. Grant proper permissions to your database user, or
+    echo   2. Run 'npm run db:push' as the database owner, or
+    echo   3. Drop and recreate the database with your current user
     pause
     exit /b 1
 )

@@ -187,15 +187,32 @@ echo "============================================"
 echo ""
 
 print_info "Pushing database schema to PostgreSQL..."
-npm run db:push
 
-if [ $? -eq 0 ]; then
-    print_success "Database schema created successfully."
-else
+# Capture both stdout and stderr, and the exit code
+DB_PUSH_OUTPUT=$(npm run db:push 2>&1)
+DB_PUSH_EXIT_CODE=$?
+
+# Display the output
+echo "$DB_PUSH_OUTPUT"
+
+# Check for errors in output or non-zero exit code
+# drizzle-kit may return 0 even with errors, so we check the output too
+if [ $DB_PUSH_EXIT_CODE -ne 0 ] || echo "$DB_PUSH_OUTPUT" | grep -qiE "error:|ERROR:|permission denied|must be owner"; then
+    echo ""
     print_error "Failed to create database schema."
-    print_warning "You may need to run 'npm run db:push' manually after fixing database connection."
+    print_warning "Database migration encountered errors. Common issues:"
+    echo "  • Permission errors: Ensure your database user has sufficient privileges"
+    echo "  • Connection errors: Verify DATABASE_URL in .env is correct"
+    echo "  • Existing tables: Your database user may not own existing tables"
+    echo ""
+    print_warning "You may need to:"
+    echo "  1. Grant proper permissions to your database user, or"
+    echo "  2. Run 'npm run db:push' as the database owner, or"
+    echo "  3. Drop and recreate the database with your current user"
     exit 1
 fi
+
+print_success "Database schema created successfully."
 
 echo ""
 echo "============================================"
