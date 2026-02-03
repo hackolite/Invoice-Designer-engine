@@ -91,8 +91,16 @@ echo   Database Setup
 echo ============================================
 echo.
 
+:: Check if .env file exists
+if not exist ".env" (
+    echo [91m.env file not found. Please create it first.[0m
+    pause
+    exit /b 1
+)
+
 :: Read DATABASE_URL from .env file
-for /f "tokens=1,* delims==" %%a in ('findstr /r "^DATABASE_URL=" .env') do set DATABASE_URL=%%b
+set "DATABASE_URL="
+for /f "tokens=1,* delims==" %%a in ('findstr /r "^DATABASE_URL=" .env 2^>nul') do set DATABASE_URL=%%b
 
 if "!DATABASE_URL!"=="" (
     echo [91mDATABASE_URL is not set in .env file.[0m
