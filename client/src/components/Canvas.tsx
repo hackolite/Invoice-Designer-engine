@@ -70,15 +70,31 @@ export function Canvas({
     const newRows = config.rows + 1;
     const newCells = [...config.cells];
     
-    // Add cells for the new row
+    // Track which columns in the new row are already occupied by spanning cells
+    const occupiedColumns = new Set<number>();
+    
+    // Check for cells with rowSpan that extend into the new row
+    config.cells.forEach(cell => {
+      const cellEndRow = cell.row + (cell.rowSpan || 1);
+      if (cellEndRow > config.rows) {
+        // This cell spans into the new row, mark its columns as occupied
+        for (let c = cell.col; c < cell.col + (cell.colSpan || 1); c++) {
+          occupiedColumns.add(c);
+        }
+      }
+    });
+    
+    // Add cells for the new row only in unoccupied columns
     for (let c = 0; c < config.cols; c++) {
-      newCells.push({
-        row: config.rows,
-        col: c,
-        content: '',
-        rowSpan: 1,
-        colSpan: 1
-      });
+      if (!occupiedColumns.has(c)) {
+        newCells.push({
+          row: config.rows,
+          col: c,
+          content: '',
+          rowSpan: 1,
+          colSpan: 1
+        });
+      }
     }
     
     onElementUpdate(elementId, {
@@ -94,15 +110,31 @@ export function Canvas({
     const newCols = config.cols + 1;
     const newCells = [...config.cells];
     
-    // Add cells for the new column
+    // Track which rows in the new column are already occupied by spanning cells
+    const occupiedRows = new Set<number>();
+    
+    // Check for cells with colSpan that extend into the new column
+    config.cells.forEach(cell => {
+      const cellEndCol = cell.col + (cell.colSpan || 1);
+      if (cellEndCol > config.cols) {
+        // This cell spans into the new column, mark its rows as occupied
+        for (let r = cell.row; r < cell.row + (cell.rowSpan || 1); r++) {
+          occupiedRows.add(r);
+        }
+      }
+    });
+    
+    // Add cells for the new column only in unoccupied rows
     for (let r = 0; r < config.rows; r++) {
-      newCells.push({
-        row: r,
-        col: config.cols,
-        content: '',
-        rowSpan: 1,
-        colSpan: 1
-      });
+      if (!occupiedRows.has(r)) {
+        newCells.push({
+          row: r,
+          col: config.cols,
+          content: '',
+          rowSpan: 1,
+          colSpan: 1
+        });
+      }
     }
     
     onElementUpdate(elementId, {
@@ -145,12 +177,8 @@ export function Canvas({
     const cell = config.cells[cellIndex];
     const newCells = [...config.cells];
     
-    // Reset to single cell
-    if ((cell.colSpan || 1) > 1) {
-      newCells[cellIndex] = { ...cell, colSpan: 1 };
-    } else if ((cell.rowSpan || 1) > 1) {
-      newCells[cellIndex] = { ...cell, rowSpan: 1 };
-    }
+    // Reset both spans to single cell
+    newCells[cellIndex] = { ...cell, colSpan: 1, rowSpan: 1 };
     
     onElementUpdate(elementId, {
       gridTableConfig: { ...config, cells: newCells }
@@ -463,8 +491,17 @@ export function Canvas({
                               borderColor: gridBorderColor,
                               borderWidth: `${gridBorderWidth}px`,
                             }}
+                            tabIndex={isPreviewMode ? undefined : 0}
+                            role={isPreviewMode ? undefined : "button"}
+                            aria-label={isPreviewMode ? undefined : `Cell at row ${rowIdx}, column ${colIdx}. Double-click to edit.`}
                             onDoubleClick={(e) => {
                               if (!isPreviewMode) {
+                                e.stopPropagation();
+                                setEditingCell({ elementId: el.id, row: rowIdx, col: colIdx });
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (!isPreviewMode && e.key === 'Enter') {
                                 e.stopPropagation();
                                 setEditingCell({ elementId: el.id, row: rowIdx, col: colIdx });
                               }
@@ -481,6 +518,7 @@ export function Canvas({
                                 autoFocus
                                 className="h-6 text-xs pointer-events-auto"
                                 value={content}
+                                aria-label={`Edit content for cell at row ${rowIdx}, column ${colIdx}`}
                                 onChange={(e) => {
                                   handleCellContentUpdate(el.id, rowIdx, colIdx, e.target.value);
                                 }}
