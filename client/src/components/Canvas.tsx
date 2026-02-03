@@ -271,6 +271,88 @@ export function Canvas({
       );
     }
 
+    if (el.type === 'gridtable') {
+      const config = el.gridTableConfig;
+      if (!config) return <div>Invalid Grid Table Config</div>;
+
+      const gridBorderColor = (el.style?.gridBorderColor as string) || '#000000';
+      const gridBorderWidth = (el.style?.gridBorderWidth as number) || 1;
+      
+      // Create a map of cells by position for easier lookup
+      const cellMap = new Map<string, typeof config.cells[0]>();
+      const occupiedCells = new Set<string>();
+      
+      config.cells.forEach(cell => {
+        const key = `${cell.row}-${cell.col}`;
+        cellMap.set(key, cell);
+        
+        // Mark all cells that are occupied by this cell (including spans)
+        for (let r = cell.row; r < cell.row + (cell.rowSpan || 1); r++) {
+          for (let c = cell.col; c < cell.col + (cell.colSpan || 1); c++) {
+            if (r !== cell.row || c !== cell.col) {
+              occupiedCells.add(`${r}-${c}`);
+            }
+          }
+        }
+      });
+      
+      return (
+        <div className="w-full h-full overflow-hidden" style={{
+          border: `${gridBorderWidth}px solid ${gridBorderColor}`
+        }}>
+          <table className="w-full h-full text-sm text-left border-collapse">
+            <tbody>
+              {Array.from({ length: config.rows }, (_, rowIdx) => (
+                <tr key={rowIdx}>
+                  {Array.from({ length: config.cols }, (_, colIdx) => {
+                    const key = `${rowIdx}-${colIdx}`;
+                    
+                    // Skip cells that are occupied by a spanning cell
+                    if (occupiedCells.has(key)) {
+                      return null;
+                    }
+                    
+                    const cell = cellMap.get(key);
+                    const rowSpan = cell?.rowSpan || 1;
+                    const colSpan = cell?.colSpan || 1;
+                    
+                    let content = cell?.content || '';
+                    
+                    // Handle data binding in preview mode
+                    if (isPreviewMode && cell?.binding) {
+                      content = getValue(sampleData, cell.binding, `{{${cell.binding}}}`);
+                    }
+                    
+                    // Process content to replace bindings with values in preview mode
+                    if (isPreviewMode && content && typeof content === 'string') {
+                      content = content.replace(/\{\{([^}]+)\}\}/g, (match, binding) => {
+                        return getValue(sampleData, binding.trim(), match);
+                      });
+                    }
+                    
+                    return (
+                      <td 
+                        key={colIdx}
+                        rowSpan={rowSpan}
+                        colSpan={colSpan}
+                        className="p-2 border"
+                        style={{ 
+                          borderColor: gridBorderColor,
+                          borderWidth: `${gridBorderWidth}px`,
+                        }}
+                      >
+                        {content}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    }
+
     return null;
   };
 
@@ -403,6 +485,61 @@ export function Canvas({
                    </Button>
                  </div>
                )}
+                {!isPreviewMode && isSelected && el.type === 'gridtable' && (
+                  <div 
+                    className="absolute -bottom-14 left-0 right-0 bg-white border rounded-lg shadow-lg p-2 flex items-center gap-3 pointer-events-auto z-40"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex items-center gap-2 flex-1">
+                      <Palette className="w-4 h-4 text-muted-foreground" />
+                      <Label className="text-xs text-muted-foreground whitespace-nowrap">Border:</Label>
+                      <Input 
+                        type="color" 
+                        className="w-10 h-8 p-1 cursor-pointer"
+                        value={el.style?.gridBorderColor as string || '#000000'}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          onElementUpdate(el.id, {
+                            style: { ...el.style, gridBorderColor: e.target.value }
+                          });
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 flex-1">
+                      <Ruler className="w-4 h-4 text-muted-foreground" />
+                      <Label className="text-xs text-muted-foreground whitespace-nowrap">Width:</Label>
+                      <Input 
+                        type="number"
+                        className="w-16 h-8 text-sm"
+                        value={el.style?.gridBorderWidth as number || 1} 
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          onElementUpdate(el.id, {
+                            style: { ...el.style, gridBorderWidth: parseInt(e.target.value) || 1 }
+                          });
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        min={0}
+                        max={10}
+                      />
+                      <span className="text-xs text-muted-foreground">px</span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onClone(el.id);
+                      }}
+                      title="Clone grid table"
+                      aria-label="Clone grid table"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
             </div>
           </Rnd>
         );

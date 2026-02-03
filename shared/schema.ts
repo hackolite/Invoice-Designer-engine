@@ -31,7 +31,7 @@ export type Template = typeof templates.$inferSelect;
 export type InsertTemplate = z.infer<typeof insertTemplateSchema>;
 
 // Element Types for the WYSIWYG Editor
-export type ElementType = 'text' | 'image' | 'table' | 'box' | 'line' | 'qr' | 'signature' | 'badge';
+export type ElementType = 'text' | 'image' | 'table' | 'gridtable' | 'box' | 'line' | 'qr' | 'signature' | 'badge';
 
 export interface TemplateElement {
   id: string;
@@ -51,6 +51,18 @@ export interface TemplateElement {
       binding: string; 
       width?: string;
       format?: 'currency' | 'number' | 'text';
+    }[];
+  };
+  gridTableConfig?: {
+    rows: number;
+    cols: number;
+    cells: {
+      row: number;
+      col: number;
+      rowSpan?: number;
+      colSpan?: number;
+      content?: string;
+      binding?: string;
     }[];
   };
   style?: Record<string, string | number>;
