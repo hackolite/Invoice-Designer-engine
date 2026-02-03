@@ -304,6 +304,7 @@ export function Canvas({
             fontFamily: el.style?.fontFamily as string || 'inherit',
             borderBottom: el.style?.borderBottom as string || 'none',
             paddingBottom: el.style?.paddingBottom ? `${el.style.paddingBottom}px` : '0',
+            textDecoration: el.style?.textDecoration as string || 'none',
           }}
         >
           {displayContent}
