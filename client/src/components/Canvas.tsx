@@ -2,6 +2,9 @@ import { Rnd } from "react-rnd";
 import { type TemplateElement, type TemplateLayout } from "@shared/schema";
 import { clsx } from "clsx";
 import { useState, useRef, useEffect } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Palette, Ruler } from "lucide-react";
 
 // Simple lodash.get alternative for binding resolution
 function getValue(obj: any, path: string, defaultValue?: any) {
@@ -141,23 +144,31 @@ export function Canvas({
         : [1, 2, 3]; // Dummy rows for editor
 
       const tableStyle = (el.style?.tableVariant as string) || 'default';
+      const gridBorderColor = (el.style?.gridBorderColor as string) || '#000000';
+      const gridBorderWidth = (el.style?.gridBorderWidth as number) || 1;
       
       return (
         <div className={clsx(
           "w-full h-full overflow-hidden",
-          tableStyle === 'default' && "border border-gray-200",
-          tableStyle === 'minimal' && "border-0",
-          tableStyle === 'modern' && "border border-primary/20 rounded-lg shadow-sm"
-        )}>
+          tableStyle === 'default' && "",
+          tableStyle === 'minimal' && "",
+          tableStyle === 'modern' && "rounded-lg shadow-sm"
+        )} style={{
+          border: `${gridBorderWidth}px solid ${gridBorderColor}`
+        }}>
           <table className="w-full text-sm text-left border-collapse">
             <thead className={clsx(
               tableStyle === 'default' && "bg-gray-100 text-gray-700 font-medium",
-              tableStyle === 'minimal' && "border-b-2 border-gray-900 text-gray-900 font-bold",
+              tableStyle === 'minimal' && "text-gray-900 font-bold",
               tableStyle === 'modern' && "bg-primary text-primary-foreground font-semibold"
             )}>
               <tr>
                 {config.columns.map((col, idx) => (
-                  <th key={idx} className="p-2 border-b" style={{ width: col.width }}>
+                  <th key={idx} className="p-2" style={{ 
+                    width: col.width,
+                    borderBottom: `${gridBorderWidth}px solid ${gridBorderColor}`,
+                    borderRight: idx < config.columns.length - 1 ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none'
+                  }}>
                     {col.header}
                   </th>
                 ))}
@@ -166,7 +177,6 @@ export function Canvas({
             <tbody>
               {Array.isArray(data) && data.map((row, rIdx) => (
                 <tr key={rIdx} className={clsx(
-                  "border-b last:border-0",
                   tableStyle === 'default' && "hover:bg-gray-50",
                   tableStyle === 'modern' && rIdx % 2 === 0 ? "bg-primary/5" : "bg-white"
                 )}>
@@ -184,7 +194,10 @@ export function Canvas({
                     }
                     
                     return (
-                      <td key={cIdx} className="p-2">
+                      <td key={cIdx} className="p-2" style={{ 
+                        borderBottom: rIdx < data.length - 1 ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none',
+                        borderRight: cIdx < config.columns.length - 1 ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none'
+                      }}>
                         {cellValue}
                       </td>
                     );
@@ -273,6 +286,48 @@ export function Canvas({
                      isSelected ? "border-primary bg-primary/5" : "border-transparent"
                    )}
                  />
+               )}
+               {!isPreviewMode && isSelected && el.type === 'table' && (
+                 <div 
+                   className="absolute -bottom-14 left-0 right-0 bg-white border rounded-lg shadow-lg p-2 flex items-center gap-3 pointer-events-auto z-40"
+                   onClick={(e) => e.stopPropagation()}
+                 >
+                   <div className="flex items-center gap-2 flex-1">
+                     <Palette className="w-4 h-4 text-muted-foreground" />
+                     <Label className="text-xs text-muted-foreground whitespace-nowrap">Border:</Label>
+                     <Input 
+                       type="color" 
+                       className="w-10 h-8 p-1 cursor-pointer"
+                       value={el.style?.gridBorderColor as string || '#000000'}
+                       onChange={(e) => {
+                         e.stopPropagation();
+                         onElementUpdate(el.id, {
+                           style: { ...el.style, gridBorderColor: e.target.value }
+                         });
+                       }}
+                       onClick={(e) => e.stopPropagation()}
+                     />
+                   </div>
+                   <div className="flex items-center gap-2 flex-1">
+                     <Ruler className="w-4 h-4 text-muted-foreground" />
+                     <Label className="text-xs text-muted-foreground whitespace-nowrap">Width:</Label>
+                     <Input 
+                       type="number"
+                       className="w-16 h-8 text-sm"
+                       value={el.style?.gridBorderWidth as number || 1} 
+                       onChange={(e) => {
+                         e.stopPropagation();
+                         onElementUpdate(el.id, {
+                           style: { ...el.style, gridBorderWidth: parseInt(e.target.value) }
+                         });
+                       }}
+                       onClick={(e) => e.stopPropagation()}
+                       min={0}
+                       max={10}
+                     />
+                     <span className="text-xs text-muted-foreground">px</span>
+                   </div>
+                 </div>
                )}
             </div>
           </Rnd>

@@ -71,6 +71,7 @@ export default function Editor() {
           { header: 'Qty', binding: 'quantity', width: '15%' }
         ]
       };
+      newElement.style = { ...newElement.style, gridBorderColor: '#000000', gridBorderWidth: 1 };
     } else if (type === 'text') {
         newElement.content = "Double click to edit";
     }
