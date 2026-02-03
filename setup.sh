@@ -138,14 +138,14 @@ if [[ $DATABASE_URL =~ postgresql://([^:]+):([^@]+)@([^:]+):([^/]+)/(.+) ]]; the
     
     # Try to create database using psql
     if command -v psql &> /dev/null; then
-        PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d postgres -tc "SELECT 1 FROM pg_database WHERE datname = '\"$DB_NAME\"'" | grep -q 1 || \
+        PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d postgres -tc "SELECT 1 FROM pg_database WHERE datname = '$DB_NAME'" | grep -q 1 || \
         PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d postgres -c "CREATE DATABASE \"$DB_NAME\"" 2>/dev/null
         
         if [ $? -eq 0 ]; then
             print_success "Database is ready."
         else
             print_warning "Could not automatically create database. Please create it manually if needed."
-            print_info "Run: CREATE DATABASE $DB_NAME;"
+            print_info "Run: CREATE DATABASE \"$DB_NAME\";"
         fi
     else
         print_warning "psql not available. Please ensure the database exists manually."
