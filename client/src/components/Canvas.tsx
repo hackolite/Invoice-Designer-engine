@@ -4,7 +4,8 @@ import { clsx } from "clsx";
 import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Palette, Ruler } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Palette, Ruler, Copy } from "lucide-react";
 
 // Simple lodash.get alternative for binding resolution
 function getValue(obj: any, path: string, defaultValue?: any) {
@@ -23,6 +24,7 @@ interface CanvasProps {
   selectedElementId: string | null;
   onElementSelect: (id: string | null) => void;
   onElementUpdate: (id: string, updates: Partial<TemplateElement>) => void;
+  onClone: (id: string) => void;
   isPreviewMode: boolean;
   scale?: number;
 }
@@ -40,6 +42,7 @@ export function Canvas({
   selectedElementId,
   onElementSelect,
   onElementUpdate,
+  onClone,
   isPreviewMode,
   scale = 1
 }: CanvasProps) {
@@ -385,6 +388,18 @@ export function Canvas({
                      />
                      <span className="text-xs text-muted-foreground">px</span>
                    </div>
+                   <Button
+                     variant="ghost"
+                     size="sm"
+                     className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/10"
+                     onClick={(e) => {
+                       e.stopPropagation();
+                       onClone(el.id);
+                     }}
+                     title="Clone table"
+                   >
+                     <Copy className="w-4 h-4" />
+                   </Button>
                  </div>
                )}
             </div>
