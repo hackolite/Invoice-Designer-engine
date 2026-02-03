@@ -65,12 +65,10 @@ export default function Editor() {
     // Limit history size
     if (newHistory.length > MAX_HISTORY_SIZE) {
       newHistory.shift();
-      setHistoryIndex(MAX_HISTORY_SIZE - 1);
-    } else {
-      setHistoryIndex(newHistory.length - 1);
     }
     
     setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
   };
 
   // Undo action
