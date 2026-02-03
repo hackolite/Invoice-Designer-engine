@@ -200,7 +200,7 @@ export function ElementProperties({ element, onChange, onDelete }: ElementProper
                     <Input 
                       type="number"
                       value={element.style?.gridBorderWidth as number || 1} 
-                      onChange={(e) => handleStyleChange('gridBorderWidth', parseInt(e.target.value))} 
+                      onChange={(e) => handleStyleChange('gridBorderWidth', parseInt(e.target.value) || 1)} 
                       min={0}
                       max={10}
                     />

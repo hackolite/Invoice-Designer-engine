@@ -318,7 +318,7 @@ export function Canvas({
                        onChange={(e) => {
                          e.stopPropagation();
                          onElementUpdate(el.id, {
-                           style: { ...el.style, gridBorderWidth: parseInt(e.target.value) }
+                           style: { ...el.style, gridBorderWidth: parseInt(e.target.value) || 1 }
                          });
                        }}
                        onClick={(e) => e.stopPropagation()}
