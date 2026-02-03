@@ -4,16 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Trash2, AlignLeft, AlignCenter, AlignRight, Type } from "lucide-react";
+import { Plus, Trash2, AlignLeft, AlignCenter, AlignRight, Type, Copy } from "lucide-react";
 import type { TemplateElement } from "@shared/schema";
 
 interface ElementPropertiesProps {
   element: TemplateElement | null;
   onChange: (id: string, updates: Partial<TemplateElement>) => void;
   onDelete: (id: string) => void;
+  onClone: (id: string) => void;
 }
 
-export function ElementProperties({ element, onChange, onDelete }: ElementPropertiesProps) {
+export function ElementProperties({ element, onChange, onDelete, onClone }: ElementPropertiesProps) {
   if (!element) {
     return (
       <div className="h-full flex flex-col items-center justify-center p-6 text-center text-muted-foreground">
@@ -73,14 +74,28 @@ export function ElementProperties({ element, onChange, onDelete }: ElementProper
       <div className="p-4 space-y-6">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-lg capitalize">{element.type} Properties</h3>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-            onClick={() => onDelete(element.id)}
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-primary hover:text-primary hover:bg-primary/10"
+              onClick={() => onClone(element.id)}
+              title="Clone element"
+              aria-label="Clone element"
+            >
+              <Copy className="w-4 h-4" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={() => onDelete(element.id)}
+              title="Delete element"
+              aria-label="Delete element"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="content" className="w-full">

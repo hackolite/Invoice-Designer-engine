@@ -108,6 +108,33 @@ export default function Editor() {
     setSelectedElementId(null);
   };
 
+  const handleCloneElement = (id: string) => {
+    setLayout(prev => {
+      if (!prev) return null;
+      const elementToClone = prev.elements.find(el => el.id === id);
+      if (!elementToClone) return prev;
+      
+      // Create a deep copy of the element with a new ID and offset position
+      // Using structuredClone for proper deep copy of all nested properties
+      const clonedElement: TemplateElement = {
+        ...structuredClone(elementToClone),
+        id: crypto.randomUUID(),
+        x: elementToClone.x + 20, // Offset by 20px
+        y: elementToClone.y + 20
+      };
+      
+      return {
+        ...prev,
+        elements: [...prev.elements, clonedElement]
+      };
+    });
+    
+    toast({
+      title: "Element cloned",
+      description: "The element has been duplicated successfully."
+    });
+  };
+
   const handleSave = async () => {
     if (!id || !layout) return;
     
@@ -361,6 +388,7 @@ export default function Editor() {
                 selectedElementId={selectedElementId}
                 onElementSelect={setSelectedElementId}
                 onElementUpdate={handleElementUpdate}
+                onClone={handleCloneElement}
                 isPreviewMode={isPreviewMode}
                 scale={scale}
              />
@@ -373,6 +401,7 @@ export default function Editor() {
               element={selectedElement}
               onChange={handleElementUpdate}
               onDelete={handleDeleteElement}
+              onClone={handleCloneElement}
            />
         </aside>
       </div>
