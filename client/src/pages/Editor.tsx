@@ -115,18 +115,12 @@ export default function Editor() {
       if (!elementToClone) return prev;
       
       // Create a deep copy of the element with a new ID and offset position
+      // Using structuredClone for proper deep copy of all nested properties
       const clonedElement: TemplateElement = {
-        ...elementToClone,
+        ...structuredClone(elementToClone),
         id: crypto.randomUUID(),
         x: elementToClone.x + 20, // Offset by 20px
-        y: elementToClone.y + 20,
-        // Deep copy tableConfig if it exists
-        tableConfig: elementToClone.tableConfig ? {
-          ...elementToClone.tableConfig,
-          columns: elementToClone.tableConfig.columns.map(col => ({ ...col }))
-        } : undefined,
-        // Deep copy style if it exists
-        style: elementToClone.style ? { ...elementToClone.style } : undefined
+        y: elementToClone.y + 20
       };
       
       return {

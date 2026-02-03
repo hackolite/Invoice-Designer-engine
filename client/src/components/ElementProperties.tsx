@@ -91,6 +91,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
               className="text-destructive hover:text-destructive hover:bg-destructive/10"
               onClick={() => onDelete(element.id)}
               title="Delete element"
+              aria-label="Delete element"
             >
               <Trash2 className="w-4 h-4" />
             </Button>
