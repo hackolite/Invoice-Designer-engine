@@ -5,7 +5,13 @@ import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Palette, Ruler, Copy } from "lucide-react";
+import { Palette, Ruler, Copy, Plus, Grid3x3, Columns, Rows } from "lucide-react";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 
 // Simple lodash.get alternative for binding resolution
 function getValue(obj: any, path: string, defaultValue?: any) {
@@ -47,10 +53,124 @@ export function Canvas({
   scale = 1
 }: CanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [editingCell, setEditingCell] = useState<{ elementId: string; row: number; col: number } | null>(null);
+  const [contextMenuCell, setContextMenuCell] = useState<{ elementId: string; row: number; col: number } | null>(null);
 
   // Magnetic snap helper
   const snapToGrid = (num: number) => {
     return Math.round(num / GRID_SIZE) * GRID_SIZE;
+  };
+
+  // Helper functions for gridtable manipulation
+  const handleAddRow = (elementId: string) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element || !element.gridTableConfig) return;
+    
+    const config = element.gridTableConfig;
+    const newRows = config.rows + 1;
+    const newCells = [...config.cells];
+    
+    // Add cells for the new row
+    for (let c = 0; c < config.cols; c++) {
+      newCells.push({
+        row: config.rows,
+        col: c,
+        content: '',
+        rowSpan: 1,
+        colSpan: 1
+      });
+    }
+    
+    onElementUpdate(elementId, {
+      gridTableConfig: { ...config, rows: newRows, cells: newCells }
+    });
+  };
+
+  const handleAddColumn = (elementId: string) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element || !element.gridTableConfig) return;
+    
+    const config = element.gridTableConfig;
+    const newCols = config.cols + 1;
+    const newCells = [...config.cells];
+    
+    // Add cells for the new column
+    for (let r = 0; r < config.rows; r++) {
+      newCells.push({
+        row: r,
+        col: config.cols,
+        content: '',
+        rowSpan: 1,
+        colSpan: 1
+      });
+    }
+    
+    onElementUpdate(elementId, {
+      gridTableConfig: { ...config, cols: newCols, cells: newCells }
+    });
+  };
+
+  const handleMergeCells = (elementId: string, row: number, col: number) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element || !element.gridTableConfig) return;
+    
+    const config = element.gridTableConfig;
+    const cellIndex = config.cells.findIndex(c => c.row === row && c.col === col);
+    if (cellIndex === -1) return;
+    
+    const cell = config.cells[cellIndex];
+    const newCells = [...config.cells];
+    
+    // Increase colSpan if possible
+    if (col + (cell.colSpan || 1) < config.cols) {
+      newCells[cellIndex] = { ...cell, colSpan: (cell.colSpan || 1) + 1 };
+    } else if (row + (cell.rowSpan || 1) < config.rows) {
+      // If can't merge right, merge down
+      newCells[cellIndex] = { ...cell, rowSpan: (cell.rowSpan || 1) + 1 };
+    }
+    
+    onElementUpdate(elementId, {
+      gridTableConfig: { ...config, cells: newCells }
+    });
+  };
+
+  const handleSubdivideCell = (elementId: string, row: number, col: number) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element || !element.gridTableConfig) return;
+    
+    const config = element.gridTableConfig;
+    const cellIndex = config.cells.findIndex(c => c.row === row && c.col === col);
+    if (cellIndex === -1) return;
+    
+    const cell = config.cells[cellIndex];
+    const newCells = [...config.cells];
+    
+    // Reset to single cell
+    if ((cell.colSpan || 1) > 1) {
+      newCells[cellIndex] = { ...cell, colSpan: 1 };
+    } else if ((cell.rowSpan || 1) > 1) {
+      newCells[cellIndex] = { ...cell, rowSpan: 1 };
+    }
+    
+    onElementUpdate(elementId, {
+      gridTableConfig: { ...config, cells: newCells }
+    });
+  };
+
+  const handleCellContentUpdate = (elementId: string, row: number, col: number, content: string) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element || !element.gridTableConfig) return;
+    
+    const config = element.gridTableConfig;
+    const cellIndex = config.cells.findIndex(c => c.row === row && c.col === col);
+    if (cellIndex === -1) return;
+    
+    const newCells = [...config.cells];
+    newCells[cellIndex] = { ...newCells[cellIndex], content };
+    
+    onElementUpdate(elementId, {
+      gridTableConfig: { ...config, cells: newCells }
+    });
   };
 
   // Helper to render content based on element type and mode
@@ -330,19 +450,70 @@ export function Canvas({
                       });
                     }
                     
+                    const isEditing = editingCell?.elementId === el.id && editingCell?.row === rowIdx && editingCell?.col === colIdx;
+                    
                     return (
-                      <td 
-                        key={colIdx}
-                        rowSpan={rowSpan}
-                        colSpan={colSpan}
-                        className="p-2 border"
-                        style={{ 
-                          borderColor: gridBorderColor,
-                          borderWidth: `${gridBorderWidth}px`,
-                        }}
-                      >
-                        {content}
-                      </td>
+                      <ContextMenu key={colIdx}>
+                        <ContextMenuTrigger asChild>
+                          <td 
+                            rowSpan={rowSpan}
+                            colSpan={colSpan}
+                            className="p-2 border cursor-pointer hover:bg-blue-50"
+                            style={{ 
+                              borderColor: gridBorderColor,
+                              borderWidth: `${gridBorderWidth}px`,
+                            }}
+                            onDoubleClick={(e) => {
+                              if (!isPreviewMode) {
+                                e.stopPropagation();
+                                setEditingCell({ elementId: el.id, row: rowIdx, col: colIdx });
+                              }
+                            }}
+                            onContextMenu={(e) => {
+                              if (!isPreviewMode) {
+                                e.stopPropagation();
+                                setContextMenuCell({ elementId: el.id, row: rowIdx, col: colIdx });
+                              }
+                            }}
+                          >
+                            {isEditing && !isPreviewMode ? (
+                              <Input
+                                autoFocus
+                                className="h-6 text-xs pointer-events-auto"
+                                value={content}
+                                onChange={(e) => {
+                                  handleCellContentUpdate(el.id, rowIdx, colIdx, e.target.value);
+                                }}
+                                onBlur={() => setEditingCell(null)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    setEditingCell(null);
+                                  }
+                                  if (e.key === 'Escape') {
+                                    setEditingCell(null);
+                                  }
+                                  e.stopPropagation();
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            ) : (
+                              content
+                            )}
+                          </td>
+                        </ContextMenuTrigger>
+                        {!isPreviewMode && (
+                          <ContextMenuContent className="pointer-events-auto">
+                            <ContextMenuItem onClick={() => handleMergeCells(el.id, rowIdx, colIdx)}>
+                              <Grid3x3 className="w-4 h-4 mr-2" />
+                              Merge with next cell
+                            </ContextMenuItem>
+                            <ContextMenuItem onClick={() => handleSubdivideCell(el.id, rowIdx, colIdx)}>
+                              <Grid3x3 className="w-4 h-4 mr-2" />
+                              Subdivide cell
+                            </ContextMenuItem>
+                          </ContextMenuContent>
+                        )}
+                      </ContextMenu>
                     );
                   })}
                 </tr>
@@ -487,12 +658,11 @@ export function Canvas({
                )}
                 {!isPreviewMode && isSelected && el.type === 'gridtable' && (
                   <div 
-                    className="absolute -bottom-14 left-0 right-0 bg-white border rounded-lg shadow-lg p-2 flex items-center gap-3 pointer-events-auto z-40"
+                    className="absolute -bottom-14 left-0 right-0 bg-white border rounded-lg shadow-lg p-2 flex items-center gap-2 pointer-events-auto z-40"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <div className="flex items-center gap-2 flex-1">
+                    <div className="flex items-center gap-2">
                       <Palette className="w-4 h-4 text-muted-foreground" />
-                      <Label className="text-xs text-muted-foreground whitespace-nowrap">Border:</Label>
                       <Input 
                         type="color" 
                         className="w-10 h-8 p-1 cursor-pointer"
@@ -506,12 +676,11 @@ export function Canvas({
                         onClick={(e) => e.stopPropagation()}
                       />
                     </div>
-                    <div className="flex items-center gap-2 flex-1">
+                    <div className="flex items-center gap-2">
                       <Ruler className="w-4 h-4 text-muted-foreground" />
-                      <Label className="text-xs text-muted-foreground whitespace-nowrap">Width:</Label>
                       <Input 
                         type="number"
-                        className="w-16 h-8 text-sm"
+                        className="w-12 h-8 text-sm"
                         value={el.style?.gridBorderWidth as number || 1} 
                         onChange={(e) => {
                           e.stopPropagation();
@@ -525,6 +694,34 @@ export function Canvas({
                       />
                       <span className="text-xs text-muted-foreground">px</span>
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAddRow(el.id);
+                      }}
+                      title="Add row"
+                      aria-label="Add row"
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      <Rows className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAddColumn(el.id);
+                      }}
+                      title="Add column"
+                      aria-label="Add column"
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      <Columns className="w-4 h-4" />
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"

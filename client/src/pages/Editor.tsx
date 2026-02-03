@@ -32,6 +32,7 @@ export default function Editor() {
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [scale, setScale] = useState(0.8);
   const [name, setName] = useState("");
+  const [copiedElement, setCopiedElement] = useState<TemplateElement | null>(null);
 
   // Initialize state when data loads
   useEffect(() => {
@@ -54,10 +55,23 @@ export default function Editor() {
         return;
       }
 
-      // Ctrl+C / Cmd+C - Copy (clone) element
+      // Ctrl+C / Cmd+C - Copy element to clipboard
       if ((e.ctrlKey || e.metaKey) && e.key === 'c' && selectedElementId) {
         e.preventDefault();
-        handleCloneElement(selectedElementId);
+        const elementToCopy = layout?.elements.find(el => el.id === selectedElementId);
+        if (elementToCopy) {
+          setCopiedElement(structuredClone(elementToCopy));
+          toast({
+            title: "Element copied",
+            description: "Press Ctrl+V to paste the element."
+          });
+        }
+      }
+      
+      // Ctrl+V / Cmd+V - Paste copied element
+      if ((e.ctrlKey || e.metaKey) && e.key === 'v' && copiedElement) {
+        e.preventDefault();
+        handlePasteElement();
       }
       
       // Delete / Backspace - Delete element
@@ -69,7 +83,7 @@ export default function Editor() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedElementId]);
+  }, [selectedElementId, copiedElement, layout]);
 
   const handleAddElement = (type: TemplateElement['type']) => {
     if (!layout) return;
@@ -175,6 +189,32 @@ export default function Editor() {
     toast({
       title: "Element cloned",
       description: "The element has been duplicated successfully."
+    });
+  };
+
+  const handlePasteElement = () => {
+    if (!copiedElement || !layout) return;
+    
+    setLayout(prev => {
+      if (!prev) return null;
+      
+      // Create a new element from the copied one with a new ID and offset position
+      const pastedElement: TemplateElement = {
+        ...structuredClone(copiedElement),
+        id: crypto.randomUUID(),
+        x: copiedElement.x + 20, // Offset by 20px
+        y: copiedElement.y + 20
+      };
+      
+      return {
+        ...prev,
+        elements: [...prev.elements, pastedElement]
+      };
+    });
+    
+    toast({
+      title: "Element pasted",
+      description: "The copied element has been pasted successfully."
     });
   };
 
