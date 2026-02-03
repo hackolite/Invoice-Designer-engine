@@ -112,6 +112,9 @@ npm start
 | `npm start` | Démarre l'application en mode production |
 | `npm run check` | Vérifie les types TypeScript |
 | `npm run db:push` | Applique le schéma de base de données |
+| `npm run db:setup` | Configure la base de données (création + schéma) |
+| `npm run db:setup:reset` | Réinitialise complètement la base de données |
+| `npm run db:setup:seed` | Ajoute des données d'exemple |
 
 ## 🗄️ Configuration de la Base de Données
 
@@ -135,6 +138,23 @@ Pour mettre à jour le schéma de base de données après des modifications :
 ```bash
 npm run db:push
 ```
+
+### Script de Configuration Avancé
+
+Pour une configuration plus complète de la base de données, utilisez le script dédié :
+
+```bash
+# Configuration standard (création + initialisation)
+npm run db:setup
+
+# Réinitialisation complète (⚠️ supprime toutes les données)
+npm run db:setup:reset
+
+# Ajout de données d'exemple pour tester
+npm run db:setup:seed
+```
+
+📖 Pour plus de détails sur le script de configuration, consultez [DATABASE_SETUP.md](DATABASE_SETUP.md).
 
 ## 🏗️ Architecture Technique
 
