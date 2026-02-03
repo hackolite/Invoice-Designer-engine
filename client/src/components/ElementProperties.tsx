@@ -513,7 +513,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                                 });
                               }}
                               min={1}
-                              max={element.gridTableConfig.rows}
+                              max={element.gridTableConfig?.rows || 10}
                               className="h-7 text-xs"
                             />
                           </div>
@@ -531,7 +531,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                                 });
                               }}
                               min={1}
-                              max={element.gridTableConfig.cols}
+                              max={element.gridTableConfig?.cols || 10}
                               className="h-7 text-xs"
                             />
                           </div>
