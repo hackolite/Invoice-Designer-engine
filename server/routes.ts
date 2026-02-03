@@ -148,7 +148,8 @@ export async function seedDatabase() {
               { header: "Price", binding: "price", width: "15%", format: "currency" },
               { header: "Total", binding: "total", width: "20%", format: "currency" }
             ]
-          }
+          },
+          style: { gridBorderColor: "#000000", gridBorderWidth: 1 }
         }
       ]
     };
@@ -573,7 +574,7 @@ export async function seedDatabase() {
               { header: "Total", binding: "total", width: "15%", format: "currency" }
             ]
           },
-          style: { tableVariant: "modern" }
+          style: { tableVariant: "modern", gridBorderColor: "#000000", gridBorderWidth: 1 }
         },
         // Financial Summary
         {
