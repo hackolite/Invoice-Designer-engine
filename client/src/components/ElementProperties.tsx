@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Trash2, AlignLeft, AlignCenter, AlignRight, Type, Copy } from "lucide-react";
+import { Plus, Trash2, AlignLeft, AlignCenter, AlignRight, AlignJustify, Bold, Italic, Underline, Type, Copy } from "lucide-react";
 import type { TemplateElement } from "@shared/schema";
 
 interface ElementPropertiesProps {
@@ -600,20 +600,57 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                 <button 
                   className={`flex-1 p-2 hover:bg-muted ${element.style?.textAlign === 'left' ? 'bg-muted' : ''}`}
                   onClick={() => handleStyleChange('textAlign', 'left')}
+                  title="Align Left"
                 >
                   <AlignLeft className="w-4 h-4 mx-auto" />
                 </button>
                 <button 
                   className={`flex-1 p-2 hover:bg-muted ${element.style?.textAlign === 'center' ? 'bg-muted' : ''}`}
                   onClick={() => handleStyleChange('textAlign', 'center')}
+                  title="Align Center"
                 >
                   <AlignCenter className="w-4 h-4 mx-auto" />
                 </button>
                 <button 
                   className={`flex-1 p-2 hover:bg-muted ${element.style?.textAlign === 'right' ? 'bg-muted' : ''}`}
                   onClick={() => handleStyleChange('textAlign', 'right')}
+                  title="Align Right"
                 >
                   <AlignRight className="w-4 h-4 mx-auto" />
+                </button>
+                <button 
+                  className={`flex-1 p-2 hover:bg-muted ${element.style?.textAlign === 'justify' ? 'bg-muted' : ''}`}
+                  onClick={() => handleStyleChange('textAlign', 'justify')}
+                  title="Justify"
+                >
+                  <AlignJustify className="w-4 h-4 mx-auto" />
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Text Style</Label>
+              <div className="flex gap-2">
+                <button 
+                  className={`flex-1 p-2 border rounded-md hover:bg-muted ${element.style?.fontWeight === 'bold' ? 'bg-muted' : ''}`}
+                  onClick={() => handleStyleChange('fontWeight', element.style?.fontWeight === 'bold' ? 'normal' : 'bold')}
+                  title="Bold"
+                >
+                  <Bold className="w-4 h-4 mx-auto" />
+                </button>
+                <button 
+                  className={`flex-1 p-2 border rounded-md hover:bg-muted ${element.style?.fontStyle === 'italic' ? 'bg-muted' : ''}`}
+                  onClick={() => handleStyleChange('fontStyle', element.style?.fontStyle === 'italic' ? 'normal' : 'italic')}
+                  title="Italic"
+                >
+                  <Italic className="w-4 h-4 mx-auto" />
+                </button>
+                <button 
+                  className={`flex-1 p-2 border rounded-md hover:bg-muted ${element.style?.textDecoration === 'underline' ? 'bg-muted' : ''}`}
+                  onClick={() => handleStyleChange('textDecoration', element.style?.textDecoration === 'underline' ? 'none' : 'underline')}
+                  title="Underline"
+                >
+                  <Underline className="w-4 h-4 mx-auto" />
                 </button>
               </div>
             </div>

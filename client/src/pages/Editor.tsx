@@ -33,13 +33,22 @@ export default function Editor() {
   const [scale, setScale] = useState(0.8);
   const [name, setName] = useState("");
   const [copiedElement, setCopiedElement] = useState<TemplateElement | null>(null);
+  
+  // Undo/Redo state management
+  const [history, setHistory] = useState<TemplateLayout[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const MAX_HISTORY_SIZE = 50;
 
   // Initialize state when data loads
   useEffect(() => {
     if (template) {
-      setLayout(template.layout as TemplateLayout);
+      const templateLayout = template.layout as TemplateLayout;
+      setLayout(templateLayout);
       setSampleData(JSON.stringify(template.sampleData, null, 2));
       setName(template.name);
+      // Initialize history with the loaded template
+      setHistory([structuredClone(templateLayout)]);
+      setHistoryIndex(0);
     }
   }, [template]);
 
@@ -47,11 +56,68 @@ export default function Editor() {
     layout?.elements.find(el => el.id === selectedElementId) || null
   , [layout, selectedElementId]);
 
-  // Keyboard shortcuts for copy, paste, and delete
+  // Save layout to history
+  const saveToHistory = (newLayout: TemplateLayout) => {
+    // Remove any redo history when a new action is performed
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(structuredClone(newLayout));
+    
+    // Limit history size
+    if (newHistory.length > MAX_HISTORY_SIZE) {
+      newHistory.shift();
+    } else {
+      setHistoryIndex(historyIndex + 1);
+    }
+    
+    setHistory(newHistory);
+  };
+
+  // Undo action
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      setHistoryIndex(newIndex);
+      setLayout(structuredClone(history[newIndex]));
+      toast({
+        title: "Undo",
+        description: "Action undone successfully."
+      });
+    }
+  };
+
+  // Redo action
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+      const newIndex = historyIndex + 1;
+      setHistoryIndex(newIndex);
+      setLayout(structuredClone(history[newIndex]));
+      toast({
+        title: "Redo",
+        description: "Action redone successfully."
+      });
+    }
+  };
+
+  // Keyboard shortcuts for copy, paste, delete, undo, and redo
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't trigger shortcuts when typing in input fields
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      // Ctrl+Z / Cmd+Z - Undo
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+        return;
+      }
+
+      // Ctrl+Y / Cmd+Shift+Z - Redo
+      if (((e.ctrlKey || e.metaKey) && e.key === 'y') || 
+          ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z')) {
+        e.preventDefault();
+        handleRedo();
         return;
       }
 
@@ -83,7 +149,7 @@ export default function Editor() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedElementId, copiedElement, layout]);
+  }, [selectedElementId, copiedElement, layout, historyIndex, history]);
 
   const handleAddElement = (type: TemplateElement['type']) => {
     if (!layout) return;
@@ -134,57 +200,59 @@ export default function Editor() {
         newElement.content = "Double click to edit";
     }
 
-    setLayout(prev => prev ? ({
-      ...prev,
-      elements: [...prev.elements, newElement]
-    }) : null);
+    const newLayout = {
+      ...layout,
+      elements: [...layout.elements, newElement]
+    };
+    setLayout(newLayout);
+    saveToHistory(newLayout);
     
     setSelectedElementId(newElement.id);
   };
 
   const handleElementUpdate = (id: string, updates: Partial<TemplateElement>) => {
-    setLayout(prev => {
-      if (!prev) return null;
-      return {
-        ...prev,
-        elements: prev.elements.map(el => 
-          el.id === id ? { ...el, ...updates } : el
-        )
-      };
-    });
+    if (!layout) return;
+    const newLayout = {
+      ...layout,
+      elements: layout.elements.map(el => 
+        el.id === id ? { ...el, ...updates } : el
+      )
+    };
+    setLayout(newLayout);
+    saveToHistory(newLayout);
   };
 
   const handleDeleteElement = (id: string) => {
-    setLayout(prev => {
-      if (!prev) return null;
-      return {
-        ...prev,
-        elements: prev.elements.filter(el => el.id !== id)
-      };
-    });
+    if (!layout) return;
+    const newLayout = {
+      ...layout,
+      elements: layout.elements.filter(el => el.id !== id)
+    };
+    setLayout(newLayout);
+    saveToHistory(newLayout);
     setSelectedElementId(null);
   };
 
   const handleCloneElement = (id: string) => {
-    setLayout(prev => {
-      if (!prev) return null;
-      const elementToClone = prev.elements.find(el => el.id === id);
-      if (!elementToClone) return prev;
-      
-      // Create a deep copy of the element with a new ID and offset position
-      // Using structuredClone for proper deep copy of all nested properties
-      const clonedElement: TemplateElement = {
-        ...structuredClone(elementToClone),
-        id: crypto.randomUUID(),
-        x: elementToClone.x + 20, // Offset by 20px
-        y: elementToClone.y + 20
-      };
-      
-      return {
-        ...prev,
-        elements: [...prev.elements, clonedElement]
-      };
-    });
+    if (!layout) return;
+    const elementToClone = layout.elements.find(el => el.id === id);
+    if (!elementToClone) return;
+    
+    // Create a deep copy of the element with a new ID and offset position
+    // Using structuredClone for proper deep copy of all nested properties
+    const clonedElement: TemplateElement = {
+      ...structuredClone(elementToClone),
+      id: crypto.randomUUID(),
+      x: elementToClone.x + 20, // Offset by 20px
+      y: elementToClone.y + 20
+    };
+    
+    const newLayout = {
+      ...layout,
+      elements: [...layout.elements, clonedElement]
+    };
+    setLayout(newLayout);
+    saveToHistory(newLayout);
     
     toast({
       title: "Element cloned",
@@ -195,22 +263,20 @@ export default function Editor() {
   const handlePasteElement = () => {
     if (!copiedElement || !layout) return;
     
-    setLayout(prev => {
-      if (!prev) return null;
-      
-      // Create a new element from the copied one with a new ID and offset position
-      const pastedElement: TemplateElement = {
-        ...structuredClone(copiedElement),
-        id: crypto.randomUUID(),
-        x: copiedElement.x + 20, // Offset by 20px
-        y: copiedElement.y + 20
-      };
-      
-      return {
-        ...prev,
-        elements: [...prev.elements, pastedElement]
-      };
-    });
+    // Create a new element from the copied one with a new ID and offset position
+    const pastedElement: TemplateElement = {
+      ...structuredClone(copiedElement),
+      id: crypto.randomUUID(),
+      x: copiedElement.x + 20, // Offset by 20px
+      y: copiedElement.y + 20
+    };
+    
+    const newLayout = {
+      ...layout,
+      elements: [...layout.elements, pastedElement]
+    };
+    setLayout(newLayout);
+    saveToHistory(newLayout);
     
     toast({
       title: "Element pasted",
@@ -424,6 +490,7 @@ export default function Editor() {
                       ]
                     };
                     setLayout(demoLayout as any);
+                    saveToHistory(demoLayout as any);
                   }}
                 >
                   Load Demo Template
