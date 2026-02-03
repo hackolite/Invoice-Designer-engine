@@ -9,9 +9,9 @@
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
     "db:push": "drizzle-kit push",
-    "db:setup": "tsx script/setup-database.ts setup",
-    "db:setup:reset": "tsx script/setup-database.ts reset",
-    "db:setup:seed": "tsx script/setup-database.ts seed"
+    "db:setup": "tsx --env-file=.env script/setup-database.ts setup",
+    "db:setup:reset": "tsx --env-file=.env script/setup-database.ts reset",
+    "db:setup:seed": "tsx --env-file=.env script/setup-database.ts seed"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
