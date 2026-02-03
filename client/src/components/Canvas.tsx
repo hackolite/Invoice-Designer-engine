@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Palette, Ruler, Copy, Plus, Grid3x3, Columns, Rows } from "lucide-react";
+import { Palette, Ruler, Copy, Plus, Grid3x3, Columns, Rows, Minus } from "lucide-react";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -70,6 +70,11 @@ export function Canvas({
     const newRows = config.rows + 1;
     const newCells = [...config.cells];
     
+    // Calculate the height per row (current height divided by number of rows)
+    const currentHeightPerRow = element.height / config.rows;
+    // New height should be current height + one more row height
+    const newHeight = Math.round(element.height + currentHeightPerRow);
+    
     // Track which columns in the new row are already occupied by spanning cells
     const occupiedColumns = new Set<number>();
     
@@ -98,7 +103,8 @@ export function Canvas({
     }
     
     onElementUpdate(elementId, {
-      gridTableConfig: { ...config, rows: newRows, cells: newCells }
+      gridTableConfig: { ...config, rows: newRows, cells: newCells },
+      height: newHeight
     });
   };
 
@@ -136,6 +142,65 @@ export function Canvas({
         });
       }
     }
+    
+    onElementUpdate(elementId, {
+      gridTableConfig: { ...config, cols: newCols, cells: newCells }
+    });
+  };
+
+  const handleDeleteRow = (elementId: string) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element || !element.gridTableConfig) return;
+    
+    const config = element.gridTableConfig;
+    // Don't allow deleting if only 1 row remains
+    if (config.rows <= 1) return;
+    
+    const lastRow = config.rows - 1;
+    const newRows = config.rows - 1;
+    
+    // Calculate the height per row and new height
+    const currentHeightPerRow = element.height / config.rows;
+    const newHeight = Math.round(element.height - currentHeightPerRow);
+    
+    // Remove cells from the last row and adjust cells with rowSpan that extend into it
+    const newCells = config.cells
+      .filter(cell => cell.row !== lastRow) // Remove cells that start in the last row
+      .map(cell => {
+        // Adjust rowSpan if it extends into the deleted row
+        if (cell.row + (cell.rowSpan || 1) > newRows) {
+          return { ...cell, rowSpan: Math.max(1, newRows - cell.row) };
+        }
+        return cell;
+      });
+    
+    onElementUpdate(elementId, {
+      gridTableConfig: { ...config, rows: newRows, cells: newCells },
+      height: newHeight
+    });
+  };
+
+  const handleDeleteColumn = (elementId: string) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element || !element.gridTableConfig) return;
+    
+    const config = element.gridTableConfig;
+    // Don't allow deleting if only 1 column remains
+    if (config.cols <= 1) return;
+    
+    const lastCol = config.cols - 1;
+    const newCols = config.cols - 1;
+    
+    // Remove cells from the last column and adjust cells with colSpan that extend into it
+    const newCells = config.cells
+      .filter(cell => cell.col !== lastCol) // Remove cells that start in the last column
+      .map(cell => {
+        // Adjust colSpan if it extends into the deleted column
+        if (cell.col + (cell.colSpan || 1) > newCols) {
+          return { ...cell, colSpan: Math.max(1, newCols - cell.col) };
+        }
+        return cell;
+      });
     
     onElementUpdate(elementId, {
       gridTableConfig: { ...config, cols: newCols, cells: newCells }
@@ -445,10 +510,10 @@ export function Canvas({
       });
       
       return (
-        <div className="w-full h-full overflow-hidden" style={{
+        <div className="w-full h-full overflow-hidden pointer-events-auto" style={{
           border: `${gridBorderWidth}px solid ${gridBorderColor}`
         }}>
-          <table className="w-full h-full text-sm text-left border-collapse">
+          <table className="w-full h-full text-sm text-left border-collapse pointer-events-auto">
             <tbody>
               {Array.from({ length: config.rows }, (_, rowIdx) => (
                 <tr key={rowIdx}>
@@ -752,6 +817,21 @@ export function Canvas({
                     <Button
                       variant="ghost"
                       size="sm"
+                      className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteRow(el.id);
+                      }}
+                      title="Delete last row"
+                      aria-label="Delete last row"
+                      disabled={el.gridTableConfig?.rows === 1}
+                    >
+                      <Minus className="w-3 h-3 mr-1" />
+                      <Rows className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/10"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -761,6 +841,21 @@ export function Canvas({
                       aria-label="Add column"
                     >
                       <Plus className="w-3 h-3 mr-1" />
+                      <Columns className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteColumn(el.id);
+                      }}
+                      title="Delete last column"
+                      aria-label="Delete last column"
+                      disabled={el.gridTableConfig?.cols === 1}
+                    >
+                      <Minus className="w-3 h-3 mr-1" />
                       <Columns className="w-4 h-4" />
                     </Button>
                     <Button
