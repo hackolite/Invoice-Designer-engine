@@ -142,6 +142,7 @@ export async function seedDatabase() {
           height: 300,
           tableConfig: {
             dataSource: "items",
+            tableType: "grid",
             columns: [
               { header: "Description", binding: "description", width: "50%" },
               { header: "Qty", binding: "quantity", width: "15%" },
@@ -566,6 +567,7 @@ export async function seedDatabase() {
           height: 320,
           tableConfig: {
             dataSource: "charges",
+            tableType: "grid",
             columns: [
               { header: "Description", binding: "description", width: "40%" },
               { header: "Category", binding: "category", width: "20%" },
@@ -685,7 +687,161 @@ export async function seedDatabase() {
       layout: marineLayout,
       sampleData: marineSampleData
     });
+
+    // Template demonstrating both grid and price table types
+    const demoSampleData = {
+      invoiceNumber: "INV-2024-001",
+      date: "2024-01-15",
+      client: {
+        name: "Demo Client Inc.",
+        address: "123 Test Street"
+      },
+      items: [
+        { description: "Product A", quantity: 2, price: 100, total: 200 },
+        { description: "Product B", quantity: 1, price: 150, total: 150 },
+        { description: "Service C", quantity: 5, price: 50, total: 250 }
+      ],
+      summary: {
+        subtotal: 600,
+        tax: 60,
+        shipping: 15,
+        discount: 25,
+        total: 650
+      }
+    };
+
+    const demoLayout = {
+      pageSize: "A4",
+      orientation: "portrait",
+      elements: [
+        {
+          id: "demo_title",
+          type: "text",
+          x: 20,
+          y: 20,
+          width: 400,
+          height: 40,
+          content: "INVOICE - Grid & Price Tables Demo",
+          style: { fontSize: 22, fontWeight: "bold", color: "#1e40af" }
+        },
+        {
+          id: "demo_inv_number",
+          type: "text",
+          x: 20,
+          y: 70,
+          width: 300,
+          height: 25,
+          content: "Invoice #: {{invoiceNumber}}",
+          style: { fontSize: 14 }
+        },
+        {
+          id: "demo_date",
+          type: "text",
+          x: 20,
+          y: 95,
+          width: 300,
+          height: 25,
+          content: "Date: {{date}}",
+          style: { fontSize: 14 }
+        },
+        {
+          id: "demo_line",
+          type: "line",
+          x: 20,
+          y: 130,
+          width: 750,
+          height: 2,
+          style: { backgroundColor: "#0369a1" }
+        },
+        // Grid Table - Items
+        {
+          id: "demo_items_heading",
+          type: "text",
+          x: 20,
+          y: 150,
+          width: 750,
+          height: 30,
+          content: "ITEMS (Grid Table)",
+          style: { fontSize: 16, fontWeight: "bold", color: "#0c4a6e" }
+        },
+        {
+          id: "demo_grid_table",
+          type: "table",
+          x: 20,
+          y: 190,
+          width: 750,
+          height: 200,
+          tableConfig: {
+            dataSource: "items",
+            tableType: "grid",
+            columns: [
+              { header: "Description", binding: "description", width: "50%" },
+              { header: "Quantity", binding: "quantity", width: "15%" },
+              { header: "Unit Price", binding: "price", width: "20%", format: "currency" },
+              { header: "Total", binding: "total", width: "15%", format: "currency" }
+            ]
+          },
+          style: { 
+            tableVariant: "modern", 
+            gridBorderColor: "#0ea5e9", 
+            gridBorderWidth: 2 
+          }
+        },
+        // Price Table - Summary
+        {
+          id: "demo_summary_heading",
+          type: "text",
+          x: 20,
+          y: 420,
+          width: 750,
+          height: 30,
+          content: "SUMMARY (Price Table)",
+          style: { fontSize: 16, fontWeight: "bold", color: "#0c4a6e" }
+        },
+        {
+          id: "demo_price_table",
+          type: "table",
+          x: 450,
+          y: 460,
+          width: 320,
+          height: 180,
+          tableConfig: {
+            dataSource: "summary",
+            tableType: "price",
+            columns: [
+              { header: "Subtotal", binding: "subtotal", format: "currency" },
+              { header: "Tax (10%)", binding: "tax", format: "currency" },
+              { header: "Shipping", binding: "shipping", format: "currency" },
+              { header: "Discount", binding: "discount", format: "currency" },
+              { header: "Total", binding: "total", format: "currency" }
+            ]
+          },
+          style: { 
+            tableVariant: "default", 
+            gridBorderColor: "#22c55e", 
+            gridBorderWidth: 2 
+          }
+        },
+        {
+          id: "demo_note",
+          type: "text",
+          x: 20,
+          y: 670,
+          width: 750,
+          height: 60,
+          content: "Note: This template demonstrates two table types:\n• Grid Table: Displays array data (items) with editable columns\n• Price Table: Displays object data (summary) as key-value pairs",
+          style: { fontSize: 11, color: "#6b7280", lineHeight: 1.6 }
+        }
+      ]
+    };
+
+    await storage.createTemplate({
+      name: "Grid & Price Table Demo",
+      description: "Template demonstrating both grid table (items) and price table (summary) types.",
+      layout: demoLayout,
+      sampleData: demoSampleData
+    });
     
-    console.log("Database seeded with 2 templates!");
+    console.log("Database seeded with 3 templates!");
   }
 }
