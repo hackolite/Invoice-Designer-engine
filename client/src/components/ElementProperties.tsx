@@ -81,6 +81,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
               className="text-primary hover:text-primary hover:bg-primary/10"
               onClick={() => onClone(element.id)}
               title="Clone element"
+              aria-label="Clone element"
             >
               <Copy className="w-4 h-4" />
             </Button>

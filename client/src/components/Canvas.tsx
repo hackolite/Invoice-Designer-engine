@@ -397,6 +397,7 @@ export function Canvas({
                        onClone(el.id);
                      }}
                      title="Clone table"
+                     aria-label="Clone table"
                    >
                      <Copy className="w-4 h-4" />
                    </Button>
