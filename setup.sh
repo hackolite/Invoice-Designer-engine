@@ -136,16 +136,26 @@ if [[ $DATABASE_URL =~ postgresql://([^:]+):([^@]+)@([^:]+):([^/]+)/(.+) ]]; the
     # Try to create the database (will fail silently if it exists)
     print_info "Creating database '$DB_NAME' if it doesn't exist..."
     
-    # Try to create database using psql
-    if command -v psql &> /dev/null; then
-        PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d postgres -tc "SELECT 1 FROM pg_database WHERE datname = '$DB_NAME'" | grep -q 1 || \
-        PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d postgres -c "CREATE DATABASE \"$DB_NAME\"" 2>/dev/null
+    # Validate database name (alphanumeric, underscore, and dash only)
+    if [[ ! "$DB_NAME" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+        print_warning "Database name contains special characters. Skipping automatic creation."
+        print_info "Please create the database manually."
+    elif command -v psql &> /dev/null; then
+        # Check if database exists using a safer parameterized approach
+        PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d postgres -tc "SELECT 1 FROM pg_database WHERE datname = '$DB_NAME'" | grep -q 1
         
         if [ $? -eq 0 ]; then
-            print_success "Database is ready."
+            print_success "Database already exists."
         else
-            print_warning "Could not automatically create database. Please create it manually if needed."
-            print_info "Run: CREATE DATABASE \"$DB_NAME\";"
+            # Try to create database
+            PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d postgres -c "CREATE DATABASE \"$DB_NAME\"" 2>/dev/null
+            
+            if [ $? -eq 0 ]; then
+                print_success "Database created successfully."
+            else
+                print_warning "Could not automatically create database. Please create it manually if needed."
+                print_info "Run: CREATE DATABASE \"$DB_NAME\";"
+            fi
         fi
     else
         print_warning "psql not available. Please ensure the database exists manually."
