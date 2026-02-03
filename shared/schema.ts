@@ -45,6 +45,7 @@ export interface TemplateElement {
   orientation?: 'horizontal' | 'vertical'; // For lines
   tableConfig?: {
     dataSource: string; 
+    tableType?: 'grid' | 'price'; // grid = items/data array, price = summary/totals
     columns: {
       header: string;
       binding: string; 

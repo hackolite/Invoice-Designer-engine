@@ -139,13 +139,71 @@ export function Canvas({
       const config = el.tableConfig;
       if (!config) return <div>Invalid Table Config</div>;
 
-      const data = isPreviewMode 
-        ? getValue(sampleData, config.dataSource, []) 
-        : [1, 2, 3]; // Dummy rows for editor
-
+      const tableType = config.tableType || 'grid';
       const tableStyle = (el.style?.tableVariant as string) || 'default';
       const gridBorderColor = (el.style?.gridBorderColor as string) || '#000000';
       const gridBorderWidth = (el.style?.gridBorderWidth as number) || 1;
+      
+      // Handle price table (summary/totals from object)
+      if (tableType === 'price') {
+        const sourceData = isPreviewMode 
+          ? getValue(sampleData, config.dataSource, {}) 
+          : {}; // Empty object for editor
+        
+        return (
+          <div className={clsx(
+            "w-full h-full overflow-hidden",
+            tableStyle === 'default' && "",
+            tableStyle === 'minimal' && "",
+            tableStyle === 'modern' && "rounded-lg shadow-sm"
+          )} style={{
+            border: `${gridBorderWidth}px solid ${gridBorderColor}`
+          }}>
+            <table className="w-full text-sm text-left border-collapse">
+              <tbody>
+                {config.columns.map((col, idx) => {
+                  let cellValue;
+                  if (isPreviewMode) {
+                    const rawVal = getValue(sourceData, col.binding);
+                    if (col.format === 'currency') {
+                      cellValue = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(rawVal) || 0);
+                    } else {
+                      cellValue = rawVal;
+                    }
+                  } else {
+                    cellValue = `{${col.binding}}`;
+                  }
+                  
+                  return (
+                    <tr key={idx} className={clsx(
+                      tableStyle === 'default' && "hover:bg-gray-50",
+                      tableStyle === 'modern' && idx % 2 === 0 ? "bg-primary/5" : "bg-white"
+                    )}>
+                      <th className="p-2 text-left font-medium" style={{ 
+                        width: col.width || '50%',
+                        borderBottom: idx < config.columns.length - 1 ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none',
+                        borderRight: `${gridBorderWidth}px solid ${gridBorderColor}`
+                      }}>
+                        {col.header}
+                      </th>
+                      <td className="p-2" style={{ 
+                        borderBottom: idx < config.columns.length - 1 ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none'
+                      }}>
+                        {cellValue}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        );
+      }
+
+      // Handle grid table (array of items)
+      const data = isPreviewMode 
+        ? getValue(sampleData, config.dataSource, []) 
+        : [1, 2, 3]; // Dummy rows for editor
       
       return (
         <div className={clsx(

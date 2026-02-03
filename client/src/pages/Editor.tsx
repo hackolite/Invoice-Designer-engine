@@ -65,6 +65,7 @@ export default function Editor() {
     } else if (type === 'table') {
       newElement.tableConfig = {
         dataSource: 'items',
+        tableType: 'grid', // Default to grid table
         columns: [
           { header: 'Description', binding: 'description', width: '50%' },
           { header: 'Price', binding: 'price', width: '20%', format: 'currency' },

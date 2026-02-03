@@ -162,6 +162,25 @@ export function ElementProperties({ element, onChange, onDelete }: ElementProper
             {element.type === 'table' && element.tableConfig && (
               <div className="space-y-4">
                 <div className="space-y-2">
+                  <Label>Table Type</Label>
+                  <select 
+                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    value={element.tableConfig.tableType || 'grid'}
+                    onChange={(e) => onChange(element.id, { 
+                      tableConfig: { ...element.tableConfig!, tableType: e.target.value as 'grid' | 'price' } 
+                    })}
+                  >
+                    <option value="grid">Grid Table (Items/Data Array)</option>
+                    <option value="price">Price Table (Summary/Totals)</option>
+                  </select>
+                  <p className="text-xs text-muted-foreground">
+                    {element.tableConfig.tableType === 'price' 
+                      ? 'Price tables display summary data from JSON object' 
+                      : 'Grid tables display arrays of data with editable rows'}
+                  </p>
+                </div>
+                
+                <div className="space-y-2">
                   <Label>Table Style</Label>
                   <select 
                     className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
@@ -211,15 +230,24 @@ export function ElementProperties({ element, onChange, onDelete }: ElementProper
                 <Separator />
                 
                 <div className="space-y-2">
-                  <Label>Data Source (Array)</Label>
+                  <Label>
+                    {element.tableConfig.tableType === 'price' 
+                      ? 'Data Source (Object)' 
+                      : 'Data Source (Array)'}
+                  </Label>
                   <Input 
                     value={element.tableConfig.dataSource} 
                     onChange={(e) => onChange(element.id, { 
                       tableConfig: { ...element.tableConfig!, dataSource: e.target.value } 
                     })}
-                    placeholder="e.g. items"
+                    placeholder={element.tableConfig.tableType === 'price' ? 'e.g. financialSummary' : 'e.g. items'}
                     className="font-mono text-sm"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    {element.tableConfig.tableType === 'price' 
+                      ? 'Path to the object containing summary data' 
+                      : 'Path to the array of items to display'}
+                  </p>
                 </div>
                 
                 <Separator />
@@ -227,21 +255,25 @@ export function ElementProperties({ element, onChange, onDelete }: ElementProper
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label>Columns</Label>
-                    <Button variant="outline" size="sm" onClick={handleTableColumnAdd}>
-                      <Plus className="w-3 h-3 mr-1" /> Add
-                    </Button>
+                    {element.tableConfig.tableType !== 'price' && (
+                      <Button variant="outline" size="sm" onClick={handleTableColumnAdd}>
+                        <Plus className="w-3 h-3 mr-1" /> Add
+                      </Button>
+                    )}
                   </div>
                   
                   {element.tableConfig.columns.map((col, idx) => (
                     <div key={idx} className="bg-muted/30 p-3 rounded-lg border space-y-2 text-sm relative group">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-background border shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => handleTableColumnRemove(idx)}
-                      >
-                        <Trash2 className="w-3 h-3 text-destructive" />
-                      </Button>
+                      {element.tableConfig!.tableType !== 'price' && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-background border shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleTableColumnRemove(idx)}
+                        >
+                          <Trash2 className="w-3 h-3 text-destructive" />
+                        </Button>
+                      )}
                       
                       <div className="grid grid-cols-2 gap-2">
                         <div>
