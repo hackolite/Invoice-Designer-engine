@@ -486,7 +486,10 @@ export function Canvas({
                           <td 
                             rowSpan={rowSpan}
                             colSpan={colSpan}
-                            className="p-2 border cursor-pointer hover:bg-blue-50"
+                            className={clsx(
+                              "p-2 border",
+                              !isPreviewMode && "cursor-pointer hover:bg-blue-50 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
+                            )}
                             style={{ 
                               borderColor: gridBorderColor,
                               borderWidth: `${gridBorderWidth}px`,
