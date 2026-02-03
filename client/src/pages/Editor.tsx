@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
-  ChevronLeft, Save, Type, Image as ImageIcon, Table as TableIcon, 
+  ChevronLeft, Save, Type, Image as ImageIcon, Table as TableIcon, Grid3x3,
   Square, Layout, Eye, EyeOff, RotateCcw, Minus, Play, QrCode, PenTool, Award, Download
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -46,6 +46,31 @@ export default function Editor() {
     layout?.elements.find(el => el.id === selectedElementId) || null
   , [layout, selectedElementId]);
 
+  // Keyboard shortcuts for copy, paste, and delete
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts when typing in input fields
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      // Ctrl+C / Cmd+C - Copy (clone) element
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c' && selectedElementId) {
+        e.preventDefault();
+        handleCloneElement(selectedElementId);
+      }
+      
+      // Delete / Backspace - Delete element
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedElementId) {
+        e.preventDefault();
+        handleDeleteElement(selectedElementId);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedElementId]);
+
   const handleAddElement = (type: TemplateElement['type']) => {
     if (!layout) return;
 
@@ -54,8 +79,8 @@ export default function Editor() {
       type,
       x: 50,
       y: 50,
-      width: type === 'table' ? 400 : (type === 'line' ? 200 : 200),
-      height: type === 'table' ? 150 : (type === 'line' ? 2 : 50),
+      width: type === 'table' || type === 'gridtable' ? 400 : (type === 'line' ? 200 : 200),
+      height: type === 'table' || type === 'gridtable' ? 150 : (type === 'line' ? 2 : 50),
       style: { color: '#000000', fontSize: 14 },
     };
 
@@ -72,6 +97,24 @@ export default function Editor() {
           { header: 'Qty', binding: 'quantity', width: '15%' }
         ]
       };
+      newElement.style = { ...newElement.style, gridBorderColor: '#000000', gridBorderWidth: 1 };
+    } else if (type === 'gridtable') {
+      // Initialize a simple 3x3 grid
+      const rows = 3;
+      const cols = 3;
+      const cells = [];
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          cells.push({
+            row: r,
+            col: c,
+            content: r === 0 ? `Header ${c + 1}` : `Cell ${r}-${c}`,
+            rowSpan: 1,
+            colSpan: 1
+          });
+        }
+      }
+      newElement.gridTableConfig = { rows, cols, cells };
       newElement.style = { ...newElement.style, gridBorderColor: '#000000', gridBorderWidth: 1 };
     } else if (type === 'text') {
         newElement.content = "Double click to edit";
@@ -291,7 +334,11 @@ export default function Editor() {
                 </Button>
                 <Button variant="outline" className="h-20 flex flex-col gap-2 hover:border-primary hover:text-primary transition-colors" onClick={() => handleAddElement('table')}>
                   <TableIcon className="w-6 h-6" />
-                  <span className="text-xs">Table</span>
+                  <span className="text-xs">Price Table</span>
+                </Button>
+                <Button variant="outline" className="h-20 flex flex-col gap-2 hover:border-primary hover:text-primary transition-colors" onClick={() => handleAddElement('gridtable')}>
+                  <Grid3x3 className="w-6 h-6" />
+                  <span className="text-xs">Grid Table</span>
                 </Button>
                 <Button variant="outline" className="h-20 flex flex-col gap-2 hover:border-primary hover:text-primary transition-colors" onClick={() => handleAddElement('box')}>
                   <Square className="w-6 h-6" />

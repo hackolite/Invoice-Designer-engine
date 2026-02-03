@@ -335,6 +335,213 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                 </div>
               </div>
             )}
+
+            {element.type === 'gridtable' && element.gridTableConfig && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Grid Border Color</Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      type="color" 
+                      className="w-12 p-1 h-10"
+                      value={element.style?.gridBorderColor as string || '#000000'}
+                      onChange={(e) => handleStyleChange('gridBorderColor', e.target.value)}
+                    />
+                    <Input 
+                      type="text"
+                      value={element.style?.gridBorderColor as string || '#000000'}
+                      onChange={(e) => handleStyleChange('gridBorderColor', e.target.value)}
+                      className="flex-1 font-mono"
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Grid Border Thickness</Label>
+                  <div className="flex items-center gap-2">
+                    <Input 
+                      type="number"
+                      value={element.style?.gridBorderWidth as number || 1} 
+                      onChange={(e) => handleStyleChange('gridBorderWidth', parseInt(e.target.value) || 1)} 
+                      min={0}
+                      max={10}
+                    />
+                    <span className="text-sm text-muted-foreground">px</span>
+                  </div>
+                </div>
+                
+                <Separator />
+                
+                <div className="space-y-2">
+                  <Label>Grid Dimensions</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs">Rows</Label>
+                      <Input 
+                        type="number"
+                        value={element.gridTableConfig.rows} 
+                        onChange={(e) => {
+                          const newRows = parseInt(e.target.value) || 1;
+                          const config = element.gridTableConfig!;
+                          
+                          // Filter out cells that are now out of bounds
+                          const newCells = config.cells.filter(cell => cell.row < newRows);
+                          
+                          // Add new cells for new rows if needed
+                          for (let r = config.rows; r < newRows; r++) {
+                            for (let c = 0; c < config.cols; c++) {
+                              newCells.push({
+                                row: r,
+                                col: c,
+                                content: `Cell ${r}-${c}`,
+                                rowSpan: 1,
+                                colSpan: 1
+                              });
+                            }
+                          }
+                          
+                          onChange(element.id, {
+                            gridTableConfig: { ...config, rows: newRows, cells: newCells }
+                          });
+                        }}
+                        min={1}
+                        max={20}
+                        className="h-8"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Columns</Label>
+                      <Input 
+                        type="number"
+                        value={element.gridTableConfig.cols} 
+                        onChange={(e) => {
+                          const newCols = parseInt(e.target.value) || 1;
+                          const config = element.gridTableConfig!;
+                          
+                          // Filter out cells that are now out of bounds
+                          const newCells = config.cells.filter(cell => cell.col < newCols);
+                          
+                          // Add new cells for new columns if needed
+                          for (let r = 0; r < config.rows; r++) {
+                            for (let c = config.cols; c < newCols; c++) {
+                              newCells.push({
+                                row: r,
+                                col: c,
+                                content: `Cell ${r}-${c}`,
+                                rowSpan: 1,
+                                colSpan: 1
+                              });
+                            }
+                          }
+                          
+                          onChange(element.id, {
+                            gridTableConfig: { ...config, cols: newCols, cells: newCells }
+                          });
+                        }}
+                        min={1}
+                        max={20}
+                        className="h-8"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <Separator />
+                
+                <div className="space-y-3">
+                  <Label>Cells</Label>
+                  <div className="text-xs text-muted-foreground mb-2">
+                    Edit cell content and bindings. Use rowSpan/colSpan to merge cells.
+                  </div>
+                  
+                  <ScrollArea className="h-64 border rounded p-2">
+                    {element.gridTableConfig.cells
+                      .sort((a, b) => a.row === b.row ? a.col - b.col : a.row - b.row)
+                      .map((cell, idx) => (
+                      <div key={idx} className="bg-muted/30 p-2 rounded border mb-2 space-y-2 text-sm">
+                        <div className="font-medium text-xs text-muted-foreground">
+                          Cell [{cell.row},{cell.col}]
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-xs">Content</Label>
+                            <Input 
+                              value={cell.content || ''} 
+                              onChange={(e) => {
+                                const config = element.gridTableConfig!;
+                                const newCells = [...config.cells];
+                                newCells[idx] = { ...newCells[idx], content: e.target.value };
+                                onChange(element.id, {
+                                  gridTableConfig: { ...config, cells: newCells }
+                                });
+                              }}
+                              className="h-7 text-xs"
+                              placeholder="Text..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Binding</Label>
+                            <Input 
+                              value={cell.binding || ''} 
+                              onChange={(e) => {
+                                const config = element.gridTableConfig!;
+                                const newCells = [...config.cells];
+                                newCells[idx] = { ...newCells[idx], binding: e.target.value };
+                                onChange(element.id, {
+                                  gridTableConfig: { ...config, cells: newCells }
+                                });
+                              }}
+                              className="h-7 text-xs font-mono"
+                              placeholder="e.g. data.key"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-xs">Row Span</Label>
+                            <Input 
+                              type="number"
+                              value={cell.rowSpan || 1} 
+                              onChange={(e) => {
+                                const config = element.gridTableConfig!;
+                                const newCells = [...config.cells];
+                                newCells[idx] = { ...newCells[idx], rowSpan: parseInt(e.target.value) || 1 };
+                                onChange(element.id, {
+                                  gridTableConfig: { ...config, cells: newCells }
+                                });
+                              }}
+                              min={1}
+                              max={element.gridTableConfig.rows}
+                              className="h-7 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Col Span</Label>
+                            <Input 
+                              type="number"
+                              value={cell.colSpan || 1} 
+                              onChange={(e) => {
+                                const config = element.gridTableConfig!;
+                                const newCells = [...config.cells];
+                                newCells[idx] = { ...newCells[idx], colSpan: parseInt(e.target.value) || 1 };
+                                onChange(element.id, {
+                                  gridTableConfig: { ...config, cells: newCells }
+                                });
+                              }}
+                              min={1}
+                              max={element.gridTableConfig.cols}
+                              className="h-7 text-xs"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </ScrollArea>
+                </div>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="style" className="space-y-4 pt-4">
