@@ -39,6 +39,153 @@ const convertStyleObjectToCss = (style: Record<string, string | number>): string
 
 const BLOB_URL_CLEANUP_DELAY_MS = 2000; // Time to allow window to load before cleaning up blob URL
 
+// Helper function to render element content for PDF/HTML export
+// Note: isPreviewMode and sampleData parameters are reserved for future enhancements
+// to support data binding in PDF exports (currently exports template structure only)
+const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sampleData: any): string => {
+  const style = convertStyleObjectToCss(el.style || {});
+  
+  // Text element
+  if (el.type === 'text') {
+    const content = el.binding ? `{{${el.binding}}}` : (el.content || 'Text');
+    return `<div class="element" style="left: ${el.x}px; top: ${el.y}px; width: ${el.width}px; height: ${el.height}px; ${style}">${content}</div>`;
+  }
+  
+  // Badge element
+  if (el.type === 'badge') {
+    const content = el.content || (el.binding ? `{{${el.binding}}}` : 'PAID');
+    return `<div class="element badge" style="left: ${el.x}px; top: ${el.y}px; width: ${el.width}px; height: ${el.height}px; ${style}">${content}</div>`;
+  }
+  
+  // Line or Box element
+  if (el.type === 'line' || el.type === 'box') {
+    return `<div class="element" style="left: ${el.x}px; top: ${el.y}px; width: ${el.width}px; height: ${el.height}px; ${style}"></div>`;
+  }
+  
+  // Image element
+  if (el.type === 'image') {
+    const src = el.content || 'https://placehold.co/400?text=Image';
+    return `<div class="element" style="left: ${el.x}px; top: ${el.y}px; width: ${el.width}px; height: ${el.height}px;"><img src="${src}" style="width: 100%; height: 100%; object-fit: contain;" /></div>`;
+  }
+  
+  // QR Code element
+  if (el.type === 'qr') {
+    const qrData = el.content || 'https://replit.com';
+    const src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrData)}`;
+    return `<div class="element" style="left: ${el.x}px; top: ${el.y}px; width: ${el.width}px; height: ${el.height}px;"><img src="${src}" style="width: 100%; height: 100%; object-fit: contain;" /></div>`;
+  }
+  
+  // Signature element
+  if (el.type === 'signature') {
+    return `<div class="element" style="left: ${el.x}px; top: ${el.y}px; width: ${el.width}px; height: ${el.height}px;"><img src="https://placehold.co/200x100?text=Signature" style="width: 100%; height: 100%; object-fit: contain;" /></div>`;
+  }
+  
+  // Table element (data-bound table)
+  if (el.type === 'table' && el.tableConfig) {
+    const config = el.tableConfig;
+    const gridBorderColor = (el.style?.gridBorderColor as string) || '#000000';
+    const gridBorderWidth = (el.style?.gridBorderWidth as number) || 1;
+    
+    let tableHtml = '';
+    
+    if (config.tableType === 'price') {
+      // Price table (key-value pairs)
+      tableHtml = `<table style="width: 100%; border-collapse: collapse; border: ${gridBorderWidth}px solid ${gridBorderColor};">
+        <tbody>
+          ${config.columns.map((col, idx) => `
+            <tr>
+              <th style="padding: 8px; text-align: left; font-weight: 500; border-bottom: ${idx < config.columns.length - 1 ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none'}; border-right: ${gridBorderWidth}px solid ${gridBorderColor};">${col.header}</th>
+              <td style="padding: 8px; border-bottom: ${idx < config.columns.length - 1 ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none'};">{${col.binding}}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>`;
+    } else {
+      // Grid table (array of items)
+      tableHtml = `<table style="width: 100%; border-collapse: collapse; border: ${gridBorderWidth}px solid ${gridBorderColor};">
+        <thead>
+          <tr>
+            ${config.columns.map((col, idx) => `
+              <th style="padding: 8px; background: #f3f4f6; border-bottom: ${gridBorderWidth}px solid ${gridBorderColor}; border-right: ${idx < config.columns.length - 1 ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none'};">${col.header}</th>
+            `).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            ${config.columns.map((col, idx) => `
+              <td style="padding: 8px; border-right: ${idx < config.columns.length - 1 ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none'};">{${col.binding}}</td>
+            `).join('')}
+          </tr>
+        </tbody>
+      </table>`;
+    }
+    
+    return `<div class="element" style="left: ${el.x}px; top: ${el.y}px; width: ${el.width}px; height: ${el.height}px; overflow: hidden;">${tableHtml}</div>`;
+  }
+  
+  // Grid table element (static grid)
+  if (el.type === 'gridtable' && el.gridTableConfig) {
+    const config = el.gridTableConfig;
+    const gridBorderColor = (el.style?.gridBorderColor as string) || '#000000';
+    const gridBorderWidth = (el.style?.gridBorderWidth as number) || 1;
+    
+    // Create a map of cells by position for easier lookup
+    const cellMap = new Map<string, typeof config.cells[0]>();
+    const occupiedCells = new Set<string>();
+    
+    config.cells.forEach(cell => {
+      const key = `${cell.row}-${cell.col}`;
+      cellMap.set(key, cell);
+      
+      // Mark all cells that are occupied by this cell (including spans)
+      for (let r = cell.row; r < cell.row + (cell.rowSpan || 1); r++) {
+        for (let c = cell.col; c < cell.col + (cell.colSpan || 1); c++) {
+          if (r !== cell.row || c !== cell.col) {
+            occupiedCells.add(`${r}-${c}`);
+          }
+        }
+      }
+    });
+    
+    // Generate table HTML with proper cell spanning
+    const rowsHtml = Array.from({ length: config.rows }, (_, rowIdx) => {
+      const cellsHtml = Array.from({ length: config.cols }, (_, colIdx) => {
+        const key = `${rowIdx}-${colIdx}`;
+        
+        // Skip cells that are occupied by a spanning cell
+        if (occupiedCells.has(key)) {
+          return '';
+        }
+        
+        const cell = cellMap.get(key);
+        const rowSpan = cell?.rowSpan || 1;
+        const colSpan = cell?.colSpan || 1;
+        const content = cell?.content || '';
+        
+        // Build cell style
+        const cellStyle = cell?.style || {};
+        const textAlign = cellStyle.textAlign || 'left';
+        const fontWeight = cellStyle.fontWeight || 'normal';
+        const fontStyle = cellStyle.fontStyle || 'normal';
+        const textDecoration = cellStyle.textDecoration || 'none';
+        const fontSize = cellStyle.fontSize ? `${cellStyle.fontSize}px` : '12px';
+        const color = cellStyle.color || 'inherit';
+        
+        return `<td ${rowSpan > 1 ? `rowspan="${rowSpan}"` : ''} ${colSpan > 1 ? `colspan="${colSpan}"` : ''} style="padding: 8px; border: ${gridBorderWidth}px solid ${gridBorderColor}; text-align: ${textAlign}; font-weight: ${fontWeight}; font-style: ${fontStyle}; text-decoration: ${textDecoration}; font-size: ${fontSize}; color: ${color};">${content}</td>`;
+      }).filter(html => html !== '').join('');
+      
+      return `<tr>${cellsHtml}</tr>`;
+    }).join('');
+    
+    const tableHtml = `<table style="width: 100%; height: 100%; border-collapse: collapse; border: ${gridBorderWidth}px solid ${gridBorderColor};"><tbody>${rowsHtml}</tbody></table>`;
+    
+    return `<div class="element" style="left: ${el.x}px; top: ${el.y}px; width: ${el.width}px; height: ${el.height}px; overflow: hidden;">${tableHtml}</div>`;
+  }
+  
+  // Default fallback
+  return `<div class="element" style="left: ${el.x}px; top: ${el.y}px; width: ${el.width}px; height: ${el.height}px; ${style}"></div>`;
+};
+
 export default function Editor() {
   const [, params] = useRoute("/editor/:id");
   const id = params?.id ? parseInt(params.id) : null;
@@ -64,11 +211,31 @@ export default function Editor() {
   useEffect(() => {
     if (template) {
       const templateLayout = template.layout as TemplateLayout;
-      setLayout(templateLayout);
+      
+      // Ensure all gridtable elements have heightPerRow initialized
+      const normalizedLayout = {
+        ...templateLayout,
+        elements: templateLayout.elements.map(el => {
+          if (el.type === 'gridtable' && el.gridTableConfig && !el.gridTableConfig.heightPerRow) {
+            // Calculate heightPerRow from current height and rows
+            const heightPerRow = el.height / el.gridTableConfig.rows;
+            return {
+              ...el,
+              gridTableConfig: {
+                ...el.gridTableConfig,
+                heightPerRow
+              }
+            };
+          }
+          return el;
+        })
+      };
+      
+      setLayout(normalizedLayout);
       setSampleData(JSON.stringify(template.sampleData, null, 2));
       setName(template.name);
-      // Initialize history with the loaded template
-      setHistory([structuredClone(templateLayout)]);
+      // Initialize history with the normalized template
+      setHistory([structuredClone(normalizedLayout)]);
       setHistoryIndex(0);
     }
   }, [template]);
@@ -396,22 +563,12 @@ export default function Editor() {
     .line { background: black; }
     .badge { border-radius: 9999px; display: flex; align-items: center; justify-content: center; color: white; }
     table { width: 100%; border-collapse: collapse; }
-    th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; font-size: 12px; }
+    th, td { padding: 8px; text-align: left; font-size: 12px; }
   </style>
 </head>
 <body>
   <div class="page">
-    ${layout.elements.map(el => {
-      const style = convertStyleObjectToCss(el.style || {});
-      const content = el.type === 'text' ? (el.binding ? `{{${el.binding}}}` : el.content) : 
-                     el.type === 'badge' ? (el.content || `{{${el.binding}}}`) : '';
-      
-      return `
-      <div class="element" style="left: ${el.x}px; top: ${el.y}px; width: ${el.width}px; height: ${el.height}px; ${style}">
-        ${el.type === 'text' || el.type === 'badge' ? content : ''}
-        ${el.type === 'line' || el.type === 'box' ? '' : ''}
-      </div>`;
-    }).join('')}
+    ${layout.elements.map(el => renderElementForExport(el, isPreviewMode, sampleData)).join('')}
   </div>
 </body>
 </html>`;
@@ -448,22 +605,12 @@ export default function Editor() {
     .line { background: black; }
     .badge { border-radius: 9999px; display: flex; align-items: center; justify-content: center; color: white; }
     table { width: 100%; border-collapse: collapse; }
-    th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; font-size: 12px; }
+    th, td { padding: 8px; text-align: left; font-size: 12px; }
   </style>
 </head>
 <body>
   <div class="page">
-    ${layout.elements.map(el => {
-      const style = convertStyleObjectToCss(el.style || {});
-      const content = el.type === 'text' ? (el.binding ? `{{${el.binding}}}` : el.content) : 
-                     el.type === 'badge' ? (el.content || `{{${el.binding}}}`) : '';
-      
-      return `
-      <div class="element" style="left: ${el.x}px; top: ${el.y}px; width: ${el.width}px; height: ${el.height}px; ${style}">
-        ${el.type === 'text' || el.type === 'badge' ? content : ''}
-        ${el.type === 'line' || el.type === 'box' ? '' : ''}
-      </div>`;
-    }).join('')}
+    ${layout.elements.map(el => renderElementForExport(el, isPreviewMode, sampleData)).join('')}
   </div>
   <script>
     window.onload = () => {
