@@ -445,11 +445,19 @@ export function Canvas({
     if (!element || !element.tableConfig) return;
     
     const config = element.tableConfig;
+    const currentTotalRows = config.columns.length + (config.footer?.length || 0);
+    const newTotalRows = currentTotalRows + 1;
+    
+    // Recalculate row heights to accommodate the new footer row
+    const currentRowHeights = config.rowHeights || Array(currentTotalRows).fill(element.height / currentTotalRows);
+    const newRowHeight = element.height / newTotalRows;
+    const newRowHeights = Array(newTotalRows).fill(newRowHeight);
     
     onElementUpdate(elementId, {
       tableConfig: {
         ...config,
-        footer: [...(config.footer || []), DEFAULT_FOOTER_ROW]
+        footer: [...(config.footer || []), DEFAULT_FOOTER_ROW],
+        rowHeights: newRowHeights
       }
     });
   };
@@ -468,10 +476,18 @@ export function Canvas({
     const newFooter = [...footer];
     newFooter.pop(); // Remove last footer row
     
+    const currentTotalRows = config.columns.length + footer.length;
+    const newTotalRows = currentTotalRows - 1;
+    
+    // Recalculate row heights after removing footer row
+    const newRowHeight = element.height / newTotalRows;
+    const newRowHeights = Array(newTotalRows).fill(newRowHeight);
+    
     onElementUpdate(elementId, {
       tableConfig: {
         ...config,
-        footer: newFooter
+        footer: newFooter,
+        rowHeights: newRowHeights
       }
     });
   };
