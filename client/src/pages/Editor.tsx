@@ -20,10 +20,18 @@ import { Link } from "wouter";
 
 // Helper function to convert camelCase style object to CSS string
 const convertStyleObjectToCss = (style: Record<string, string | number>): string => {
+  // CSS properties that should not have 'px' appended when numeric
+  const unitlessProperties = new Set([
+    'opacity', 'z-index', 'font-weight', 'line-height', 'flex', 'flex-grow', 
+    'flex-shrink', 'order', 'zoom', 'animation-iteration-count'
+  ]);
+  
   return Object.entries(style)
     .map(([key, value]) => {
       const kebabKey = key.replace(/[A-Z]/g, m => "-" + m.toLowerCase());
-      const cssValue = typeof value === 'number' ? `${value}px` : value;
+      const cssValue = typeof value === 'number' && !unitlessProperties.has(kebabKey)
+        ? `${value}px` 
+        : value;
       return `${kebabKey}: ${cssValue}`;
     })
     .join('; ');
@@ -469,10 +477,9 @@ export default function Editor() {
               const blob = new Blob([html], { type: 'text/html' });
               const url = URL.createObjectURL(blob);
               const printWindow = window.open(url, '_blank');
+              // Clean up the blob URL after a short delay to allow the window to load
               if (printWindow) {
-                printWindow.onload = () => {
-                  URL.revokeObjectURL(url);
-                };
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
               }
             }}
           >
