@@ -457,6 +457,58 @@ export function Canvas({
     });
   };
 
+  // Handler to add footer row to gridtable
+  const handleAddGridTableFooter = (elementId: string) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element || !element.gridTableConfig) return;
+    
+    const config = element.gridTableConfig;
+    
+    onElementUpdate(elementId, {
+      gridTableConfig: {
+        ...config,
+        footer: [...(config.footer || []), DEFAULT_FOOTER_ROW]
+      }
+    });
+  };
+
+  // Handler to remove last footer row from gridtable
+  const handleRemoveLastGridTableFooter = (elementId: string) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element || !element.gridTableConfig) return;
+    
+    const config = element.gridTableConfig;
+    const footer = config.footer;
+    
+    // Early return if no footer or empty footer array
+    if (!footer || footer.length === 0) return;
+    
+    const newFooter = [...footer];
+    newFooter.pop(); // Remove last footer row
+    
+    onElementUpdate(elementId, {
+      gridTableConfig: {
+        ...config,
+        footer: newFooter
+      }
+    });
+  };
+
+  // Handler to update footer cell in gridtable
+  const handleGridTableFooterCellUpdate = (elementId: string, footerIdx: number, field: 'label' | 'value', newValue: string) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element || !element.gridTableConfig || !element.gridTableConfig.footer) return;
+    
+    const config = element.gridTableConfig;
+    const footer = config.footer;
+    const newFooter = [...footer];
+    newFooter[footerIdx] = { ...newFooter[footerIdx], [field]: newValue };
+    
+    onElementUpdate(elementId, {
+      gridTableConfig: { ...config, footer: newFooter }
+    });
+  };
+
   // Recursive function to render JSON data tree in context menu for text elements
   const renderDataTreeForText = (tree: Record<string, any>, elementId: string): JSX.Element[] => {
     return Object.keys(tree).map((key) => {
@@ -1411,6 +1463,123 @@ export function Canvas({
               );
             })}
             </tbody>
+            {config.footer && config.footer.length > 0 && (
+              <tfoot className="bg-gray-50 font-semibold">
+                {config.footer.map((footerRow, idx) => {
+                  let footerValue;
+                  if (isPreviewMode) {
+                    // Try to parse as binding first - check for pattern {bindingName}
+                    if (footerRow.value.startsWith('{') && footerRow.value.endsWith('}') && footerRow.value.length > 2) {
+                      const binding = footerRow.value.slice(1, -1).trim();
+                      if (binding.length > 0) {
+                        const rawVal = getValue(sampleData, binding);
+                        if (footerRow.format === 'currency') {
+                          footerValue = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(rawVal) || 0);
+                        } else if (footerRow.format === 'number') {
+                          footerValue = new Intl.NumberFormat('en-US').format(Number(rawVal) || 0);
+                        } else {
+                          footerValue = rawVal;
+                        }
+                      } else {
+                        footerValue = footerRow.value;
+                      }
+                    } else {
+                      // Static text
+                      footerValue = footerRow.value;
+                    }
+                  } else {
+                    footerValue = footerRow.value;
+                  }
+                  
+                  const isEditingLabel = editingFooterCell?.elementId === el.id && editingFooterCell?.footerIdx === idx && editingFooterCell?.field === 'label';
+                  const isEditingValue = editingFooterCell?.elementId === el.id && editingFooterCell?.footerIdx === idx && editingFooterCell?.field === 'value';
+                  
+                  return (
+                    <tr key={`footer-${idx}`}>
+                      <th 
+                        className={clsx(
+                          "p-2 text-left font-semibold",
+                          !isPreviewMode && "cursor-text hover:bg-blue-50"
+                        )}
+                        style={{
+                          borderWidth: `${gridBorderWidth}px`,
+                          borderStyle: 'solid',
+                          borderColor: gridBorderColor
+                        }}
+                        colSpan={config.cols > 1 ? config.cols - 1 : 1}
+                        onDoubleClick={(e) => {
+                          if (!isPreviewMode) {
+                            e.stopPropagation();
+                            setEditingFooterCell({ elementId: el.id, footerIdx: idx, field: 'label' });
+                          }
+                        }}
+                      >
+                        {isEditingLabel && !isPreviewMode ? (
+                          <input
+                            autoFocus
+                            className="w-full pointer-events-auto border-none outline-none bg-transparent font-semibold"
+                            value={footerRow.label}
+                            onChange={(e) => {
+                              handleGridTableFooterCellUpdate(el.id, idx, 'label', e.target.value);
+                            }}
+                            onBlur={() => setEditingFooterCell(null)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Escape' || e.key === 'Enter') {
+                                setEditingFooterCell(null);
+                                e.stopPropagation();
+                              }
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        ) : (
+                          footerRow.label
+                        )}
+                      </th>
+                      {config.cols > 1 && (
+                        <td 
+                          className={clsx(
+                            "p-2 font-semibold",
+                            !isPreviewMode && "cursor-text hover:bg-blue-50"
+                          )}
+                          style={{
+                            borderWidth: `${gridBorderWidth}px`,
+                            borderStyle: 'solid',
+                            borderColor: gridBorderColor
+                          }}
+                          onDoubleClick={(e) => {
+                            if (!isPreviewMode) {
+                              e.stopPropagation();
+                              setEditingFooterCell({ elementId: el.id, footerIdx: idx, field: 'value' });
+                            }
+                          }}
+                        >
+                          {isEditingValue && !isPreviewMode ? (
+                            <input
+                              autoFocus
+                              className="w-full pointer-events-auto border-none outline-none bg-transparent font-semibold"
+                              value={footerRow.value}
+                              onChange={(e) => {
+                                handleGridTableFooterCellUpdate(el.id, idx, 'value', e.target.value);
+                              }}
+                              onBlur={() => setEditingFooterCell(null)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Escape' || e.key === 'Enter') {
+                                  setEditingFooterCell(null);
+                                  e.stopPropagation();
+                                }
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          ) : (
+                            footerValue
+                          )}
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
+              </tfoot>
+            )}
           </table>
           </div>
           {/* Overlay delete buttons for rows */}
@@ -1827,6 +1996,37 @@ export function Canvas({
                       <Minus className="w-3 h-3 mr-1" />
                       <Columns className="w-4 h-4" />
                     </Button>
+                    <div className="w-px h-6 bg-border mx-1" />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAddGridTableFooter(el.id);
+                      }}
+                      title="Add footer row"
+                      aria-label="Add footer row"
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      Footer
+                    </Button>
+                    {el.gridTableConfig?.footer && el.gridTableConfig.footer.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveLastGridTableFooter(el.id);
+                        }}
+                        title="Remove last footer row"
+                        aria-label="Remove last footer row"
+                      >
+                        <Minus className="w-3 h-3 mr-1" />
+                        Footer
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"
