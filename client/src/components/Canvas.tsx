@@ -1162,7 +1162,19 @@ export function Canvas({
       // Calculate column widths (use custom or equal distribution)
       // Guard against division by zero
       const colWidths = config.colWidths || (config.cols > 0 ? Array(config.cols).fill(100 / config.cols) : [100]);
-      const rowHeights = config.rowHeights || (config.rows > 0 ? Array(config.rows).fill(el.height / config.rows) : [el.height]);
+      
+      // Calculate row heights and normalize to fit container exactly
+      let rowHeights = config.rowHeights || (config.rows > 0 ? Array(config.rows).fill(el.height / config.rows) : [el.height]);
+      
+      // Ensure row heights fit within container height
+      if (rowHeights && rowHeights.length > 0) {
+        const totalHeight = rowHeights.reduce((sum, h) => sum + h, 0);
+        if (totalHeight !== el.height && totalHeight > 0) {
+          // Normalize row heights to fit exactly within container
+          const scaleFactor = el.height / totalHeight;
+          rowHeights = rowHeights.map(h => h * scaleFactor);
+        }
+      }
       
       return (
         <div className="w-full h-full pointer-events-auto relative">
