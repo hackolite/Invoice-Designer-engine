@@ -40,6 +40,8 @@ const convertStyleObjectToCss = (style: Record<string, string | number>): string
 const BLOB_URL_CLEANUP_DELAY_MS = 2000; // Time to allow window to load before cleaning up blob URL
 
 // Helper function to render element content for PDF/HTML export
+// Note: isPreviewMode and sampleData parameters are reserved for future enhancements
+// to support data binding in PDF exports (currently exports template structure only)
 const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sampleData: any): string => {
   const style = convertStyleObjectToCss(el.style || {});
   
