@@ -68,6 +68,7 @@ interface CanvasProps {
 const PAGE_WIDTH = 794;  // 210mm * 3.78
 const PAGE_HEIGHT = 1123; // 297mm * 3.78
 const GRID_SIZE = 10;
+const TOOLBAR_HEIGHT = 56; // Height of inline toolbar (14 * 4px for -bottom-14 or -top-14)
 
 // GridTable constraints and settings
 const MIN_ROW_HEIGHT = 20; // Minimum height for a row in pixels
@@ -78,6 +79,13 @@ const RESIZE_HANDLE_OFFSET = 2; // Offset for centering resize handle in pixels
 
 // Default footer row for price tables
 const DEFAULT_FOOTER_ROW = { label: "Total", value: "{total}", format: 'currency' as const };
+
+// Helper function to determine toolbar positioning based on available space
+function getToolbarPositionClass(element: TemplateElement, pageHeight: number): string {
+  const tableBottom = element.y + element.height;
+  const spaceBelow = pageHeight - tableBottom;
+  return spaceBelow < TOOLBAR_HEIGHT ? "-top-14" : "-bottom-14";
+}
 
 export function Canvas({
   layout,
@@ -1888,18 +1896,11 @@ export function Canvas({
                    )}
                  />
                )}
-               {!isPreviewMode && isSelected && el.type === 'table' && (() => {
-                  // Calculate if toolbar should be positioned above or below the table
-                  const toolbarHeight = 56; // Height of the toolbar (14 * 4px)
-                  const tableBottom = el.y + el.height;
-                  const spaceBelow = PAGE_HEIGHT - tableBottom;
-                  const shouldPositionAbove = spaceBelow < toolbarHeight;
-                  
-                  return (
-                    <div 
-                      className={clsx(
-                        "absolute left-0 right-0 bg-white border rounded-lg shadow-lg p-2 flex items-center gap-3 pointer-events-auto z-40",
-                        shouldPositionAbove ? "-top-14" : "-bottom-14"
+               {!isPreviewMode && isSelected && el.type === 'table' && (
+                 <div 
+                   className={clsx(
+                     "absolute left-0 right-0 bg-white border rounded-lg shadow-lg p-2 flex items-center gap-3 pointer-events-auto z-40",
+                     getToolbarPositionClass(el, PAGE_HEIGHT)
                       )}
                       onClick={(e) => e.stopPropagation()}
                  >
@@ -1987,20 +1988,12 @@ export function Canvas({
                      <Copy className="w-4 h-4" />
                    </Button>
                  </div>
-                 );
-               })()}
-                {!isPreviewMode && isSelected && el.type === 'gridtable' && (() => {
-                  // Calculate if toolbar should be positioned above or below the gridtable
-                  const toolbarHeight = 56; // Height of the toolbar (14 * 4px)
-                  const tableBottom = el.y + el.height;
-                  const spaceBelow = PAGE_HEIGHT - tableBottom;
-                  const shouldPositionAbove = spaceBelow < toolbarHeight;
-                  
-                  return (
-                    <div 
-                      className={clsx(
-                        "absolute left-0 right-0 bg-white border rounded-lg shadow-lg p-2 flex items-center gap-2 pointer-events-auto z-40",
-                        shouldPositionAbove ? "-top-14" : "-bottom-14"
+               )}
+                {!isPreviewMode && isSelected && el.type === 'gridtable' && (
+                  <div 
+                    className={clsx(
+                      "absolute left-0 right-0 bg-white border rounded-lg shadow-lg p-2 flex items-center gap-2 pointer-events-auto z-40",
+                      getToolbarPositionClass(el, PAGE_HEIGHT)
                       )}
                       onClick={(e) => e.stopPropagation()}
                   >
@@ -2140,8 +2133,7 @@ export function Canvas({
                       <Copy className="w-4 h-4" />
                     </Button>
                   </div>
-                  );
-                })()}
+                )}
             </div>
           </Rnd>
         );
