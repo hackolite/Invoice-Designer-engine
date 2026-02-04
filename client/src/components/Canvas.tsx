@@ -93,6 +93,7 @@ export function Canvas({
   const [selectedRow, setSelectedRow] = useState<{ elementId: string; row: number } | null>(null);
   const [resizingBorder, setResizingBorder] = useState<{ elementId: string; type: 'row' | 'col'; index: number; startPos: number; startSize: number } | null>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [editingTextElement, setEditingTextElement] = useState<string | null>(null);
 
   // Handle resize border dragging
   useEffect(() => {
@@ -378,6 +379,58 @@ export function Canvas({
     });
   };
 
+  // Handlers for text element updates
+  const handleTextContentUpdate = (elementId: string, content: string) => {
+    onElementUpdate(elementId, { content });
+  };
+
+  const handleTextBindingUpdate = (elementId: string, binding: string) => {
+    onElementUpdate(elementId, { 
+      binding,
+      content: `{{${binding}}}`
+    });
+  };
+
+  const handleTextStyleUpdate = (elementId: string, styleKey: string, styleValue: string | number) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element) return;
+    
+    onElementUpdate(elementId, {
+      style: { ...element.style, [styleKey]: styleValue }
+    });
+  };
+
+  // Recursive function to render JSON data tree in context menu for text elements
+  const renderDataTreeForText = (tree: Record<string, any>, elementId: string): JSX.Element[] => {
+    return Object.keys(tree).map((key) => {
+      const value = tree[key];
+      
+      if (typeof value === 'string') {
+        // Leaf node - this is a full path
+        return (
+          <ContextMenuItem 
+            key={value}
+            onClick={() => handleTextBindingUpdate(elementId, value)}
+          >
+            {key} → {value}
+          </ContextMenuItem>
+        );
+      } else {
+        // Nested object - create submenu
+        return (
+          <ContextMenuSub key={key}>
+            <ContextMenuSubTrigger>
+              {key}
+            </ContextMenuSubTrigger>
+            <ContextMenuSubContent>
+              {renderDataTreeForText(value, elementId)}
+            </ContextMenuSubContent>
+          </ContextMenuSub>
+        );
+      }
+    });
+  };
+
   // Recursive function to render JSON data tree in context menu
   const renderDataTree = (tree: Record<string, any>, elementId: string, row: number, col: number): JSX.Element[] => {
     return Object.keys(tree).map((key) => {
@@ -591,26 +644,143 @@ export function Canvas({
         });
       }
       
+      const isEditing = editingTextElement === el.id;
+      
       return (
-        <div 
-          className="w-full h-full overflow-hidden whitespace-pre-wrap"
-          style={{
-            fontSize: el.style?.fontSize ? `${el.style.fontSize}px` : '14px',
-            textAlign: (el.style?.textAlign as any) || 'left',
-            color: el.style?.color as string || 'inherit',
-            fontWeight: el.style?.fontWeight as any || 'normal',
-            lineHeight: el.style?.lineHeight as any || 'normal',
-            fontStyle: el.style?.fontStyle as any || 'normal',
-            textTransform: el.style?.textTransform as any || 'none',
-            letterSpacing: el.style?.letterSpacing ? `${el.style.letterSpacing}px` : 'normal',
-            fontFamily: el.style?.fontFamily as string || 'inherit',
-            borderBottom: el.style?.borderBottom as string || 'none',
-            paddingBottom: el.style?.paddingBottom ? `${el.style.paddingBottom}px` : '0',
-            textDecoration: el.style?.textDecoration as string || 'none',
-          }}
-        >
-          {displayContent}
-        </div>
+        <ContextMenu>
+          <ContextMenuTrigger asChild>
+            <div 
+              className="w-full h-full overflow-hidden whitespace-pre-wrap pointer-events-auto cursor-text"
+              style={{
+                fontSize: el.style?.fontSize ? `${el.style.fontSize}px` : '14px',
+                textAlign: (el.style?.textAlign as any) || 'left',
+                color: el.style?.color as string || 'inherit',
+                fontWeight: el.style?.fontWeight as any || 'normal',
+                lineHeight: el.style?.lineHeight as any || 'normal',
+                fontStyle: el.style?.fontStyle as any || 'normal',
+                textTransform: el.style?.textTransform as any || 'none',
+                letterSpacing: el.style?.letterSpacing ? `${el.style.letterSpacing}px` : 'normal',
+                fontFamily: el.style?.fontFamily as string || 'inherit',
+                borderBottom: el.style?.borderBottom as string || 'none',
+                paddingBottom: el.style?.paddingBottom ? `${el.style.paddingBottom}px` : '0',
+                textDecoration: el.style?.textDecoration as string || 'none',
+              }}
+              onDoubleClick={(e) => {
+                if (!isPreviewMode) {
+                  e.stopPropagation();
+                  setEditingTextElement(el.id);
+                }
+              }}
+              onContextMenu={(e) => {
+                if (!isPreviewMode) {
+                  e.stopPropagation();
+                }
+              }}
+            >
+              {isEditing && !isPreviewMode ? (
+                <textarea
+                  autoFocus
+                  className="w-full h-full pointer-events-auto border-none outline-none resize-none bg-transparent"
+                  style={{
+                    fontSize: el.style?.fontSize ? `${el.style.fontSize}px` : '14px',
+                    textAlign: (el.style?.textAlign as any) || 'left',
+                    color: el.style?.color as string || 'inherit',
+                    fontWeight: el.style?.fontWeight as any || 'normal',
+                    lineHeight: el.style?.lineHeight as any || 'normal',
+                    fontStyle: el.style?.fontStyle as any || 'normal',
+                    textTransform: el.style?.textTransform as any || 'none',
+                    letterSpacing: el.style?.letterSpacing ? `${el.style.letterSpacing}px` : 'normal',
+                    fontFamily: el.style?.fontFamily as string || 'inherit',
+                    textDecoration: el.style?.textDecoration as string || 'none',
+                  }}
+                  value={el.content || ''}
+                  onChange={(e) => {
+                    handleTextContentUpdate(el.id, e.target.value);
+                  }}
+                  onBlur={() => setEditingTextElement(null)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      setEditingTextElement(null);
+                      e.stopPropagation();
+                    }
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ) : (
+                displayContent
+              )}
+            </div>
+          </ContextMenuTrigger>
+          {!isPreviewMode && (
+            <ContextMenuContent className="pointer-events-auto">
+              <ContextMenuSub>
+                <ContextMenuSubTrigger>
+                  <AlignLeft className="w-4 h-4 mr-2" />
+                  Text Align
+                </ContextMenuSubTrigger>
+                <ContextMenuSubContent>
+                  <ContextMenuItem onClick={() => handleTextStyleUpdate(el.id, 'textAlign', 'left')}>
+                    <AlignLeft className="w-4 h-4 mr-2" />
+                    Left
+                  </ContextMenuItem>
+                  <ContextMenuItem onClick={() => handleTextStyleUpdate(el.id, 'textAlign', 'center')}>
+                    <AlignCenter className="w-4 h-4 mr-2" />
+                    Center
+                  </ContextMenuItem>
+                  <ContextMenuItem onClick={() => handleTextStyleUpdate(el.id, 'textAlign', 'right')}>
+                    <AlignRight className="w-4 h-4 mr-2" />
+                    Right
+                  </ContextMenuItem>
+                  <ContextMenuItem onClick={() => handleTextStyleUpdate(el.id, 'textAlign', 'justify')}>
+                    <AlignJustify className="w-4 h-4 mr-2" />
+                    Justify
+                  </ContextMenuItem>
+                </ContextMenuSubContent>
+              </ContextMenuSub>
+              <ContextMenuSub>
+                <ContextMenuSubTrigger>
+                  <Bold className="w-4 h-4 mr-2" />
+                  Text Style
+                </ContextMenuSubTrigger>
+                <ContextMenuSubContent>
+                  <ContextMenuItem onClick={() => {
+                    const currentWeight = el.style?.fontWeight;
+                    handleTextStyleUpdate(el.id, 'fontWeight', currentWeight === 'bold' ? 'normal' : 'bold');
+                  }}>
+                    <Bold className="w-4 h-4 mr-2" />
+                    {el.style?.fontWeight === 'bold' ? 'Remove Bold' : 'Bold'}
+                  </ContextMenuItem>
+                  <ContextMenuItem onClick={() => {
+                    const currentStyle = el.style?.fontStyle;
+                    handleTextStyleUpdate(el.id, 'fontStyle', currentStyle === 'italic' ? 'normal' : 'italic');
+                  }}>
+                    <Italic className="w-4 h-4 mr-2" />
+                    {el.style?.fontStyle === 'italic' ? 'Remove Italic' : 'Italic'}
+                  </ContextMenuItem>
+                  <ContextMenuItem onClick={() => {
+                    const currentDecoration = el.style?.textDecoration;
+                    handleTextStyleUpdate(el.id, 'textDecoration', currentDecoration === 'underline' ? 'none' : 'underline');
+                  }}>
+                    <Underline className="w-4 h-4 mr-2" />
+                    {el.style?.textDecoration === 'underline' ? 'Remove Underline' : 'Underline'}
+                  </ContextMenuItem>
+                </ContextMenuSubContent>
+              </ContextMenuSub>
+              <ContextMenuSeparator />
+              {sampleData && (
+                <ContextMenuSub>
+                  <ContextMenuSubTrigger>
+                    <Database className="w-4 h-4 mr-2" />
+                    Bind Data
+                  </ContextMenuSubTrigger>
+                  <ContextMenuSubContent>
+                    {renderDataTreeForText(buildDataPathTree(sampleData), el.id)}
+                  </ContextMenuSubContent>
+                </ContextMenuSub>
+              )}
+            </ContextMenuContent>
+          )}
+        </ContextMenu>
       );
     }
 
