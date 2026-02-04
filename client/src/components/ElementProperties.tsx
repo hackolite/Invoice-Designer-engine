@@ -629,7 +629,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                   </div>
                   
                   <ScrollArea className="h-64 border rounded p-2">
-                    {element.gridTableConfig.cells
+                    {element.gridTableConfig.cells && element.gridTableConfig.cells
                       .sort((a, b) => a.row === b.row ? a.col - b.col : a.row - b.row)
                       .map((cell, idx) => (
                       <div key={idx} className="bg-muted/30 p-2 rounded border mb-2 space-y-2 text-sm">
