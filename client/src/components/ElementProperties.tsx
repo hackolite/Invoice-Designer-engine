@@ -34,6 +34,19 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
     });
   };
 
+  const handleCellStyleChange = (cellIndex: number, styleKey: string, styleValue: any) => {
+    if (!element.gridTableConfig) return;
+    const config = element.gridTableConfig;
+    const newCells = [...config.cells];
+    newCells[cellIndex] = { 
+      ...newCells[cellIndex], 
+      style: { ...newCells[cellIndex].style, [styleKey]: styleValue }
+    };
+    onChange(element.id, {
+      gridTableConfig: { ...config, cells: newCells }
+    });
+  };
+
   const handleTableColumnAdd = () => {
     if (!element.tableConfig) return;
     const newCol = { header: "New Column", binding: "newKey", width: "100px" };
@@ -534,6 +547,76 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                               max={element.gridTableConfig?.cols || 10}
                               className="h-7 text-xs"
                             />
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <Label className="text-xs">Text Align</Label>
+                          <div className="flex border rounded-md overflow-hidden divide-x">
+                            <button 
+                              className={`flex-1 p-1 hover:bg-muted ${cell.style?.textAlign === 'left' ? 'bg-muted' : ''}`}
+                              onClick={() => handleCellStyleChange(idx, 'textAlign', 'left')}
+                              title="Align Left"
+                            >
+                              <AlignLeft className="w-3 h-3 mx-auto" />
+                            </button>
+                            <button 
+                              className={`flex-1 p-1 hover:bg-muted ${cell.style?.textAlign === 'center' ? 'bg-muted' : ''}`}
+                              onClick={() => handleCellStyleChange(idx, 'textAlign', 'center')}
+                              title="Align Center"
+                            >
+                              <AlignCenter className="w-3 h-3 mx-auto" />
+                            </button>
+                            <button 
+                              className={`flex-1 p-1 hover:bg-muted ${cell.style?.textAlign === 'right' ? 'bg-muted' : ''}`}
+                              onClick={() => handleCellStyleChange(idx, 'textAlign', 'right')}
+                              title="Align Right"
+                            >
+                              <AlignRight className="w-3 h-3 mx-auto" />
+                            </button>
+                            <button 
+                              className={`flex-1 p-1 hover:bg-muted ${cell.style?.textAlign === 'justify' ? 'bg-muted' : ''}`}
+                              onClick={() => handleCellStyleChange(idx, 'textAlign', 'justify')}
+                              title="Justify"
+                            >
+                              <AlignJustify className="w-3 h-3 mx-auto" />
+                            </button>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <Label className="text-xs">Text Style</Label>
+                          <div className="flex border rounded-md overflow-hidden divide-x">
+                            <button 
+                              className={`flex-1 p-1 hover:bg-muted ${cell.style?.fontWeight === 'bold' ? 'bg-muted' : ''}`}
+                              onClick={() => {
+                                const currentWeight = cell.style?.fontWeight;
+                                handleCellStyleChange(idx, 'fontWeight', currentWeight === 'bold' ? 'normal' : 'bold');
+                              }}
+                              title="Bold"
+                            >
+                              <Bold className="w-3 h-3 mx-auto" />
+                            </button>
+                            <button 
+                              className={`flex-1 p-1 hover:bg-muted ${cell.style?.fontStyle === 'italic' ? 'bg-muted' : ''}`}
+                              onClick={() => {
+                                const currentStyle = cell.style?.fontStyle;
+                                handleCellStyleChange(idx, 'fontStyle', currentStyle === 'italic' ? 'normal' : 'italic');
+                              }}
+                              title="Italic"
+                            >
+                              <Italic className="w-3 h-3 mx-auto" />
+                            </button>
+                            <button 
+                              className={`flex-1 p-1 hover:bg-muted ${cell.style?.textDecoration === 'underline' ? 'bg-muted' : ''}`}
+                              onClick={() => {
+                                const currentDecoration = cell.style?.textDecoration;
+                                handleCellStyleChange(idx, 'textDecoration', currentDecoration === 'underline' ? 'none' : 'underline');
+                              }}
+                              title="Underline"
+                            >
+                              <Underline className="w-3 h-3 mx-auto" />
+                            </button>
                           </div>
                         </div>
                       </div>
