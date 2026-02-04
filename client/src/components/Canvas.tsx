@@ -65,6 +65,16 @@ export function Canvas({
     return Math.round(num / GRID_SIZE) * GRID_SIZE;
   };
 
+  // Helper to get cell styles
+  const getCellStyle = (cell: any) => ({
+    textAlign: (cell?.style?.textAlign as any) || 'left',
+    fontWeight: (cell?.style?.fontWeight as any) || 'normal',
+    fontStyle: (cell?.style?.fontStyle as any) || 'normal',
+    textDecoration: (cell?.style?.textDecoration as string) || 'none',
+    fontSize: cell?.style?.fontSize ? `${cell.style.fontSize}px` : '12px',
+    color: (cell?.style?.color as string) || 'inherit',
+  });
+
   // Helper to calculate new gridtable height when rows change
   // Note: This calculates based on total element height, not accounting for border widths
   const calculateNewGridTableHeight = (currentHeight: number, currentRows: number, newRows: number): number => {
@@ -587,12 +597,7 @@ export function Canvas({
                             style={{ 
                               borderColor: gridBorderColor,
                               borderWidth: `${gridBorderWidth}px`,
-                              textAlign: (cell?.style?.textAlign as any) || 'left',
-                              fontWeight: (cell?.style?.fontWeight as any) || 'normal',
-                              fontStyle: (cell?.style?.fontStyle as any) || 'normal',
-                              textDecoration: (cell?.style?.textDecoration as string) || 'none',
-                              fontSize: cell?.style?.fontSize ? `${cell.style.fontSize}px` : '12px',
-                              color: (cell?.style?.color as string) || 'inherit',
+                              ...getCellStyle(cell)
                             }}
                             tabIndex={isPreviewMode ? undefined : 0}
                             role={isPreviewMode ? undefined : "button"}
@@ -634,17 +639,14 @@ export function Canvas({
                                   // Don't stop propagation for Enter to allow line breaks
                                 }}
                                 onClick={(e) => e.stopPropagation()}
-                                style={{
-                                  textAlign: (cell?.style?.textAlign as any) || 'left',
-                                  fontWeight: (cell?.style?.fontWeight as any) || 'normal',
-                                  fontStyle: (cell?.style?.fontStyle as any) || 'normal',
-                                  textDecoration: (cell?.style?.textDecoration as string) || 'none',
-                                  fontSize: cell?.style?.fontSize ? `${cell.style.fontSize}px` : '12px',
-                                  color: (cell?.style?.color as string) || 'inherit',
-                                }}
+                                style={getCellStyle(cell)}
                               />
                             ) : (
-                              <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                              <div style={{ 
+                                whiteSpace: 'pre-wrap', 
+                                wordBreak: 'break-word',
+                                ...getCellStyle(cell)
+                              }}>
                                 {content}
                               </div>
                             )}
