@@ -94,6 +94,7 @@ export function Canvas({
   const [resizingBorder, setResizingBorder] = useState<{ elementId: string; type: 'row' | 'col'; index: number; startPos: number; startSize: number } | null>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [editingTextElement, setEditingTextElement] = useState<string | null>(null);
+  const [editingFooterCell, setEditingFooterCell] = useState<{ elementId: string; footerIdx: number; field: 'label' | 'value' } | null>(null);
 
   // Handle resize border dragging
   useEffect(() => {
@@ -397,6 +398,20 @@ export function Canvas({
     
     onElementUpdate(elementId, {
       style: { ...element.style, [styleKey]: styleValue }
+    });
+  };
+
+  // Handlers for footer cell updates in price tables
+  const handleFooterCellUpdate = (elementId: string, footerIdx: number, field: 'label' | 'value', newValue: string) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element || !element.tableConfig || !element.tableConfig.footer) return;
+    
+    const config = element.tableConfig;
+    const newFooter = [...config.footer];
+    newFooter[footerIdx] = { ...newFooter[footerIdx], [field]: newValue };
+    
+    onElementUpdate(elementId, {
+      tableConfig: { ...config, footer: newFooter }
     });
   };
 
@@ -919,22 +934,86 @@ export function Canvas({
                     const isFirstFooterRow = idx === 0;
                     const isLastFooterRow = idx === config.footer!.length - 1;
                     const footerBorderBottom = !isLastFooterRow ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none';
+                    const isEditingLabel = editingFooterCell?.elementId === el.id && editingFooterCell?.footerIdx === idx && editingFooterCell?.field === 'label';
+                    const isEditingValue = editingFooterCell?.elementId === el.id && editingFooterCell?.footerIdx === idx && editingFooterCell?.field === 'value';
                     
                     return (
                       <tr key={`footer-${idx}`}>
-                        <th className="p-2 text-left font-semibold" style={{
-                          width: '50%',
-                          borderTop: isFirstFooterRow ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none',
-                          borderBottom: footerBorderBottom,
-                          borderRight: `${gridBorderWidth}px solid ${gridBorderColor}`
-                        }}>
-                          {footerRow.label}
+                        <th 
+                          className={clsx(
+                            "p-2 text-left font-semibold",
+                            !isPreviewMode && "cursor-text hover:bg-blue-50"
+                          )}
+                          style={{
+                            width: '50%',
+                            borderTop: isFirstFooterRow ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none',
+                            borderBottom: footerBorderBottom,
+                            borderRight: `${gridBorderWidth}px solid ${gridBorderColor}`
+                          }}
+                          onDoubleClick={(e) => {
+                            if (!isPreviewMode) {
+                              e.stopPropagation();
+                              setEditingFooterCell({ elementId: el.id, footerIdx: idx, field: 'label' });
+                            }
+                          }}
+                        >
+                          {isEditingLabel && !isPreviewMode ? (
+                            <input
+                              autoFocus
+                              className="w-full pointer-events-auto border-none outline-none bg-transparent font-semibold"
+                              value={footerRow.label}
+                              onChange={(e) => {
+                                handleFooterCellUpdate(el.id, idx, 'label', e.target.value);
+                              }}
+                              onBlur={() => setEditingFooterCell(null)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Escape' || e.key === 'Enter') {
+                                  setEditingFooterCell(null);
+                                  e.stopPropagation();
+                                }
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          ) : (
+                            footerRow.label
+                          )}
                         </th>
-                        <td className="p-2 font-semibold" style={{
-                          borderTop: isFirstFooterRow ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none',
-                          borderBottom: footerBorderBottom
-                        }}>
-                          {footerValue}
+                        <td 
+                          className={clsx(
+                            "p-2 font-semibold",
+                            !isPreviewMode && "cursor-text hover:bg-blue-50"
+                          )}
+                          style={{
+                            borderTop: isFirstFooterRow ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none',
+                            borderBottom: footerBorderBottom
+                          }}
+                          onDoubleClick={(e) => {
+                            if (!isPreviewMode) {
+                              e.stopPropagation();
+                              setEditingFooterCell({ elementId: el.id, footerIdx: idx, field: 'value' });
+                            }
+                          }}
+                        >
+                          {isEditingValue && !isPreviewMode ? (
+                            <input
+                              autoFocus
+                              className="w-full pointer-events-auto border-none outline-none bg-transparent font-semibold"
+                              value={footerRow.value}
+                              onChange={(e) => {
+                                handleFooterCellUpdate(el.id, idx, 'value', e.target.value);
+                              }}
+                              onBlur={() => setEditingFooterCell(null)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Escape' || e.key === 'Enter') {
+                                  setEditingFooterCell(null);
+                                  e.stopPropagation();
+                                }
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          ) : (
+                            footerValue
+                          )}
                         </td>
                       </tr>
                     );
@@ -1451,32 +1530,59 @@ export function Canvas({
               const newX = snapToGrid(position.x);
               const newY = snapToGrid(position.y);
               
-              // For gridtable, handle proportional row resizing on height change
-              if (el.type === 'gridtable' && el.gridTableConfig && el.height !== newHeight) {
+              // For gridtable, handle proportional resizing on both height and width changes
+              if (el.type === 'gridtable' && el.gridTableConfig) {
                 const config = el.gridTableConfig;
                 const oldHeight = el.height;
-                const heightRatio = newHeight / oldHeight;
+                const oldWidth = el.width;
+                const heightChanged = oldHeight !== newHeight;
+                const widthChanged = oldWidth !== newWidth;
                 
-                // Scale all row heights proportionally
                 let newRowHeights: number[] | undefined;
-                if (config.rowHeights && config.rowHeights.length > 0) {
-                  newRowHeights = config.rowHeights.map(h => h * heightRatio);
-                } else {
-                  // If no custom row heights, create proportional ones based on equal distribution
-                  const scaledRowHeight = (oldHeight / config.rows) * heightRatio;
-                  newRowHeights = Array(config.rows).fill(scaledRowHeight);
+                let newColWidths: number[] | undefined;
+                
+                // Scale row heights proportionally on height change
+                if (heightChanged) {
+                  const heightRatio = newHeight / oldHeight;
+                  if (config.rowHeights && config.rowHeights.length > 0) {
+                    newRowHeights = config.rowHeights.map(h => h * heightRatio);
+                  } else {
+                    // If no custom row heights, create proportional ones based on equal distribution
+                    const scaledRowHeight = (oldHeight / config.rows) * heightRatio;
+                    newRowHeights = Array(config.rows).fill(scaledRowHeight);
+                  }
                 }
                 
-                onElementUpdate(el.id, {
-                  width: newWidth,
-                  height: newHeight,
-                  x: newX,
-                  y: newY,
-                  gridTableConfig: {
-                    ...config,
-                    rowHeights: newRowHeights
-                  }
-                });
+                // Scale column widths proportionally on width change
+                // Column widths are stored as percentages, so they remain proportional
+                // We don't need to modify them, but we should preserve them
+                if (widthChanged) {
+                  // Column widths are already in percentages, so they scale naturally
+                  // Just preserve existing colWidths if they exist
+                  newColWidths = config.colWidths;
+                }
+                
+                // Update config only if changes were made
+                if (heightChanged || widthChanged) {
+                  onElementUpdate(el.id, {
+                    width: newWidth,
+                    height: newHeight,
+                    x: newX,
+                    y: newY,
+                    gridTableConfig: {
+                      ...config,
+                      ...(newRowHeights && { rowHeights: newRowHeights }),
+                      ...(newColWidths && { colWidths: newColWidths })
+                    }
+                  });
+                } else {
+                  onElementUpdate(el.id, {
+                    width: newWidth,
+                    height: newHeight,
+                    x: newX,
+                    y: newY,
+                  });
+                }
               } else {
                 onElementUpdate(el.id, {
                   width: newWidth,
