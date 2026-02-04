@@ -1861,6 +1861,38 @@ export function Canvas({
                     rowHeights: newRowHeights
                   }
                 });
+              } else if (el.type === 'table' && el.tableConfig && el.height !== newHeight) {
+                // For price/grid tables, handle proportional resizing on height change
+                const config = el.tableConfig;
+                const oldHeight = el.height;
+                const heightRatio = newHeight / oldHeight;
+                
+                // Calculate total rows for price table
+                const tableType = config.tableType || 'grid';
+                const totalRows = tableType === 'price' 
+                  ? config.columns.length + (config.footer?.length || 0)
+                  : config.columns.length; // For grid type, just use columns as rows
+                
+                // Scale all row heights proportionally
+                let newRowHeights: number[] | undefined;
+                if (config.rowHeights && config.rowHeights.length > 0) {
+                  newRowHeights = config.rowHeights.map(h => h * heightRatio);
+                } else {
+                  // If no custom row heights, create proportional ones based on equal distribution
+                  const scaledRowHeight = totalRows > 0 ? (oldHeight / totalRows) * heightRatio : oldHeight * heightRatio;
+                  newRowHeights = Array(totalRows).fill(scaledRowHeight);
+                }
+                
+                onElementUpdate(el.id, {
+                  width: newWidth,
+                  height: newHeight,
+                  x: newX,
+                  y: newY,
+                  tableConfig: {
+                    ...config,
+                    rowHeights: newRowHeights
+                  }
+                });
               } else {
                 onElementUpdate(el.id, {
                   width: newWidth,
