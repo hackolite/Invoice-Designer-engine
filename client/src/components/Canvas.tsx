@@ -1977,7 +1977,7 @@ export function Canvas({
                        <Button
                          variant="ghost"
                          size="sm"
-                         className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/10"
+                         className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/10 pointer-events-auto"
                          onClick={(e) => {
                            e.stopPropagation();
                            handleAddFooter(el.id);
@@ -1991,7 +1991,7 @@ export function Canvas({
                        <Button
                          variant="ghost"
                          size="sm"
-                         className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                         className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10 pointer-events-auto"
                          disabled={!el.tableConfig?.footer || el.tableConfig.footer.length === 0}
                          onClick={(e) => {
                            e.stopPropagation();
