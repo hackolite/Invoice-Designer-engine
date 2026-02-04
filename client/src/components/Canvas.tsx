@@ -1972,7 +1972,7 @@ export function Canvas({
                      <span className="text-xs text-muted-foreground">px</span>
                    </div>
                    <div className="flex-1" />
-                   {el.tableConfig?.tableType === 'price' && (
+                   {el.tableConfig?.tableType === 'price' ? (
                      <>
                        <Button
                          variant="ghost"
@@ -2003,21 +2003,22 @@ export function Canvas({
                          <Minus className="w-3 h-3 mr-1" />
                          Footer
                        </Button>
-                     </>
+                      </>
+                   ) : (
+                     <Button
+                       variant="ghost"
+                       size="sm"
+                       className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/10"
+                       onClick={(e) => {
+                         e.stopPropagation();
+                         onClone(el.id);
+                       }}
+                       title="Clone table"
+                       aria-label="Clone table"
+                     >
+                       <Copy className="w-4 h-4" />
+                     </Button>
                    )}
-                   <Button
-                     variant="ghost"
-                     size="sm"
-                     className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/10"
-                     onClick={(e) => {
-                       e.stopPropagation();
-                       onClone(el.id);
-                     }}
-                     title="Clone table"
-                     aria-label="Clone table"
-                   >
-                     <Copy className="w-4 h-4" />
-                   </Button>
                  </div>
                )}
                 {!isPreviewMode && isSelected && el.type === 'gridtable' && (
