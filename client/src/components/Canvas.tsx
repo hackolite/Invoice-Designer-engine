@@ -728,7 +728,7 @@ const handleAddFooter = (elementId: string) => {
     });
   };
 
-  // Detect and apply fusion between nearby gridtables
+  // Detect and apply fusion between nearby gridtables and price tables
   const applyTableFusion = (movedElementId: string, newX: number, newY: number) => {
     const movedElement = layout.elements.find(e => e.id === movedElementId);
     if (!movedElement || movedElement.type !== 'gridtable' || !movedElement.gridTableConfig) return { x: newX, y: newY };
@@ -737,9 +737,15 @@ const handleAddFooter = (elementId: string) => {
     let finalX = newX;
     let finalY = newY;
 
-    // Check against other gridtables
+    // Check against other gridtables and price tables
     for (const otherEl of layout.elements) {
-      if (otherEl.id === movedElementId || otherEl.type !== 'gridtable' || !otherEl.gridTableConfig) continue;
+      if (otherEl.id === movedElementId) continue;
+      
+      // Check if the other element is a gridtable or a price table
+      const isOtherGridTable = otherEl.type === 'gridtable' && otherEl.gridTableConfig;
+      const isOtherPriceTable = otherEl.type === 'table' && otherEl.tableConfig?.tableType === 'price';
+      
+      if (!isOtherGridTable && !isOtherPriceTable) continue;
 
       const movedRight = finalX + movedElement.width;
       const movedBottom = finalY + movedElement.height;
