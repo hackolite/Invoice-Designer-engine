@@ -39,8 +39,8 @@ const convertStyleObjectToCss = (style: Record<string, string | number>): string
 
 const BLOB_URL_CLEANUP_DELAY_MS = 2000; // Time to allow window to load before cleaning up blob URL
 
-// Helper function to resolve bindings in data
-function getValue(obj: any, path: string, defaultValue?: any) {
+// Helper function to resolve nested object paths for data binding
+function getNestedValue(obj: any, path: string, defaultValue?: any) {
   const keys = path.split('.');
   let result = obj;
   for (const key of keys) {
@@ -48,6 +48,21 @@ function getValue(obj: any, path: string, defaultValue?: any) {
     result = result[key];
   }
   return result === undefined ? defaultValue : result;
+}
+
+// Helper function to format currency values
+function formatCurrency(value: any): string {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(value) || 0);
+}
+
+// Helper function to parse sample data JSON
+function parseSampleData(sampleData: string): any {
+  try {
+    return JSON.parse(sampleData || '{}');
+  } catch (e) {
+    console.error('Failed to parse sample data:', e);
+    return {};
+  }
 }
 
 // Helper function to render element content for PDF/HTML export
@@ -61,7 +76,7 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
     
     if (isPreviewMode && el.binding) {
       // Use actual data from binding in preview mode
-      content = String(getValue(sampleData, el.binding, `{{${el.binding}}}`));
+      content = String(getNestedValue(sampleData, el.binding, `{{${el.binding}}}`));
     } else {
       // Show binding placeholder or static content
       content = el.binding ? `{{${el.binding}}}` : (el.content || 'Text');
@@ -70,7 +85,7 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
     // Process content to replace bindings with values in preview mode
     if (isPreviewMode && content) {
       content = content.replace(/\{\{([^}]+)\}\}/g, (match, binding) => {
-        return String(getValue(sampleData, binding.trim(), match));
+        return String(getNestedValue(sampleData, binding.trim(), match));
       });
     }
     
@@ -83,7 +98,7 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
     
     if (isPreviewMode && el.binding) {
       // Use actual data from binding in preview mode
-      content = String(getValue(sampleData, el.binding, el.content || 'PAID'));
+      content = String(getNestedValue(sampleData, el.binding, el.content || 'PAID'));
     } else {
       // Show binding placeholder or static content
       content = el.content || (el.binding ? `{{${el.binding}}}` : 'PAID');
@@ -109,7 +124,7 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
     
     if (isPreviewMode && el.binding) {
       // Use actual data from binding in preview mode
-      qrData = String(getValue(sampleData, el.binding, el.content || 'https://replit.com'));
+      qrData = String(getNestedValue(sampleData, el.binding, el.content || 'https://replit.com'));
     } else {
       // Use static content
       qrData = el.content || 'https://replit.com';
@@ -135,7 +150,7 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
     if (config.tableType === 'price') {
       // Price table (key-value pairs from object)
       const sourceData = isPreviewMode 
-        ? getValue(sampleData, config.dataSource, {}) 
+        ? getNestedValue(sampleData, config.dataSource, {}) 
         : {}; // Empty object for template mode
       
       tableHtml = `<table style="width: 100%; border-collapse: collapse; border: ${gridBorderWidth}px solid ${gridBorderColor};">
@@ -144,9 +159,9 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
             let cellValue: string;
             
             if (isPreviewMode) {
-              const rawVal = getValue(sourceData, col.binding);
+              const rawVal = getNestedValue(sourceData, col.binding);
               if (col.format === 'currency') {
-                cellValue = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(rawVal) || 0);
+                cellValue = formatCurrency(rawVal);
               } else {
                 cellValue = String(rawVal);
               }
@@ -166,7 +181,7 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
     } else {
       // Grid table (array of items)
       const data = isPreviewMode 
-        ? getValue(sampleData, config.dataSource, []) 
+        ? getNestedValue(sampleData, config.dataSource, []) 
         : [{}]; // Single dummy row for template mode
       
       const rows = Array.isArray(data) ? data : [data];
@@ -186,9 +201,9 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
                 let cellValue: string;
                 
                 if (isPreviewMode) {
-                  const rawVal = getValue(row, col.binding);
+                  const rawVal = getNestedValue(row, col.binding);
                   if (col.format === 'currency') {
-                    cellValue = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(rawVal) || 0);
+                    cellValue = formatCurrency(rawVal);
                   } else {
                     cellValue = String(rawVal);
                   }
@@ -637,12 +652,7 @@ export default function Editor() {
               if (!layout) return;
               
               // Parse sample data from string to object
-              let parsedData = {};
-              try {
-                parsedData = JSON.parse(sampleData || '{}');
-              } catch (e) {
-                console.error('Failed to parse sample data:', e);
-              }
+              const parsedData = parseSampleData(sampleData);
               
               const html = `
 <!DOCTYPE html>
@@ -683,12 +693,7 @@ export default function Editor() {
               if (!layout) return;
               
               // Parse sample data from string to object
-              let parsedData = {};
-              try {
-                parsedData = JSON.parse(sampleData || '{}');
-              } catch (e) {
-                console.error('Failed to parse sample data:', e);
-              }
+              const parsedData = parseSampleData(sampleData);
               
               const html = `
 <!DOCTYPE html>
