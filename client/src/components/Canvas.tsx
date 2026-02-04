@@ -391,7 +391,7 @@ export function Canvas({
     });
   };
 
-  const handleTextStyleUpdate = (elementId: string, styleKey: string, styleValue: any) => {
+  const handleTextStyleUpdate = (elementId: string, styleKey: string, styleValue: string | number) => {
     const element = layout.elements.find(e => e.id === elementId);
     if (!element) return;
     
@@ -680,7 +680,7 @@ export function Canvas({
               {isEditing && !isPreviewMode ? (
                 <textarea
                   autoFocus
-                  className="w-full h-full text-xs pointer-events-auto border-none outline-none resize-none bg-transparent"
+                  className="w-full h-full pointer-events-auto border-none outline-none resize-none bg-transparent"
                   style={{
                     fontSize: el.style?.fontSize ? `${el.style.fontSize}px` : '14px',
                     textAlign: (el.style?.textAlign as any) || 'left',
