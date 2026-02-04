@@ -604,39 +604,22 @@ export function Canvas({
         }
       });
       
+      // Calculate equal column width percentage
+      const columnWidthPercent = `${(100 / config.cols).toFixed(2)}%`;
+      
       return (
         <div className="w-full h-full overflow-hidden pointer-events-auto" style={{
           border: `${gridBorderWidth}px solid ${gridBorderColor}`
         }}>
           <table className="w-full h-full text-sm text-left border-collapse pointer-events-auto">
+            <colgroup>
+              {Array.from({ length: config.cols }, (_, colIdx) => (
+                <col key={colIdx} style={{ width: columnWidthPercent }} />
+              ))}
+            </colgroup>
             <tbody>
               {Array.from({ length: config.rows }, (_, rowIdx) => (
-                <tr key={rowIdx} className="group">
-                  {!isPreviewMode && (
-                    <td 
-                      className="relative w-8 p-0 border-r group-hover:bg-gray-50"
-                      style={{ 
-                        borderColor: gridBorderColor,
-                        borderWidth: `${gridBorderWidth}px`,
-                        verticalAlign: 'middle'
-                      }}
-                    >
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteRow(el.id, rowIdx);
-                        }}
-                        title={`Delete row ${rowIdx + 1}`}
-                        aria-label={`Delete row ${rowIdx + 1}`}
-                        disabled={config.rows <= 1}
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </td>
-                  )}
+                <tr key={rowIdx}>
                   {Array.from({ length: config.cols }, (_, colIdx) => {
                     const key = `${rowIdx}-${colIdx}`;
                     
