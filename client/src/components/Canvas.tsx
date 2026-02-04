@@ -68,6 +68,7 @@ export function Canvas({
   const [contextMenuCell, setContextMenuCell] = useState<{ elementId: string; row: number; col: number } | null>(null);
   const [hoveredRow, setHoveredRow] = useState<{ elementId: string; row: number } | null>(null);
   const [resizingBorder, setResizingBorder] = useState<{ elementId: string; type: 'row' | 'col'; index: number; startPos: number; startSize: number } | null>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Handle resize border dragging
   useEffect(() => {
@@ -817,12 +818,25 @@ export function Canvas({
                   <tr 
                     key={rowIdx}
                     style={{ height: `${rowHeight}px` }}
-                    onMouseEnter={() => !isPreviewMode && setHoveredRow({ elementId: el.id, row: rowIdx })}
+                    onMouseEnter={() => {
+                      if (!isPreviewMode) {
+                        // Cancel any pending timeout when entering a row
+                        if (hoverTimeoutRef.current) {
+                          clearTimeout(hoverTimeoutRef.current);
+                          hoverTimeoutRef.current = null;
+                        }
+                        setHoveredRow({ elementId: el.id, row: rowIdx });
+                      }
+                    }}
                     onMouseLeave={(e) => {
                       // Don't clear hover if moving to the delete button
                       if (!isPreviewMode) {
+                        // Cancel any existing timeout to avoid race conditions
+                        if (hoverTimeoutRef.current) {
+                          clearTimeout(hoverTimeoutRef.current);
+                        }
                         // Use a small delay to allow the delete button's onMouseEnter to fire first
-                        setTimeout(() => {
+                        hoverTimeoutRef.current = setTimeout(() => {
                           setHoveredRow(prev => {
                             // Only clear if we're still on the same row (not re-entered)
                             if (prev?.elementId === el.id && prev?.row === rowIdx) {
@@ -830,6 +844,7 @@ export function Canvas({
                             }
                             return prev;
                           });
+                          hoverTimeoutRef.current = null;
                         }, 0);
                       }
                     }}
@@ -1018,14 +1033,25 @@ export function Canvas({
                 zIndex: 10
               }}
               onMouseEnter={() => {
+                // Cancel any pending timeout when entering the delete button
+                if (hoverTimeoutRef.current) {
+                  clearTimeout(hoverTimeoutRef.current);
+                  hoverTimeoutRef.current = null;
+                }
                 // Maintain the hover state when entering the delete button area
-                if (hoveredRow) {
+                // The hoveredRow is already validated in the parent condition
+                if (hoveredRow && hoveredRow.elementId === el.id) {
                   setHoveredRow({ elementId: el.id, row: hoveredRow.row });
                 }
               }}
               onMouseLeave={() => {
                 // Clear hover state when leaving the delete button area
                 setHoveredRow(null);
+                // Clear any pending timeout
+                if (hoverTimeoutRef.current) {
+                  clearTimeout(hoverTimeoutRef.current);
+                  hoverTimeoutRef.current = null;
+                }
               }}
             >
               <Button
