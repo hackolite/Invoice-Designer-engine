@@ -500,8 +500,7 @@ export function Canvas({
     if (!element || !element.gridTableConfig || !element.gridTableConfig.footer) return;
     
     const config = element.gridTableConfig;
-    const footer = config.footer; // Extract footer for type narrowing
-    if (!footer) return; // Additional safety check
+    const footer = config.footer;
     const newFooter = [...footer];
     newFooter[footerIdx] = { ...newFooter[footerIdx], [field]: newValue };
     

@@ -858,7 +858,7 @@ export default function Editor() {
                        Invalid JSON
                      </span>
                    )}
-                   {isValidJson && sampleData.trim() !== '' && (
+                   {isValidJson && (
                      <span className="flex items-center gap-1 text-green-600 text-xs font-normal">
                        <CheckCircle className="w-3 h-3" />
                        Valid
