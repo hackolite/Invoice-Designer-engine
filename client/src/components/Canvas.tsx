@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Palette, Ruler, Copy, Plus, Grid3x3, Columns, Rows, Minus, AlignLeft, AlignCenter, AlignRight, AlignJustify, Bold, Italic, Underline, Trash2 } from "lucide-react";
+import { Palette, Ruler, Copy, Plus, Grid3x3, Columns, Rows, Minus, AlignLeft, AlignCenter, AlignRight, AlignJustify, Bold, Italic, Underline, Trash2, Database } from "lucide-react";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -26,6 +26,29 @@ function getValue(obj: any, path: string, defaultValue?: any) {
     result = result[key];
   }
   return result === undefined ? defaultValue : result;
+}
+
+// Build JSON data path tree for navigation
+// Returns an object with keys as JSON property names and values as either nested objects or full paths
+function buildDataPathTree(data: any, currentPath: string = ''): Record<string, any> {
+  if (!data || typeof data !== 'object') return {};
+  
+  const tree: Record<string, any> = {};
+  
+  for (const key of Object.keys(data)) {
+    const fullPath = currentPath ? `${currentPath}.${key}` : key;
+    const value = data[key];
+    
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      // Nested object - create submenu
+      tree[key] = buildDataPathTree(value, fullPath);
+    } else {
+      // Leaf node or array - store the full path
+      tree[key] = fullPath;
+    }
+  }
+  
+  return tree;
 }
 
 interface CanvasProps {
@@ -331,6 +354,58 @@ export function Canvas({
     
     onElementUpdate(elementId, {
       gridTableConfig: { ...config, cells: newCells }
+    });
+  };
+
+  const handleCellBindingUpdate = (elementId: string, row: number, col: number, binding: string) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element || !element.gridTableConfig) return;
+    
+    const config = element.gridTableConfig;
+    const cellIndex = config.cells.findIndex(c => c.row === row && c.col === col);
+    if (cellIndex === -1) return;
+    
+    const newCells = [...config.cells];
+    // Update the binding and set content to show the binding placeholder
+    newCells[cellIndex] = { 
+      ...newCells[cellIndex], 
+      binding,
+      content: `{{${binding}}}`
+    };
+    
+    onElementUpdate(elementId, {
+      gridTableConfig: { ...config, cells: newCells }
+    });
+  };
+
+  // Recursive function to render JSON data tree in context menu
+  const renderDataTree = (tree: Record<string, any>, elementId: string, row: number, col: number): JSX.Element[] => {
+    return Object.keys(tree).map((key) => {
+      const value = tree[key];
+      
+      if (typeof value === 'string') {
+        // Leaf node - this is a full path
+        return (
+          <ContextMenuItem 
+            key={value}
+            onClick={() => handleCellBindingUpdate(elementId, row, col, value)}
+          >
+            {key} → {value}
+          </ContextMenuItem>
+        );
+      } else {
+        // Nested object - create submenu
+        return (
+          <ContextMenuSub key={key}>
+            <ContextMenuSubTrigger>
+              {key}
+            </ContextMenuSubTrigger>
+            <ContextMenuSubContent>
+              {renderDataTree(value, elementId, row, col)}
+            </ContextMenuSubContent>
+          </ContextMenuSub>
+        );
+      }
     });
   };
 
@@ -1009,6 +1084,18 @@ export function Canvas({
                               </ContextMenuSubContent>
                             </ContextMenuSub>
                             <ContextMenuSeparator />
+                            {sampleData && (
+                              <ContextMenuSub>
+                                <ContextMenuSubTrigger>
+                                  <Database className="w-4 h-4 mr-2" />
+                                  Bind Data
+                                </ContextMenuSubTrigger>
+                                <ContextMenuSubContent>
+                                  {renderDataTree(buildDataPathTree(sampleData), el.id, rowIdx, colIdx)}
+                                </ContextMenuSubContent>
+                              </ContextMenuSub>
+                            )}
+                            <ContextMenuSeparator />
                             <ContextMenuItem onClick={() => handleMergeCells(el.id, rowIdx, colIdx)}>
                               <Grid3x3 className="w-4 h-4 mr-2" />
                               Merge with next cell
@@ -1189,12 +1276,45 @@ export function Canvas({
               }
             }}
             onResizeStop={(e, direction, ref, delta, position) => {
-              onElementUpdate(el.id, {
-                width: snapToGrid(parseInt(ref.style.width)),
-                height: snapToGrid(parseInt(ref.style.height)),
-                x: snapToGrid(position.x),
-                y: snapToGrid(position.y),
-              });
+              const newWidth = snapToGrid(parseInt(ref.style.width));
+              const newHeight = snapToGrid(parseInt(ref.style.height));
+              const newX = snapToGrid(position.x);
+              const newY = snapToGrid(position.y);
+              
+              // For gridtable, handle proportional row resizing on height change
+              if (el.type === 'gridtable' && el.gridTableConfig && el.height !== newHeight) {
+                const config = el.gridTableConfig;
+                const oldHeight = el.height;
+                const heightRatio = newHeight / oldHeight;
+                
+                // Scale all row heights proportionally
+                let newRowHeights: number[] | undefined;
+                if (config.rowHeights && config.rowHeights.length > 0) {
+                  newRowHeights = config.rowHeights.map(h => h * heightRatio);
+                } else {
+                  // If no custom row heights, create proportional ones based on equal distribution
+                  const scaledRowHeight = (oldHeight / config.rows) * heightRatio;
+                  newRowHeights = Array(config.rows).fill(scaledRowHeight);
+                }
+                
+                onElementUpdate(el.id, {
+                  width: newWidth,
+                  height: newHeight,
+                  x: newX,
+                  y: newY,
+                  gridTableConfig: {
+                    ...config,
+                    rowHeights: newRowHeights
+                  }
+                });
+              } else {
+                onElementUpdate(el.id, {
+                  width: newWidth,
+                  height: newHeight,
+                  x: newX,
+                  y: newY,
+                });
+              }
             }}
             bounds="parent"
             disableDragging={isPreviewMode}
