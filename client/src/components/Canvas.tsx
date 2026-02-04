@@ -67,6 +67,7 @@ export function Canvas({
   const [editingCell, setEditingCell] = useState<{ elementId: string; row: number; col: number } | null>(null);
   const [contextMenuCell, setContextMenuCell] = useState<{ elementId: string; row: number; col: number } | null>(null);
   const [hoveredRow, setHoveredRow] = useState<{ elementId: string; row: number } | null>(null);
+  const [selectedRow, setSelectedRow] = useState<{ elementId: string; row: number } | null>(null);
   const [resizingBorder, setResizingBorder] = useState<{ elementId: string; type: 'row' | 'col'; index: number; startPos: number; startSize: number } | null>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -818,6 +819,11 @@ export function Canvas({
                   <tr 
                     key={rowIdx}
                     style={{ height: `${rowHeight}px` }}
+                    onClick={() => {
+                      if (!isPreviewMode) {
+                        setSelectedRow({ elementId: el.id, row: rowIdx });
+                      }
+                    }}
                     onMouseEnter={() => {
                       if (!isPreviewMode) {
                         // Cancel any pending timeout when entering a row
@@ -885,12 +891,13 @@ export function Canvas({
                             rowSpan={rowSpan}
                             colSpan={colSpan}
                             className={clsx(
-                              "p-2 border",
+                              "p-2",
                               !isPreviewMode && "cursor-text hover:bg-blue-50 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
                             )}
                             style={{ 
                               borderColor: gridBorderColor,
                               borderWidth: `${gridBorderWidth}px`,
+                              borderStyle: 'solid',
                               ...getCellStyle(cell)
                             }}
                             tabIndex={isPreviewMode ? undefined : 0}
@@ -1022,12 +1029,16 @@ export function Canvas({
           </table>
           </div>
           {/* Overlay delete buttons for rows */}
-          {!isPreviewMode && hoveredRow && hoveredRow.elementId === el.id && config.rows > 1 && (
+          {!isPreviewMode && (selectedRow || hoveredRow) && (selectedRow?.elementId === el.id || hoveredRow?.elementId === el.id) && config.rows > 1 && (() => {
+            const displayRow = hoveredRow?.elementId === el.id ? hoveredRow : selectedRow;
+            if (!displayRow || displayRow.elementId !== el.id) return null;
+            
+            return (
             <div
               className="absolute right-0 pointer-events-auto"
               style={{
-                top: `${rowHeights.slice(0, hoveredRow.row).reduce((sum, h) => sum + h, 0)}px`,
-                height: `${rowHeights[hoveredRow.row]}px`,
+                top: `${rowHeights.slice(0, displayRow.row).reduce((sum, h) => sum + h, 0)}px`,
+                height: `${rowHeights[displayRow.row]}px`,
                 display: 'flex',
                 alignItems: 'center',
                 transform: 'translateX(calc(100% + 4px))',
@@ -1040,9 +1051,8 @@ export function Canvas({
                   hoverTimeoutRef.current = null;
                 }
                 // Maintain the hover state when entering the delete button area
-                // The hoveredRow is already validated in the parent condition
-                if (hoveredRow && hoveredRow.elementId === el.id) {
-                  setHoveredRow({ elementId: el.id, row: hoveredRow.row });
+                if (displayRow && displayRow.elementId === el.id) {
+                  setHoveredRow({ elementId: el.id, row: displayRow.row });
                 }
               }}
               onMouseLeave={() => {
@@ -1061,16 +1071,18 @@ export function Canvas({
                 className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 opacity-80 hover:opacity-100 shadow-sm border border-destructive/20"
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleDeleteRow(el.id, hoveredRow.row);
+                  handleDeleteRow(el.id, displayRow.row);
                   setHoveredRow(null);
+                  setSelectedRow(null);
                 }}
-                title={`Delete row ${hoveredRow.row + 1}`}
-                aria-label={`Delete row ${hoveredRow.row + 1}`}
+                title={`Delete row ${displayRow.row + 1}`}
+                aria-label={`Delete row ${displayRow.row + 1}`}
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </Button>
             </div>
-          )}
+            );
+          })()}
           {/* Row resize handles */}
           {!isPreviewMode && config.rows > 1 && rowHeights.slice(0, -1).map((_, rowIdx) => {
             const topPos = rowHeights.slice(0, rowIdx + 1).reduce((sum, h) => sum + h, 0);
@@ -1143,6 +1155,7 @@ export function Canvas({
         // Only deselect if clicking directly on the canvas background
         if (e.target === e.currentTarget) {
           onElementSelect(null);
+          setSelectedRow(null);
         }
       }}
     >
