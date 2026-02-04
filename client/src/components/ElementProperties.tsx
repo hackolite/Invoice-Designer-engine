@@ -152,7 +152,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
     });
   };
 
-  const handleTableFooterStyleChange = (index: number, styleKey: string, styleValue: any) => {
+  const handleTableFooterStyleChange = (index: number, styleKey: string, styleValue: string | number) => {
     if (!element.tableConfig || !element.tableConfig.footer) return;
     const newFooter = [...element.tableConfig.footer];
     newFooter[index] = { 
@@ -167,7 +167,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
     });
   };
 
-  const handleGridTableFooterStyleChange = (index: number, styleKey: string, styleValue: any) => {
+  const handleGridTableFooterStyleChange = (index: number, styleKey: string, styleValue: string | number) => {
     if (!element.gridTableConfig || !element.gridTableConfig.footer) return;
     const newFooter = [...element.gridTableConfig.footer];
     newFooter[index] = { 
