@@ -1100,7 +1100,11 @@ export function Canvas({
                             width: '50%',
                             borderWidth: `${gridBorderWidth}px`,
                             borderStyle: 'solid',
-                            borderColor: gridBorderColor
+                            borderColor: gridBorderColor,
+                            textAlign: footerRow.style?.textAlign || 'left',
+                            fontWeight: footerRow.style?.fontWeight || 'bold',
+                            fontStyle: footerRow.style?.fontStyle || 'normal',
+                            textDecoration: footerRow.style?.textDecoration || 'none'
                           }}
                           onDoubleClick={(e) => {
                             if (!isPreviewMode) {
@@ -1138,7 +1142,11 @@ export function Canvas({
                           style={{
                             borderWidth: `${gridBorderWidth}px`,
                             borderStyle: 'solid',
-                            borderColor: gridBorderColor
+                            borderColor: gridBorderColor,
+                            textAlign: footerRow.style?.textAlign || 'left',
+                            fontWeight: footerRow.style?.fontWeight || 'bold',
+                            fontStyle: footerRow.style?.fontStyle || 'normal',
+                            textDecoration: footerRow.style?.textDecoration || 'none'
                           }}
                           onDoubleClick={(e) => {
                             if (!isPreviewMode) {
@@ -1590,7 +1598,11 @@ export function Canvas({
                         style={{
                           borderWidth: `${gridBorderWidth}px`,
                           borderStyle: 'solid',
-                          borderColor: gridBorderColor
+                          borderColor: gridBorderColor,
+                          textAlign: footerRow.style?.textAlign || 'left',
+                          fontWeight: footerRow.style?.fontWeight || 'bold',
+                          fontStyle: footerRow.style?.fontStyle || 'normal',
+                          textDecoration: footerRow.style?.textDecoration || 'none'
                         }}
                         colSpan={config.cols > 1 ? config.cols - 1 : 1}
                         onDoubleClick={(e) => {
@@ -1630,7 +1642,11 @@ export function Canvas({
                           style={{
                             borderWidth: `${gridBorderWidth}px`,
                             borderStyle: 'solid',
-                            borderColor: gridBorderColor
+                            borderColor: gridBorderColor,
+                            textAlign: footerRow.style?.textAlign || 'left',
+                            fontWeight: footerRow.style?.fontWeight || 'bold',
+                            fontStyle: footerRow.style?.fontStyle || 'normal',
+                            textDecoration: footerRow.style?.textDecoration || 'none'
                           }}
                           onDoubleClick={(e) => {
                             if (!isPreviewMode) {

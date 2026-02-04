@@ -57,6 +57,7 @@ export interface TemplateElement {
       label: string;
       value: string; // Can be static text or binding
       format?: 'currency' | 'number' | 'text';
+      style?: Record<string, string | number>; // Support for footer-level styling (textAlign, fontWeight, fontStyle, etc.)
     }[];
     rowHeights?: number[]; // Individual height for each row (optional, for custom sizing)
   };
@@ -79,6 +80,7 @@ export interface TemplateElement {
       label: string;
       value: string; // Can be static text or binding
       format?: 'currency' | 'number' | 'text';
+      style?: Record<string, string | number>; // Support for footer-level styling (textAlign, fontWeight, fontStyle, etc.)
     }[];
   };
   style?: Record<string, string | number>;
