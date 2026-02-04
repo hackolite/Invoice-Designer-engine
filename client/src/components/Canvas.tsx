@@ -46,6 +46,13 @@ const PAGE_WIDTH = 794;  // 210mm * 3.78
 const PAGE_HEIGHT = 1123; // 297mm * 3.78
 const GRID_SIZE = 10;
 
+// GridTable constraints and settings
+const MIN_ROW_HEIGHT = 20; // Minimum height for a row in pixels
+const MIN_COL_WIDTH_PERCENT = 5; // Minimum width for a column as percentage
+const FUSION_THRESHOLD = 15; // Distance in pixels for table fusion snapping
+const RESIZE_HANDLE_SIZE = 4; // Size of resize handle in pixels
+const RESIZE_HANDLE_OFFSET = 2; // Offset for centering resize handle in pixels
+
 export function Canvas({
   layout,
   sampleData,
@@ -351,9 +358,12 @@ export function Canvas({
     if (!element || !element.gridTableConfig) return;
     
     const config = element.gridTableConfig;
+    // Guard against division by zero
+    if (config.rows <= 0) return;
+    
     const rowHeights = config.rowHeights || Array(config.rows).fill(element.height / config.rows);
     const newRowHeights = [...rowHeights];
-    newRowHeights[rowIndex] = Math.max(20, newHeight); // Minimum 20px height
+    newRowHeights[rowIndex] = Math.max(MIN_ROW_HEIGHT, newHeight);
     
     // Update total element height
     const newTotalHeight = newRowHeights.reduce((sum, h) => sum + h, 0);
@@ -370,16 +380,21 @@ export function Canvas({
     if (!element || !element.gridTableConfig) return;
     
     const config = element.gridTableConfig;
+    // Guard against division by zero
+    if (config.cols <= 0) return;
+    
     const colWidths = config.colWidths || Array(config.cols).fill(100 / config.cols);
     const newColWidths = [...colWidths];
     
-    // Ensure minimum width of 5% and adjust next column
-    const minWidth = 5;
-    const maxWidth = 100 - (config.cols - 1) * minWidth;
-    newColWidths[colIndex] = Math.max(minWidth, Math.min(maxWidth, newWidthPercent));
+    // Ensure minimum width and adjust
+    const maxWidth = 100 - (config.cols - 1) * MIN_COL_WIDTH_PERCENT;
+    newColWidths[colIndex] = Math.max(MIN_COL_WIDTH_PERCENT, Math.min(maxWidth, newWidthPercent));
     
     // Normalize to ensure total is 100%
     const total = newColWidths.reduce((sum, w) => sum + w, 0);
+    // Guard against division by zero in normalization
+    if (total <= 0) return;
+    
     const normalized = newColWidths.map(w => (w / total) * 100);
     
     onElementUpdate(elementId, {
@@ -392,7 +407,6 @@ export function Canvas({
     const movedElement = layout.elements.find(e => e.id === movedElementId);
     if (!movedElement || movedElement.type !== 'gridtable' || !movedElement.gridTableConfig) return { x: newX, y: newY };
 
-    const FUSION_THRESHOLD = 15; // pixels
     const updates: { id: string; updates: Partial<TemplateElement> }[] = [];
     let finalX = newX;
     let finalY = newY;
@@ -755,8 +769,9 @@ export function Canvas({
       });
       
       // Calculate column widths (use custom or equal distribution)
-      const colWidths = config.colWidths || Array(config.cols).fill(100 / config.cols);
-      const rowHeights = config.rowHeights || Array(config.rows).fill(el.height / config.rows);
+      // Guard against division by zero
+      const colWidths = config.colWidths || (config.cols > 0 ? Array(config.cols).fill(100 / config.cols) : [100]);
+      const rowHeights = config.rowHeights || (config.rows > 0 ? Array(config.rows).fill(el.height / config.rows) : [el.height]);
       
       return (
         <div className="w-full h-full overflow-hidden pointer-events-auto relative" style={{
@@ -987,8 +1002,8 @@ export function Canvas({
                 key={`row-resize-${rowIdx}`}
                 className="absolute left-0 right-0 pointer-events-auto cursor-row-resize hover:bg-blue-500/20"
                 style={{
-                  top: `${topPos - 2}px`,
-                  height: '4px',
+                  top: `${topPos - RESIZE_HANDLE_OFFSET}px`,
+                  height: `${RESIZE_HANDLE_SIZE}px`,
                   zIndex: 5
                 }}
                 onMouseDown={(e) => {
@@ -1013,8 +1028,8 @@ export function Canvas({
                 className="absolute top-0 bottom-0 pointer-events-auto cursor-col-resize hover:bg-blue-500/20"
                 style={{
                   left: `${leftPercent}%`,
-                  width: '4px',
-                  transform: 'translateX(-2px)',
+                  width: `${RESIZE_HANDLE_SIZE}px`,
+                  transform: `translateX(-${RESIZE_HANDLE_OFFSET}px)`,
                   zIndex: 5
                 }}
                 onMouseDown={(e) => {
