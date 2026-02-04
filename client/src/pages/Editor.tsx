@@ -297,7 +297,7 @@ export default function Editor() {
   const [sampleData, setSampleData] = useState<string>("");
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
-  const [scale, setScale] = useState(0.8);
+  const [scale, setScale] = useState(1);
   const [name, setName] = useState("");
   const [copiedElement, setCopiedElement] = useState<TemplateElement | null>(null);
   
