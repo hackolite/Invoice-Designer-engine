@@ -467,22 +467,21 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                   ))}
                 </div>
                 
-                {element.tableConfig.tableType === 'price' && (
-                  <>
-                    <Separator />
+                <>
+                  <Separator />
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label>Footer Rows</Label>
+                      <Button variant="outline" size="sm" onClick={handleTableFooterAdd}>
+                        <Plus className="w-3 h-3 mr-1" /> Add Footer
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Add footer rows to display totals or additional information
+                    </p>
                     
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <Label>Footer Rows</Label>
-                        <Button variant="outline" size="sm" onClick={handleTableFooterAdd}>
-                          <Plus className="w-3 h-3 mr-1" /> Add Footer
-                        </Button>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Add footer rows to display totals or additional information
-                      </p>
-                      
-                      {element.tableConfig.footer && element.tableConfig.footer.map((footerRow, idx) => (
+                    {element.tableConfig.footer && element.tableConfig.footer.map((footerRow, idx) => (
                         <div key={idx} className="bg-muted/30 p-3 rounded-lg border space-y-2 text-sm relative group">
                           <Button 
                             variant="ghost" 
@@ -601,7 +600,6 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                       ))}
                     </div>
                   </>
-                )}
               </div>
             )}
 
