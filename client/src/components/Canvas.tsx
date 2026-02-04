@@ -407,7 +407,9 @@ export function Canvas({
     if (!element || !element.tableConfig || !element.tableConfig.footer) return;
     
     const config = element.tableConfig;
-    const newFooter = [...config.footer];
+    const footer = config.footer; // Extract footer for type narrowing
+    if (!footer) return; // Additional safety check
+    const newFooter = [...footer];
     newFooter[footerIdx] = { ...newFooter[footerIdx], [field]: newValue };
     
     onElementUpdate(elementId, {
@@ -864,9 +866,7 @@ export function Canvas({
             tableStyle === 'default' && "",
             tableStyle === 'minimal' && "",
             tableStyle === 'modern' && "rounded-lg shadow-sm"
-          )} style={{
-            border: `${gridBorderWidth}px solid ${gridBorderColor}`
-          }}>
+          )}>
             <table className="w-full text-sm text-left border-collapse">
               <tbody>
                 {config.columns.map((col, idx) => {
@@ -889,13 +889,16 @@ export function Canvas({
                     )}>
                       <th className="p-2 text-left font-medium" style={{ 
                         width: col.width || '50%',
-                        borderBottom: idx < config.columns.length - 1 ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none',
-                        borderRight: `${gridBorderWidth}px solid ${gridBorderColor}`
+                        borderWidth: `${gridBorderWidth}px`,
+                        borderStyle: 'solid',
+                        borderColor: gridBorderColor
                       }}>
                         {col.header}
                       </th>
                       <td className="p-2" style={{ 
-                        borderBottom: idx < config.columns.length - 1 ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none'
+                        borderWidth: `${gridBorderWidth}px`,
+                        borderStyle: 'solid',
+                        borderColor: gridBorderColor
                       }}>
                         {cellValue}
                       </td>
@@ -931,9 +934,6 @@ export function Canvas({
                       footerValue = footerRow.value;
                     }
                     
-                    const isFirstFooterRow = idx === 0;
-                    const isLastFooterRow = idx === config.footer!.length - 1;
-                    const footerBorderBottom = !isLastFooterRow ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none';
                     const isEditingLabel = editingFooterCell?.elementId === el.id && editingFooterCell?.footerIdx === idx && editingFooterCell?.field === 'label';
                     const isEditingValue = editingFooterCell?.elementId === el.id && editingFooterCell?.footerIdx === idx && editingFooterCell?.field === 'value';
                     
@@ -946,9 +946,9 @@ export function Canvas({
                           )}
                           style={{
                             width: '50%',
-                            borderTop: isFirstFooterRow ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none',
-                            borderBottom: footerBorderBottom,
-                            borderRight: `${gridBorderWidth}px solid ${gridBorderColor}`
+                            borderWidth: `${gridBorderWidth}px`,
+                            borderStyle: 'solid',
+                            borderColor: gridBorderColor
                           }}
                           onDoubleClick={(e) => {
                             if (!isPreviewMode) {
@@ -984,8 +984,9 @@ export function Canvas({
                             !isPreviewMode && "cursor-text hover:bg-blue-50"
                           )}
                           style={{
-                            borderTop: isFirstFooterRow ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none',
-                            borderBottom: footerBorderBottom
+                            borderWidth: `${gridBorderWidth}px`,
+                            borderStyle: 'solid',
+                            borderColor: gridBorderColor
                           }}
                           onDoubleClick={(e) => {
                             if (!isPreviewMode) {
@@ -1036,9 +1037,7 @@ export function Canvas({
           tableStyle === 'default' && "",
           tableStyle === 'minimal' && "",
           tableStyle === 'modern' && "rounded-lg shadow-sm"
-        )} style={{
-          border: `${gridBorderWidth}px solid ${gridBorderColor}`
-        }}>
+        )}>
           <table className="w-full text-sm text-left border-collapse">
             <thead className={clsx(
               tableStyle === 'default' && "bg-gray-100 text-gray-700 font-medium",
@@ -1049,8 +1048,9 @@ export function Canvas({
                 {config.columns.map((col, idx) => (
                   <th key={idx} className="p-2" style={{ 
                     width: col.width,
-                    borderBottom: `${gridBorderWidth}px solid ${gridBorderColor}`,
-                    borderRight: idx < config.columns.length - 1 ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none'
+                    borderWidth: `${gridBorderWidth}px`,
+                    borderStyle: 'solid',
+                    borderColor: gridBorderColor
                   }}>
                     {col.header}
                   </th>
@@ -1078,8 +1078,9 @@ export function Canvas({
                     
                     return (
                       <td key={cIdx} className="p-2" style={{ 
-                        borderBottom: rIdx < data.length - 1 ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none',
-                        borderRight: cIdx < config.columns.length - 1 ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none'
+                        borderWidth: `${gridBorderWidth}px`,
+                        borderStyle: 'solid',
+                        borderColor: gridBorderColor
                       }}>
                         {cellValue}
                       </td>
