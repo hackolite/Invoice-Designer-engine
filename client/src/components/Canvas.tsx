@@ -458,14 +458,20 @@ export function Canvas({
                   {config.footer.map((footerRow, idx) => {
                     let footerValue;
                     if (isPreviewMode) {
-                      // Try to parse as binding first
-                      if (footerRow.value.startsWith('{') && footerRow.value.endsWith('}')) {
-                        const binding = footerRow.value.slice(1, -1);
-                        const rawVal = getValue(sourceData, binding);
-                        if (footerRow.format === 'currency') {
-                          footerValue = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(rawVal) || 0);
+                      // Try to parse as binding first - check for pattern {bindingName}
+                      if (footerRow.value.startsWith('{') && footerRow.value.endsWith('}') && footerRow.value.length > 2) {
+                        const binding = footerRow.value.slice(1, -1).trim();
+                        if (binding.length > 0) {
+                          const rawVal = getValue(sourceData, binding);
+                          if (footerRow.format === 'currency') {
+                            footerValue = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(rawVal) || 0);
+                          } else if (footerRow.format === 'number') {
+                            footerValue = new Intl.NumberFormat('en-US').format(Number(rawVal) || 0);
+                          } else {
+                            footerValue = rawVal;
+                          }
                         } else {
-                          footerValue = rawVal;
+                          footerValue = footerRow.value;
                         }
                       } else {
                         // Static text
@@ -475,19 +481,23 @@ export function Canvas({
                       footerValue = footerRow.value;
                     }
                     
+                    const isFirstFooterRow = idx === 0;
+                    const isLastFooterRow = idx === config.footer!.length - 1;
+                    const footerBorderBottom = !isLastFooterRow ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none';
+                    
                     return (
                       <tr key={`footer-${idx}`}>
                         <th className="p-2 text-left font-semibold" style={{
                           width: '50%',
-                          borderTop: idx === 0 ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none',
-                          borderBottom: idx < config.footer!.length - 1 ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none',
+                          borderTop: isFirstFooterRow ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none',
+                          borderBottom: footerBorderBottom,
                           borderRight: `${gridBorderWidth}px solid ${gridBorderColor}`
                         }}>
                           {footerRow.label}
                         </th>
                         <td className="p-2 font-semibold" style={{
-                          borderTop: idx === 0 ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none',
-                          borderBottom: idx < config.footer!.length - 1 ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none'
+                          borderTop: isFirstFooterRow ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none',
+                          borderBottom: footerBorderBottom
                         }}>
                           {footerValue}
                         </td>
