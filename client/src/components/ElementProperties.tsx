@@ -348,6 +348,26 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                   </p>
                 </div>
                 
+                {element.tableConfig.tableType === 'price' && (
+                  <div className="space-y-2">
+                    <Label>Currency Format</Label>
+                    <select 
+                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      value={element.tableConfig.currency || 'USD'}
+                      onChange={(e) => onChange(element.id, { 
+                        tableConfig: { ...element.tableConfig!, currency: e.target.value as 'USD' | 'EUR' | 'none' } 
+                      })}
+                    >
+                      <option value="USD">US Dollar ($)</option>
+                      <option value="EUR">Euro (€)</option>
+                      <option value="none">None (Number only)</option>
+                    </select>
+                    <p className="text-xs text-muted-foreground">
+                      Currency symbol for values formatted as currency
+                    </p>
+                  </div>
+                )}
+                
                 <Separator />
                 
                 <div className="space-y-3">

@@ -46,6 +46,7 @@ export interface TemplateElement {
   tableConfig?: {
     dataSource: string; 
     tableType?: 'grid' | 'price'; // grid = items/data array, price = summary/totals
+    currency?: 'USD' | 'EUR' | 'none'; // Currency selection for price tables
     columns: {
       header: string;
       binding: string; 
@@ -57,6 +58,7 @@ export interface TemplateElement {
       value: string; // Can be static text or binding
       format?: 'currency' | 'number' | 'text';
     }[];
+    rowHeights?: number[]; // Individual height for each row (optional, for custom sizing)
   };
   gridTableConfig?: {
     rows: number;
