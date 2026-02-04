@@ -75,13 +75,6 @@ export function Canvas({
     color: (cell?.style?.color as string) || 'inherit',
   });
 
-  // Helper to calculate new gridtable height when rows change
-  // Note: This calculates based on total element height, not accounting for border widths
-  const calculateNewGridTableHeight = (currentHeight: number, currentRows: number, newRows: number): number => {
-    const heightPerRow = currentHeight / currentRows;
-    return Math.round(heightPerRow * newRows);
-  };
-
   // Helper functions for gridtable manipulation
   const handleAddRow = (elementId: string) => {
     const element = layout.elements.find(e => e.id === elementId);
@@ -91,8 +84,10 @@ export function Canvas({
     const newRows = config.rows + 1;
     const newCells = [...config.cells];
     
-    // Calculate new height maintaining consistent row heights
-    const newHeight = calculateNewGridTableHeight(element.height, config.rows, newRows);
+    // Get or initialize heightPerRow to maintain consistent row heights
+    // This prevents rounding errors from accumulating when adding multiple rows
+    const heightPerRow = config.heightPerRow ?? (element.height / config.rows);
+    const newHeight = Math.round(heightPerRow * newRows);
     
     // Track which columns in the new row are already occupied by spanning cells
     const occupiedColumns = new Set<number>();
@@ -122,7 +117,7 @@ export function Canvas({
     }
     
     onElementUpdate(elementId, {
-      gridTableConfig: { ...config, rows: newRows, cells: newCells },
+      gridTableConfig: { ...config, rows: newRows, cells: newCells, heightPerRow },
       height: newHeight
     });
   };
@@ -178,8 +173,9 @@ export function Canvas({
     const lastRow = config.rows - 1;
     const newRows = config.rows - 1;
     
-    // Calculate new height maintaining consistent row heights
-    const newHeight = calculateNewGridTableHeight(element.height, config.rows, newRows);
+    // Get or initialize heightPerRow to maintain consistent row heights
+    const heightPerRow = config.heightPerRow ?? (element.height / config.rows);
+    const newHeight = Math.round(heightPerRow * newRows);
     
     // Remove cells from the last row and adjust cells with rowSpan that extend into it
     const newCells = config.cells
@@ -193,7 +189,7 @@ export function Canvas({
       });
     
     onElementUpdate(elementId, {
-      gridTableConfig: { ...config, rows: newRows, cells: newCells },
+      gridTableConfig: { ...config, rows: newRows, cells: newCells, heightPerRow },
       height: newHeight
     });
   };
