@@ -39,21 +39,56 @@ const convertStyleObjectToCss = (style: Record<string, string | number>): string
 
 const BLOB_URL_CLEANUP_DELAY_MS = 2000; // Time to allow window to load before cleaning up blob URL
 
+// Helper function to resolve bindings in data
+function getValue(obj: any, path: string, defaultValue?: any) {
+  const keys = path.split('.');
+  let result = obj;
+  for (const key of keys) {
+    if (result === undefined || result === null) return defaultValue;
+    result = result[key];
+  }
+  return result === undefined ? defaultValue : result;
+}
+
 // Helper function to render element content for PDF/HTML export
-// Note: isPreviewMode and sampleData parameters are reserved for future enhancements
-// to support data binding in PDF exports (currently exports template structure only)
+// Supports data binding when isPreviewMode is true
 const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sampleData: any): string => {
   const style = convertStyleObjectToCss(el.style || {});
   
   // Text element
   if (el.type === 'text') {
-    const content = el.binding ? `{{${el.binding}}}` : (el.content || 'Text');
+    let content: string;
+    
+    if (isPreviewMode && el.binding) {
+      // Use actual data from binding in preview mode
+      content = String(getValue(sampleData, el.binding, `{{${el.binding}}}`));
+    } else {
+      // Show binding placeholder or static content
+      content = el.binding ? `{{${el.binding}}}` : (el.content || 'Text');
+    }
+    
+    // Process content to replace bindings with values in preview mode
+    if (isPreviewMode && content) {
+      content = content.replace(/\{\{([^}]+)\}\}/g, (match, binding) => {
+        return String(getValue(sampleData, binding.trim(), match));
+      });
+    }
+    
     return `<div class="element" style="left: ${el.x}px; top: ${el.y}px; width: ${el.width}px; height: ${el.height}px; ${style}">${content}</div>`;
   }
   
   // Badge element
   if (el.type === 'badge') {
-    const content = el.content || (el.binding ? `{{${el.binding}}}` : 'PAID');
+    let content: string;
+    
+    if (isPreviewMode && el.binding) {
+      // Use actual data from binding in preview mode
+      content = String(getValue(sampleData, el.binding, el.content || 'PAID'));
+    } else {
+      // Show binding placeholder or static content
+      content = el.content || (el.binding ? `{{${el.binding}}}` : 'PAID');
+    }
+    
     return `<div class="element badge" style="left: ${el.x}px; top: ${el.y}px; width: ${el.width}px; height: ${el.height}px; ${style}">${content}</div>`;
   }
   
@@ -70,7 +105,16 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
   
   // QR Code element
   if (el.type === 'qr') {
-    const qrData = el.content || 'https://replit.com';
+    let qrData: string;
+    
+    if (isPreviewMode && el.binding) {
+      // Use actual data from binding in preview mode
+      qrData = String(getValue(sampleData, el.binding, el.content || 'https://replit.com'));
+    } else {
+      // Use static content
+      qrData = el.content || 'https://replit.com';
+    }
+    
     const src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrData)}`;
     return `<div class="element" style="left: ${el.x}px; top: ${el.y}px; width: ${el.width}px; height: ${el.height}px;"><img src="${src}" style="width: 100%; height: 100%; object-fit: contain;" /></div>`;
   }
@@ -89,19 +133,44 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
     let tableHtml = '';
     
     if (config.tableType === 'price') {
-      // Price table (key-value pairs)
+      // Price table (key-value pairs from object)
+      const sourceData = isPreviewMode 
+        ? getValue(sampleData, config.dataSource, {}) 
+        : {}; // Empty object for template mode
+      
       tableHtml = `<table style="width: 100%; border-collapse: collapse; border: ${gridBorderWidth}px solid ${gridBorderColor};">
         <tbody>
-          ${config.columns.map((col, idx) => `
+          ${config.columns.map((col, idx) => {
+            let cellValue: string;
+            
+            if (isPreviewMode) {
+              const rawVal = getValue(sourceData, col.binding);
+              if (col.format === 'currency') {
+                cellValue = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(rawVal) || 0);
+              } else {
+                cellValue = String(rawVal);
+              }
+            } else {
+              cellValue = `{${col.binding}}`;
+            }
+            
+            return `
             <tr>
               <th style="padding: 8px; text-align: left; font-weight: 500; border-bottom: ${idx < config.columns.length - 1 ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none'}; border-right: ${gridBorderWidth}px solid ${gridBorderColor};">${col.header}</th>
-              <td style="padding: 8px; border-bottom: ${idx < config.columns.length - 1 ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none'};">{${col.binding}}</td>
+              <td style="padding: 8px; border-bottom: ${idx < config.columns.length - 1 ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none'};">${cellValue}</td>
             </tr>
-          `).join('')}
+          `;
+          }).join('')}
         </tbody>
       </table>`;
     } else {
       // Grid table (array of items)
+      const data = isPreviewMode 
+        ? getValue(sampleData, config.dataSource, []) 
+        : [{}]; // Single dummy row for template mode
+      
+      const rows = Array.isArray(data) ? data : [data];
+      
       tableHtml = `<table style="width: 100%; border-collapse: collapse; border: ${gridBorderWidth}px solid ${gridBorderColor};">
         <thead>
           <tr>
@@ -111,11 +180,26 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
           </tr>
         </thead>
         <tbody>
-          <tr>
-            ${config.columns.map((col, idx) => `
-              <td style="padding: 8px; border-right: ${idx < config.columns.length - 1 ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none'};">{${col.binding}}</td>
-            `).join('')}
-          </tr>
+          ${rows.map((row, rIdx) => `
+            <tr>
+              ${config.columns.map((col, cIdx) => {
+                let cellValue: string;
+                
+                if (isPreviewMode) {
+                  const rawVal = getValue(row, col.binding);
+                  if (col.format === 'currency') {
+                    cellValue = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(rawVal) || 0);
+                  } else {
+                    cellValue = String(rawVal);
+                  }
+                } else {
+                  cellValue = `{${col.binding}}`;
+                }
+                
+                return `<td style="padding: 8px; border-bottom: ${rIdx < rows.length - 1 ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none'}; border-right: ${cIdx < config.columns.length - 1 ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none'};">${cellValue}</td>`;
+              }).join('')}
+            </tr>
+          `).join('')}
         </tbody>
       </table>`;
     }
@@ -551,6 +635,15 @@ export default function Editor() {
             size="sm" 
             onClick={() => {
               if (!layout) return;
+              
+              // Parse sample data from string to object
+              let parsedData = {};
+              try {
+                parsedData = JSON.parse(sampleData || '{}');
+              } catch (e) {
+                console.error('Failed to parse sample data:', e);
+              }
+              
               const html = `
 <!DOCTYPE html>
 <html>
@@ -568,7 +661,7 @@ export default function Editor() {
 </head>
 <body>
   <div class="page">
-    ${layout.elements.map(el => renderElementForExport(el, isPreviewMode, sampleData)).join('')}
+    ${layout.elements.map(el => renderElementForExport(el, isPreviewMode, parsedData)).join('')}
   </div>
 </body>
 </html>`;
@@ -588,6 +681,15 @@ export default function Editor() {
             size="sm" 
             onClick={() => {
               if (!layout) return;
+              
+              // Parse sample data from string to object
+              let parsedData = {};
+              try {
+                parsedData = JSON.parse(sampleData || '{}');
+              } catch (e) {
+                console.error('Failed to parse sample data:', e);
+              }
+              
               const html = `
 <!DOCTYPE html>
 <html>
@@ -610,7 +712,7 @@ export default function Editor() {
 </head>
 <body>
   <div class="page">
-    ${layout.elements.map(el => renderElementForExport(el, isPreviewMode, sampleData)).join('')}
+    ${layout.elements.map(el => renderElementForExport(el, isPreviewMode, parsedData)).join('')}
   </div>
   <script>
     window.onload = () => {
