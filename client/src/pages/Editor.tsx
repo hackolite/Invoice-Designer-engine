@@ -18,6 +18,17 @@ import { useToast } from "@/hooks/use-toast";
 import type { TemplateElement, TemplateLayout } from "@shared/schema";
 import { Link } from "wouter";
 
+// Helper function to convert camelCase style object to CSS string
+const convertStyleObjectToCss = (style: Record<string, string | number>): string => {
+  return Object.entries(style)
+    .map(([key, value]) => {
+      const kebabKey = key.replace(/[A-Z]/g, m => "-" + m.toLowerCase());
+      const cssValue = typeof value === 'number' ? `${value}px` : value;
+      return `${kebabKey}: ${cssValue}`;
+    })
+    .join('; ');
+};
+
 export default function Editor() {
   const [, params] = useRoute("/editor/:id");
   const id = params?.id ? parseInt(params.id) : null;
@@ -381,7 +392,7 @@ export default function Editor() {
 <body>
   <div class="page">
     ${layout.elements.map(el => {
-      const style = Object.entries(el.style || {}).map(([k, v]) => `${k.replace(/[A-Z]/g, m => "-" + m.toLowerCase())}: ${v}${typeof v === 'number' ? 'px' : ''}`).join('; ');
+      const style = convertStyleObjectToCss(el.style || {});
       const content = el.type === 'text' ? (el.binding ? `{{${el.binding}}}` : el.content) : 
                      el.type === 'badge' ? (el.content || `{{${el.binding}}}`) : '';
       
@@ -433,7 +444,7 @@ export default function Editor() {
 <body>
   <div class="page">
     ${layout.elements.map(el => {
-      const style = Object.entries(el.style || {}).map(([k, v]) => `${k.replace(/[A-Z]/g, m => "-" + m.toLowerCase())}: ${v}${typeof v === 'number' ? 'px' : ''}`).join('; ');
+      const style = convertStyleObjectToCss(el.style || {});
       const content = el.type === 'text' ? (el.binding ? `{{${el.binding}}}` : el.content) : 
                      el.type === 'badge' ? (el.content || `{{${el.binding}}}`) : '';
       
@@ -447,7 +458,10 @@ export default function Editor() {
   <script>
     window.onload = () => {
       window.print();
-      setTimeout(() => window.close(), 100);
+      // Close window after user finishes printing
+      window.onafterprint = () => {
+        window.close();
+      };
     };
   </script>
 </body>
