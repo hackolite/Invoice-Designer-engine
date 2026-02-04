@@ -1162,11 +1162,21 @@ export function Canvas({
       // Calculate column widths (use custom or equal distribution)
       // Guard against division by zero
       const colWidths = config.colWidths || (config.cols > 0 ? Array(config.cols).fill(100 / config.cols) : [100]);
-      const rowHeights = config.rowHeights || (config.rows > 0 ? Array(config.rows).fill(el.height / config.rows) : [el.height]);
+      
+      // Calculate row heights and normalize to fit container exactly
+      let rowHeights = config.rowHeights || (config.rows > 0 ? Array(config.rows).fill(el.height / config.rows) : [el.height]);
+      
+      // Ensure row heights fit within container height to prevent overflow/cropping
+      const totalHeight = rowHeights.reduce((sum, h) => sum + h, 0);
+      if (totalHeight > 0 && Math.abs(totalHeight - el.height) > 0.01) {
+        // Normalize row heights to fit exactly within container
+        const scaleFactor = el.height / totalHeight;
+        rowHeights = rowHeights.map(h => h * scaleFactor);
+      }
       
       return (
         <div className="w-full h-full pointer-events-auto relative">
-          <div className="w-full h-full overflow-hidden">
+          <div className="w-full h-full">
             <table className="w-full h-full text-sm text-left border-collapse pointer-events-auto" style={{ tableLayout: 'fixed' }}>
             <colgroup>
               {colWidths.map((width, colIdx) => (
@@ -1636,7 +1646,7 @@ export function Canvas({
                    className="absolute -bottom-14 left-0 right-0 bg-white border rounded-lg shadow-lg p-2 flex items-center gap-3 pointer-events-auto z-40"
                    onClick={(e) => e.stopPropagation()}
                  >
-                   <div className="flex items-center gap-2 flex-1">
+                   <div className="flex items-center gap-2">
                      <Palette className="w-4 h-4 text-muted-foreground" />
                      <Label className="text-xs text-muted-foreground whitespace-nowrap">Border:</Label>
                      <Input 
@@ -1652,7 +1662,7 @@ export function Canvas({
                        onClick={(e) => e.stopPropagation()}
                      />
                    </div>
-                   <div className="flex items-center gap-2 flex-1">
+                   <div className="flex items-center gap-2">
                      <Ruler className="w-4 h-4 text-muted-foreground" />
                      <Label className="text-xs text-muted-foreground whitespace-nowrap">Width:</Label>
                      <Input 
@@ -1671,6 +1681,7 @@ export function Canvas({
                      />
                      <span className="text-xs text-muted-foreground">px</span>
                    </div>
+                   <div className="flex-1" />
                    {el.tableConfig?.tableType === 'price' && (
                      <>
                        <Button
