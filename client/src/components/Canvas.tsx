@@ -1024,7 +1024,11 @@ export function Canvas({
               tableStyle === 'minimal' && "",
               tableStyle === 'modern' && "rounded-lg shadow-sm"
             )}>
-              <table className="w-full text-sm text-left border-collapse">
+              <table className="w-full text-sm text-left border-collapse" style={{ tableLayout: 'fixed' }}>
+                <colgroup>
+                  <col style={{ width: config.columns[0]?.width || '50%' }} />
+                  <col style={{ width: config.columns[0]?.width ? `calc(100% - ${config.columns[0].width})` : '50%' }} />
+                </colgroup>
                 <tbody>
                 {config.columns.map((col, idx) => {
                   let cellValue;
@@ -1122,7 +1126,6 @@ export function Canvas({
                             !isPreviewMode && "cursor-text hover:bg-blue-50"
                           )}
                           style={{
-                            width: '50%',
                             borderWidth: `${gridBorderWidth}px`,
                             borderStyle: 'solid',
                             borderColor: gridBorderColor,
