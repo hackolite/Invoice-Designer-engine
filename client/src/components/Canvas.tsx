@@ -5,12 +5,16 @@ import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Palette, Ruler, Copy, Plus, Grid3x3, Columns, Rows, Minus } from "lucide-react";
+import { Palette, Ruler, Copy, Plus, Grid3x3, Columns, Rows, Minus, AlignLeft, AlignCenter, AlignRight, AlignJustify, Bold, Italic, Underline } from "lucide-react";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
+  ContextMenuSeparator,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
 } from "@/components/ui/context-menu";
 
 // Simple lodash.get alternative for binding resolution
@@ -264,6 +268,26 @@ export function Canvas({
     
     const newCells = [...config.cells];
     newCells[cellIndex] = { ...newCells[cellIndex], content };
+    
+    onElementUpdate(elementId, {
+      gridTableConfig: { ...config, cells: newCells }
+    });
+  };
+
+  const handleCellStyleUpdate = (elementId: string, row: number, col: number, styleKey: string, styleValue: any) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element || !element.gridTableConfig) return;
+    
+    const config = element.gridTableConfig;
+    const cellIndex = config.cells.findIndex(c => c.row === row && c.col === col);
+    if (cellIndex === -1) return;
+    
+    const newCells = [...config.cells];
+    const currentStyle = newCells[cellIndex].style || {};
+    newCells[cellIndex] = { 
+      ...newCells[cellIndex], 
+      style: { ...currentStyle, [styleKey]: styleValue }
+    };
     
     onElementUpdate(elementId, {
       gridTableConfig: { ...config, cells: newCells }
@@ -558,11 +582,17 @@ export function Canvas({
                             colSpan={colSpan}
                             className={clsx(
                               "p-2 border",
-                              !isPreviewMode && "cursor-pointer hover:bg-blue-50 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
+                              !isPreviewMode && "cursor-text hover:bg-blue-50 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
                             )}
                             style={{ 
                               borderColor: gridBorderColor,
                               borderWidth: `${gridBorderWidth}px`,
+                              textAlign: (cell?.style?.textAlign as any) || 'left',
+                              fontWeight: (cell?.style?.fontWeight as any) || 'normal',
+                              fontStyle: (cell?.style?.fontStyle as any) || 'normal',
+                              textDecoration: (cell?.style?.textDecoration as string) || 'none',
+                              fontSize: cell?.style?.fontSize ? `${cell.style.fontSize}px` : '12px',
+                              color: (cell?.style?.color as string) || 'inherit',
                             }}
                             tabIndex={isPreviewMode ? undefined : 0}
                             role={isPreviewMode ? undefined : "button"}
@@ -587,9 +617,9 @@ export function Canvas({
                             }}
                           >
                             {isEditing && !isPreviewMode ? (
-                              <Input
+                              <textarea
                                 autoFocus
-                                className="h-6 text-xs pointer-events-auto"
+                                className="w-full h-auto min-h-[24px] text-xs pointer-events-auto border-none outline-none resize-none bg-transparent"
                                 value={cell?.content || ''}
                                 aria-label={`Edit content for cell at row ${rowIdx}, column ${colIdx}`}
                                 onChange={(e) => {
@@ -597,23 +627,85 @@ export function Canvas({
                                 }}
                                 onBlur={() => setEditingCell(null)}
                                 onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    setEditingCell(null);
-                                  }
                                   if (e.key === 'Escape') {
                                     setEditingCell(null);
+                                    e.stopPropagation();
                                   }
-                                  e.stopPropagation();
+                                  // Don't stop propagation for Enter to allow line breaks
                                 }}
                                 onClick={(e) => e.stopPropagation()}
+                                style={{
+                                  textAlign: (cell?.style?.textAlign as any) || 'left',
+                                  fontWeight: (cell?.style?.fontWeight as any) || 'normal',
+                                  fontStyle: (cell?.style?.fontStyle as any) || 'normal',
+                                  textDecoration: (cell?.style?.textDecoration as string) || 'none',
+                                  fontSize: cell?.style?.fontSize ? `${cell.style.fontSize}px` : '12px',
+                                  color: (cell?.style?.color as string) || 'inherit',
+                                }}
                               />
                             ) : (
-                              content
+                              <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                                {content}
+                              </div>
                             )}
                           </td>
                         </ContextMenuTrigger>
                         {!isPreviewMode && (
                           <ContextMenuContent className="pointer-events-auto">
+                            <ContextMenuSub>
+                              <ContextMenuSubTrigger>
+                                <AlignLeft className="w-4 h-4 mr-2" />
+                                Text Align
+                              </ContextMenuSubTrigger>
+                              <ContextMenuSubContent>
+                                <ContextMenuItem onClick={() => handleCellStyleUpdate(el.id, rowIdx, colIdx, 'textAlign', 'left')}>
+                                  <AlignLeft className="w-4 h-4 mr-2" />
+                                  Left
+                                </ContextMenuItem>
+                                <ContextMenuItem onClick={() => handleCellStyleUpdate(el.id, rowIdx, colIdx, 'textAlign', 'center')}>
+                                  <AlignCenter className="w-4 h-4 mr-2" />
+                                  Center
+                                </ContextMenuItem>
+                                <ContextMenuItem onClick={() => handleCellStyleUpdate(el.id, rowIdx, colIdx, 'textAlign', 'right')}>
+                                  <AlignRight className="w-4 h-4 mr-2" />
+                                  Right
+                                </ContextMenuItem>
+                                <ContextMenuItem onClick={() => handleCellStyleUpdate(el.id, rowIdx, colIdx, 'textAlign', 'justify')}>
+                                  <AlignJustify className="w-4 h-4 mr-2" />
+                                  Justify
+                                </ContextMenuItem>
+                              </ContextMenuSubContent>
+                            </ContextMenuSub>
+                            <ContextMenuSub>
+                              <ContextMenuSubTrigger>
+                                <Bold className="w-4 h-4 mr-2" />
+                                Text Style
+                              </ContextMenuSubTrigger>
+                              <ContextMenuSubContent>
+                                <ContextMenuItem onClick={() => {
+                                  const currentWeight = cell?.style?.fontWeight;
+                                  handleCellStyleUpdate(el.id, rowIdx, colIdx, 'fontWeight', currentWeight === 'bold' ? 'normal' : 'bold');
+                                }}>
+                                  <Bold className="w-4 h-4 mr-2" />
+                                  {cell?.style?.fontWeight === 'bold' ? 'Remove Bold' : 'Bold'}
+                                </ContextMenuItem>
+                                <ContextMenuItem onClick={() => {
+                                  const currentStyle = cell?.style?.fontStyle;
+                                  handleCellStyleUpdate(el.id, rowIdx, colIdx, 'fontStyle', currentStyle === 'italic' ? 'normal' : 'italic');
+                                }}>
+                                  <Italic className="w-4 h-4 mr-2" />
+                                  {cell?.style?.fontStyle === 'italic' ? 'Remove Italic' : 'Italic'}
+                                </ContextMenuItem>
+                                <ContextMenuItem onClick={() => {
+                                  const currentDecoration = cell?.style?.textDecoration;
+                                  handleCellStyleUpdate(el.id, rowIdx, colIdx, 'textDecoration', currentDecoration === 'underline' ? 'none' : 'underline');
+                                }}>
+                                  <Underline className="w-4 h-4 mr-2" />
+                                  {cell?.style?.textDecoration === 'underline' ? 'Remove Underline' : 'Underline'}
+                                </ContextMenuItem>
+                              </ContextMenuSubContent>
+                            </ContextMenuSub>
+                            <ContextMenuSeparator />
                             <ContextMenuItem onClick={() => handleMergeCells(el.id, rowIdx, colIdx)}>
                               <Grid3x3 className="w-4 h-4 mr-2" />
                               Merge with next cell

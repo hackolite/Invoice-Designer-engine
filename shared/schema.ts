@@ -63,6 +63,7 @@ export interface TemplateElement {
       colSpan?: number;
       content?: string;
       binding?: string;
+      style?: Record<string, string | number>; // Support for cell-level styling (textAlign, fontWeight, fontStyle, etc.)
     }[];
   };
   style?: Record<string, string | number>;
