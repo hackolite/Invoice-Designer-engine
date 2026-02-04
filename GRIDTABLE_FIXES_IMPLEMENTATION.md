@@ -75,15 +75,38 @@ The row deletion icon would disappear when the user tried to hover over it. This
 4. The icon disappears before it can be clicked
 
 ### Solution
-Implemented a two-part fix to maintain hover state during cursor transition:
+Implemented a robust solution to maintain hover state during cursor transition with proper timeout management:
 
-#### Part 1: Row's onMouseLeave (Canvas.tsx, lines 821-835)
-Added a setTimeout with 0 delay to allow the delete button's `onMouseEnter` to fire first:
+#### Part 1: Add Timeout Tracking (Canvas.tsx, line 71)
+Added a ref to track pending timeouts and prevent race conditions:
 
 ```typescript
+const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+```
+
+#### Part 2: Row's Event Handlers (Canvas.tsx, lines 821-850)
+Added timeout management in row enter/leave handlers:
+
+```typescript
+onMouseEnter={() => {
+  if (!isPreviewMode) {
+    // Cancel any pending timeout when entering a row
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    setHoveredRow({ elementId: el.id, row: rowIdx });
+  }
+}}
 onMouseLeave={(e) => {
   if (!isPreviewMode) {
-    setTimeout(() => {
+    // Cancel any existing timeout to avoid race conditions
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    // Use setTimeout(0) to defer execution until after the current event loop,
+    // allowing the delete button's onMouseEnter to fire first
+    hoverTimeoutRef.current = setTimeout(() => {
       setHoveredRow(prev => {
         // Only clear if we're still on the same row (not re-entered)
         if (prev?.elementId === el.id && prev?.row === rowIdx) {
@@ -91,39 +114,54 @@ onMouseLeave={(e) => {
         }
         return prev;
       });
+      hoverTimeoutRef.current = null;
     }, 0);
   }
 }}
 ```
 
-#### Part 2: Delete Button Container Events (Canvas.tsx, lines 1020-1029)
-Added `onMouseEnter` and `onMouseLeave` handlers to the delete button container:
+#### Part 3: Delete Button Container Events (Canvas.tsx, lines 1035-1055)
+Added `onMouseEnter` and `onMouseLeave` handlers with timeout cancellation:
 
 ```typescript
 onMouseEnter={() => {
+  // Cancel any pending timeout when entering the delete button
+  if (hoverTimeoutRef.current) {
+    clearTimeout(hoverTimeoutRef.current);
+    hoverTimeoutRef.current = null;
+  }
   // Maintain the hover state when entering the delete button area
-  if (hoveredRow) {
+  // The hoveredRow is already validated in the parent condition
+  if (hoveredRow && hoveredRow.elementId === el.id) {
     setHoveredRow({ elementId: el.id, row: hoveredRow.row });
   }
 }}
 onMouseLeave={() => {
   // Clear hover state when leaving the delete button area
   setHoveredRow(null);
+  // Clear any pending timeout
+  if (hoverTimeoutRef.current) {
+    clearTimeout(hoverTimeoutRef.current);
+    hoverTimeoutRef.current = null;
+  }
 }}
 ```
 
 ### How It Works
 1. User hovers over a row → `hoveredRow` state is set → icon appears
 2. User moves cursor toward the icon:
-   - Row's `onMouseLeave` schedules a state clear with setTimeout(0)
-   - Delete button's `onMouseEnter` fires immediately, refreshing the state
-   - The scheduled clear sees the state has been refreshed, so it doesn't clear
+   - Row's `onMouseLeave` cancels any existing timeout and schedules a new state clear with setTimeout(0)
+   - Delete button's `onMouseEnter` fires immediately, cancels the pending timeout, and refreshes the state
+   - The scheduled clear is cancelled before it executes
 3. Icon remains visible and clickable
-4. When cursor leaves the delete button area, the state is cleared properly
+4. When cursor leaves the delete button area, both the state and any pending timeouts are cleared properly
+5. If user quickly moves between rows, pending timeouts are cancelled to prevent race conditions
 
 ### Benefits
 - Icon stays visible when moving from row to delete button
 - No flickering or disappearing behavior
+- No race conditions when quickly moving between rows
+- Proper cleanup of all timeout references
 - Smooth user experience
 - Icon properly disappears when cursor leaves the entire area
 

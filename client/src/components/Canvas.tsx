@@ -835,7 +835,8 @@ export function Canvas({
                         if (hoverTimeoutRef.current) {
                           clearTimeout(hoverTimeoutRef.current);
                         }
-                        // Use a small delay to allow the delete button's onMouseEnter to fire first
+                        // Use setTimeout(0) to defer execution until after the current event loop,
+                        // allowing the delete button's onMouseEnter to fire first
                         hoverTimeoutRef.current = setTimeout(() => {
                           setHoveredRow(prev => {
                             // Only clear if we're still on the same row (not re-entered)
