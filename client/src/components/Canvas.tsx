@@ -457,6 +457,43 @@ export function Canvas({
     });
   };
 
+  // Handler to add footer row to gridtable
+  const handleAddGridTableFooter = (elementId: string) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element || !element.gridTableConfig) return;
+    
+    const config = element.gridTableConfig;
+    
+    onElementUpdate(elementId, {
+      gridTableConfig: {
+        ...config,
+        footer: [...(config.footer || []), DEFAULT_FOOTER_ROW]
+      }
+    });
+  };
+
+  // Handler to remove last footer row from gridtable
+  const handleRemoveLastGridTableFooter = (elementId: string) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element || !element.gridTableConfig) return;
+    
+    const config = element.gridTableConfig;
+    const footer = config.footer;
+    
+    // Early return if no footer or empty footer array
+    if (!footer || footer.length === 0) return;
+    
+    const newFooter = [...footer];
+    newFooter.pop(); // Remove last footer row
+    
+    onElementUpdate(elementId, {
+      gridTableConfig: {
+        ...config,
+        footer: newFooter
+      }
+    });
+  };
+
   // Recursive function to render JSON data tree in context menu for text elements
   const renderDataTreeForText = (tree: Record<string, any>, elementId: string): JSX.Element[] => {
     return Object.keys(tree).map((key) => {
@@ -1827,6 +1864,37 @@ export function Canvas({
                       <Minus className="w-3 h-3 mr-1" />
                       <Columns className="w-4 h-4" />
                     </Button>
+                    <div className="w-px h-6 bg-border mx-1" />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAddGridTableFooter(el.id);
+                      }}
+                      title="Add footer row"
+                      aria-label="Add footer row"
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      Footer
+                    </Button>
+                    {el.gridTableConfig?.footer && el.gridTableConfig.footer.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveLastGridTableFooter(el.id);
+                        }}
+                        title="Remove last footer row"
+                        aria-label="Remove last footer row"
+                      >
+                        <Minus className="w-3 h-3 mr-1" />
+                        Footer
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"

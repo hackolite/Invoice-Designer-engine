@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   ChevronLeft, Save, Type, Image as ImageIcon, Table as TableIcon, Grid3x3,
-  Square, Layout, Eye, EyeOff, RotateCcw, Minus, Play, QrCode, PenTool, Award, Download
+  Square, Layout, Eye, EyeOff, RotateCcw, Minus, Play, QrCode, PenTool, Award, Download, AlertCircle, CheckCircle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { TemplateElement, TemplateLayout } from "@shared/schema";
@@ -300,6 +300,16 @@ export default function Editor() {
   const [scale, setScale] = useState(1);
   const [name, setName] = useState("");
   const [copiedElement, setCopiedElement] = useState<TemplateElement | null>(null);
+  
+  // Validate JSON and cache the result
+  const isValidJson = useMemo(() => {
+    try {
+      JSON.parse(sampleData || '{}');
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }, [sampleData]);
   
   // Undo/Redo state management
   const [history, setHistory] = useState<TemplateLayout[]>([]);
@@ -840,7 +850,21 @@ export default function Editor() {
           <div className="mt-auto border-t">
             <div className="p-4 border-b">
                <h3 className="font-semibold text-sm text-foreground/80 flex items-center justify-between">
-                 Sample Data (JSON)
+                 <span className="flex items-center gap-2">
+                   Sample Data (JSON)
+                   {!isValidJson && (
+                     <span className="flex items-center gap-1 text-destructive text-xs font-normal">
+                       <AlertCircle className="w-3 h-3" />
+                       Invalid JSON
+                     </span>
+                   )}
+                   {isValidJson && sampleData.trim() !== '' && (
+                     <span className="flex items-center gap-1 text-green-600 text-xs font-normal">
+                       <CheckCircle className="w-3 h-3" />
+                       Valid
+                     </span>
+                   )}
+                 </span>
                  <Button variant="ghost" size="icon" className="h-5 w-5" title="Reset Data" onClick={() => setSampleData(JSON.stringify(template.sampleData, null, 2))}>
                    <RotateCcw className="w-3 h-3" />
                  </Button>
@@ -850,7 +874,7 @@ export default function Editor() {
               <Textarea 
                 value={sampleData}
                 onChange={(e) => setSampleData(e.target.value)}
-                className="h-full w-full resize-none font-mono text-xs border-0 focus-visible:ring-0 p-4 rounded-none bg-muted/10"
+                className={`h-full w-full resize-none font-mono text-xs border-0 focus-visible:ring-0 p-4 rounded-none ${isValidJson ? 'bg-muted/10' : 'bg-destructive/5'}`}
                 spellCheck={false}
               />
             </div>
@@ -876,7 +900,7 @@ export default function Editor() {
            <div className="shadow-2xl">
              <Canvas 
                 layout={layout}
-                sampleData={JSON.parse(sampleData || '{}')}
+                sampleData={parseSampleData(sampleData)}
                 selectedElementId={selectedElementId}
                 onElementSelect={setSelectedElementId}
                 onElementUpdate={handleElementUpdate}

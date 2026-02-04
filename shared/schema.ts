@@ -73,6 +73,11 @@ export interface TemplateElement {
       binding?: string;
       style?: Record<string, string | number>; // Support for cell-level styling (textAlign, fontWeight, fontStyle, etc.)
     }[];
+    footer?: {
+      label: string;
+      value: string; // Can be static text or binding
+      format?: 'currency' | 'number' | 'text';
+    }[];
   };
   style?: Record<string, string | number>;
 }
