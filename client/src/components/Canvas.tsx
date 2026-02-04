@@ -686,10 +686,10 @@ export function Canvas({
     const config = element.tableConfig;
     const totalRows = config.columns.length + (config.footer?.length || 0);
     
-    // Guard against invalid row index
-    if (totalRows <= 0 || rowIndex >= totalRows) return;
+    // Guard against invalid row index (resize handles exist between rows, so max index is totalRows - 2)
+    if (totalRows <= 0 || rowIndex >= totalRows - 1) return;
     
-    const rowHeights = config.rowHeights || Array(totalRows).fill(element.height / totalRows);
+    const rowHeights = config.rowHeights || (totalRows > 0 ? Array(totalRows).fill(element.height / totalRows) : []);
     const newRowHeights = [...rowHeights];
     newRowHeights[rowIndex] = Math.max(MIN_ROW_HEIGHT, newHeight);
     
@@ -991,7 +991,7 @@ export function Canvas({
         
         // Calculate row heights for price table
         const totalRows = config.columns.length + (config.footer?.length || 0);
-        const rowHeights = config.rowHeights || (totalRows > 0 ? Array(totalRows).fill(el.height / totalRows) : [el.height]);
+        const rowHeights = config.rowHeights || (totalRows > 0 ? Array(totalRows).fill(el.height / totalRows) : []);
         
         return (
           <div className="w-full h-full pointer-events-auto relative">
@@ -1168,7 +1168,7 @@ export function Canvas({
             </table>
           </div>
           {/* Row resize handles for PriceTable */}
-          {!isPreviewMode && totalRows > 1 && rowHeights.slice(0, -1).map((_, rowIdx) => {
+          {!isPreviewMode && rowHeights.length > 1 && rowHeights.slice(0, -1).map((_, rowIdx) => {
             const topPos = rowHeights.slice(0, rowIdx + 1).reduce((sum, h) => sum + h, 0);
             return (
               <div
