@@ -76,6 +76,9 @@ const FUSION_THRESHOLD = 15; // Distance in pixels for table fusion snapping
 const RESIZE_HANDLE_SIZE = 4; // Size of resize handle in pixels
 const RESIZE_HANDLE_OFFSET = 2; // Offset for centering resize handle in pixels
 
+// Default footer row for price tables
+const DEFAULT_FOOTER_ROW = { label: "Total", value: "{total}", format: 'currency' as const };
+
 export function Canvas({
   layout,
   sampleData,
@@ -423,12 +426,11 @@ export function Canvas({
     if (!element || !element.tableConfig) return;
     
     const config = element.tableConfig;
-    const newFooter = { label: "Total", value: "{total}", format: 'currency' as const };
     
     onElementUpdate(elementId, {
       tableConfig: {
         ...config,
-        footer: [...(config.footer || []), newFooter]
+        footer: [...(config.footer || []), DEFAULT_FOOTER_ROW]
       }
     });
   };
@@ -436,10 +438,15 @@ export function Canvas({
   // Handler to remove last footer row from price table
   const handleRemoveLastFooter = (elementId: string) => {
     const element = layout.elements.find(e => e.id === elementId);
-    if (!element || !element.tableConfig || !element.tableConfig.footer || element.tableConfig.footer.length === 0) return;
+    if (!element || !element.tableConfig) return;
     
     const config = element.tableConfig;
-    const newFooter = [...config.footer];
+    const footer = config.footer;
+    
+    // Early return if no footer or empty footer array
+    if (!footer || footer.length === 0) return;
+    
+    const newFooter = [...footer];
     newFooter.pop(); // Remove last footer row
     
     onElementUpdate(elementId, {
