@@ -193,7 +193,9 @@ export default function Editor() {
           });
         }
       }
-      newElement.gridTableConfig = { rows, cols, cells };
+      // Calculate initial heightPerRow to maintain consistent row heights
+      const heightPerRow = 150 / rows; // 150 is the initial height set above
+      newElement.gridTableConfig = { rows, cols, cells, heightPerRow };
       newElement.style = { ...newElement.style, gridBorderColor: '#000000', gridBorderWidth: 1 };
     } else if (type === 'text') {
         newElement.content = "Double click to edit";

@@ -56,6 +56,7 @@ export interface TemplateElement {
   gridTableConfig?: {
     rows: number;
     cols: number;
+    heightPerRow?: number; // Stored height per row to maintain consistency when adding/removing rows
     cells: {
       row: number;
       col: number;
