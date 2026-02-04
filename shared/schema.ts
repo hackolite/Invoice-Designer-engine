@@ -52,6 +52,11 @@ export interface TemplateElement {
       width?: string;
       format?: 'currency' | 'number' | 'text';
     }[];
+    footer?: {
+      label: string;
+      value: string; // Can be static text or binding
+      format?: 'currency' | 'number' | 'text';
+    }[];
   };
   gridTableConfig?: {
     rows: number;

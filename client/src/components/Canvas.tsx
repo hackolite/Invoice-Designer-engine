@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Palette, Ruler, Copy, Plus, Grid3x3, Columns, Rows, Minus, AlignLeft, AlignCenter, AlignRight, AlignJustify, Bold, Italic, Underline } from "lucide-react";
+import { Palette, Ruler, Copy, Plus, Grid3x3, Columns, Rows, Minus, AlignLeft, AlignCenter, AlignRight, AlignJustify, Bold, Italic, Underline, Trash2 } from "lucide-react";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -162,7 +162,7 @@ export function Canvas({
     });
   };
 
-  const handleDeleteRow = (elementId: string) => {
+  const handleDeleteRow = (elementId: string, rowIndex?: number) => {
     const element = layout.elements.find(e => e.id === elementId);
     if (!element || !element.gridTableConfig) return;
     
@@ -170,22 +170,29 @@ export function Canvas({
     // Don't allow deleting if only 1 row remains
     if (config.rows <= 1) return;
     
-    const lastRow = config.rows - 1;
+    // Default to last row if no specific row index provided
+    const rowToDelete = rowIndex !== undefined ? rowIndex : config.rows - 1;
     const newRows = config.rows - 1;
     
     // Get or initialize heightPerRow to maintain consistent row heights
     const heightPerRow = config.heightPerRow ?? (element.height / config.rows);
     const newHeight = Math.round(heightPerRow * newRows);
     
-    // Remove cells from the last row and adjust cells with rowSpan that extend into it
+    // Remove cells from the specified row and adjust other cells
     const newCells = config.cells
-      .filter(cell => cell.row !== lastRow) // Remove cells that start in the last row
+      .filter(cell => cell.row !== rowToDelete) // Remove cells that start in the deleted row
       .map(cell => {
-        // Adjust rowSpan if it extends into the deleted row
-        if (cell.row + (cell.rowSpan || 1) > newRows) {
-          return { ...cell, rowSpan: Math.max(1, newRows - cell.row) };
+        // Shift rows that are after the deleted row up by one
+        const newRow = cell.row > rowToDelete ? cell.row - 1 : cell.row;
+        
+        // Adjust rowSpan if it extends into or past the deleted row
+        let newRowSpan = cell.rowSpan || 1;
+        if (cell.row < rowToDelete && cell.row + newRowSpan > rowToDelete) {
+          // Cell starts before deleted row and spans through it
+          newRowSpan = Math.max(1, newRowSpan - 1);
         }
-        return cell;
+        
+        return { ...cell, row: newRow, rowSpan: newRowSpan };
       });
     
     onElementUpdate(elementId, {
@@ -446,6 +453,59 @@ export function Canvas({
                   );
                 })}
               </tbody>
+              {config.footer && config.footer.length > 0 && (
+                <tfoot className="bg-gray-50 font-semibold">
+                  {config.footer.map((footerRow, idx) => {
+                    let footerValue;
+                    if (isPreviewMode) {
+                      // Try to parse as binding first - check for pattern {bindingName}
+                      if (footerRow.value.startsWith('{') && footerRow.value.endsWith('}') && footerRow.value.length > 2) {
+                        const binding = footerRow.value.slice(1, -1).trim();
+                        if (binding.length > 0) {
+                          const rawVal = getValue(sourceData, binding);
+                          if (footerRow.format === 'currency') {
+                            footerValue = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(rawVal) || 0);
+                          } else if (footerRow.format === 'number') {
+                            footerValue = new Intl.NumberFormat('en-US').format(Number(rawVal) || 0);
+                          } else {
+                            footerValue = rawVal;
+                          }
+                        } else {
+                          footerValue = footerRow.value;
+                        }
+                      } else {
+                        // Static text
+                        footerValue = footerRow.value;
+                      }
+                    } else {
+                      footerValue = footerRow.value;
+                    }
+                    
+                    const isFirstFooterRow = idx === 0;
+                    const isLastFooterRow = idx === config.footer!.length - 1;
+                    const footerBorderBottom = !isLastFooterRow ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none';
+                    
+                    return (
+                      <tr key={`footer-${idx}`}>
+                        <th className="p-2 text-left font-semibold" style={{
+                          width: '50%',
+                          borderTop: isFirstFooterRow ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none',
+                          borderBottom: footerBorderBottom,
+                          borderRight: `${gridBorderWidth}px solid ${gridBorderColor}`
+                        }}>
+                          {footerRow.label}
+                        </th>
+                        <td className="p-2 font-semibold" style={{
+                          borderTop: isFirstFooterRow ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none',
+                          borderBottom: footerBorderBottom
+                        }}>
+                          {footerValue}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tfoot>
+              )}
             </table>
           </div>
         );
@@ -551,7 +611,32 @@ export function Canvas({
           <table className="w-full h-full text-sm text-left border-collapse pointer-events-auto">
             <tbody>
               {Array.from({ length: config.rows }, (_, rowIdx) => (
-                <tr key={rowIdx}>
+                <tr key={rowIdx} className="group">
+                  {!isPreviewMode && (
+                    <td 
+                      className="relative w-8 p-0 border-r group-hover:bg-gray-50"
+                      style={{ 
+                        borderColor: gridBorderColor,
+                        borderWidth: `${gridBorderWidth}px`,
+                        verticalAlign: 'middle'
+                      }}
+                    >
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteRow(el.id, rowIdx);
+                        }}
+                        title={`Delete row ${rowIdx + 1}`}
+                        aria-label={`Delete row ${rowIdx + 1}`}
+                        disabled={config.rows <= 1}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </td>
+                  )}
                   {Array.from({ length: config.cols }, (_, colIdx) => {
                     const key = `${rowIdx}-${colIdx}`;
                     
