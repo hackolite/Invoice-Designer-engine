@@ -152,6 +152,36 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
     });
   };
 
+  const handleTableFooterStyleChange = (index: number, styleKey: string, styleValue: any) => {
+    if (!element.tableConfig || !element.tableConfig.footer) return;
+    const newFooter = [...element.tableConfig.footer];
+    newFooter[index] = { 
+      ...newFooter[index], 
+      style: { ...(newFooter[index].style || {}), [styleKey]: styleValue } 
+    };
+    onChange(element.id, {
+      tableConfig: {
+        ...element.tableConfig,
+        footer: newFooter
+      }
+    });
+  };
+
+  const handleGridTableFooterStyleChange = (index: number, styleKey: string, styleValue: any) => {
+    if (!element.gridTableConfig || !element.gridTableConfig.footer) return;
+    const newFooter = [...element.gridTableConfig.footer];
+    newFooter[index] = { 
+      ...newFooter[index], 
+      style: { ...(newFooter[index].style || {}), [styleKey]: styleValue } 
+    };
+    onChange(element.id, {
+      gridTableConfig: {
+        ...element.gridTableConfig,
+        footer: newFooter
+      }
+    });
+  };
+
   return (
     <ScrollArea className="h-full">
       <div className="p-4 space-y-6">
@@ -495,6 +525,76 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                                 <option value="currency">Currency</option>
                                 <option value="number">Number</option>
                               </select>
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <Label className="text-xs">Text Align</Label>
+                            <div className="flex border rounded-md overflow-hidden divide-x">
+                              <button 
+                                className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.textAlign === 'left' ? 'bg-muted' : ''}`}
+                                onClick={() => handleTableFooterStyleChange(idx, 'textAlign', 'left')}
+                                title="Align Left"
+                              >
+                                <AlignLeft className="w-3 h-3 mx-auto" />
+                              </button>
+                              <button 
+                                className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.textAlign === 'center' ? 'bg-muted' : ''}`}
+                                onClick={() => handleTableFooterStyleChange(idx, 'textAlign', 'center')}
+                                title="Align Center"
+                              >
+                                <AlignCenter className="w-3 h-3 mx-auto" />
+                              </button>
+                              <button 
+                                className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.textAlign === 'right' ? 'bg-muted' : ''}`}
+                                onClick={() => handleTableFooterStyleChange(idx, 'textAlign', 'right')}
+                                title="Align Right"
+                              >
+                                <AlignRight className="w-3 h-3 mx-auto" />
+                              </button>
+                              <button 
+                                className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.textAlign === 'justify' ? 'bg-muted' : ''}`}
+                                onClick={() => handleTableFooterStyleChange(idx, 'textAlign', 'justify')}
+                                title="Justify"
+                              >
+                                <AlignJustify className="w-3 h-3 mx-auto" />
+                              </button>
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <Label className="text-xs">Text Style</Label>
+                            <div className="flex border rounded-md overflow-hidden divide-x">
+                              <button 
+                                className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.fontWeight === 'bold' ? 'bg-muted' : ''}`}
+                                onClick={() => {
+                                  const currentWeight = footerRow.style?.fontWeight;
+                                  handleTableFooterStyleChange(idx, 'fontWeight', currentWeight === 'bold' ? 'normal' : 'bold');
+                                }}
+                                title="Bold"
+                              >
+                                <Bold className="w-3 h-3 mx-auto" />
+                              </button>
+                              <button 
+                                className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.fontStyle === 'italic' ? 'bg-muted' : ''}`}
+                                onClick={() => {
+                                  const currentStyle = footerRow.style?.fontStyle;
+                                  handleTableFooterStyleChange(idx, 'fontStyle', currentStyle === 'italic' ? 'normal' : 'italic');
+                                }}
+                                title="Italic"
+                              >
+                                <Italic className="w-3 h-3 mx-auto" />
+                              </button>
+                              <button 
+                                className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.textDecoration === 'underline' ? 'bg-muted' : ''}`}
+                                onClick={() => {
+                                  const currentDecoration = footerRow.style?.textDecoration;
+                                  handleTableFooterStyleChange(idx, 'textDecoration', currentDecoration === 'underline' ? 'none' : 'underline');
+                                }}
+                                title="Underline"
+                              >
+                                <Underline className="w-3 h-3 mx-auto" />
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -841,6 +941,76 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                             <option value="currency">Currency</option>
                             <option value="number">Number</option>
                           </select>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-xs">Text Align</Label>
+                        <div className="flex border rounded-md overflow-hidden divide-x">
+                          <button 
+                            className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.textAlign === 'left' ? 'bg-muted' : ''}`}
+                            onClick={() => handleGridTableFooterStyleChange(idx, 'textAlign', 'left')}
+                            title="Align Left"
+                          >
+                            <AlignLeft className="w-3 h-3 mx-auto" />
+                          </button>
+                          <button 
+                            className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.textAlign === 'center' ? 'bg-muted' : ''}`}
+                            onClick={() => handleGridTableFooterStyleChange(idx, 'textAlign', 'center')}
+                            title="Align Center"
+                          >
+                            <AlignCenter className="w-3 h-3 mx-auto" />
+                          </button>
+                          <button 
+                            className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.textAlign === 'right' ? 'bg-muted' : ''}`}
+                            onClick={() => handleGridTableFooterStyleChange(idx, 'textAlign', 'right')}
+                            title="Align Right"
+                          >
+                            <AlignRight className="w-3 h-3 mx-auto" />
+                          </button>
+                          <button 
+                            className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.textAlign === 'justify' ? 'bg-muted' : ''}`}
+                            onClick={() => handleGridTableFooterStyleChange(idx, 'textAlign', 'justify')}
+                            title="Justify"
+                          >
+                            <AlignJustify className="w-3 h-3 mx-auto" />
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-xs">Text Style</Label>
+                        <div className="flex border rounded-md overflow-hidden divide-x">
+                          <button 
+                            className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.fontWeight === 'bold' ? 'bg-muted' : ''}`}
+                            onClick={() => {
+                              const currentWeight = footerRow.style?.fontWeight;
+                              handleGridTableFooterStyleChange(idx, 'fontWeight', currentWeight === 'bold' ? 'normal' : 'bold');
+                            }}
+                            title="Bold"
+                          >
+                            <Bold className="w-3 h-3 mx-auto" />
+                          </button>
+                          <button 
+                            className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.fontStyle === 'italic' ? 'bg-muted' : ''}`}
+                            onClick={() => {
+                              const currentStyle = footerRow.style?.fontStyle;
+                              handleGridTableFooterStyleChange(idx, 'fontStyle', currentStyle === 'italic' ? 'normal' : 'italic');
+                            }}
+                            title="Italic"
+                          >
+                            <Italic className="w-3 h-3 mx-auto" />
+                          </button>
+                          <button 
+                            className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.textDecoration === 'underline' ? 'bg-muted' : ''}`}
+                            onClick={() => {
+                              const currentDecoration = footerRow.style?.textDecoration;
+                              handleGridTableFooterStyleChange(idx, 'textDecoration', currentDecoration === 'underline' ? 'none' : 'underline');
+                            }}
+                            title="Underline"
+                          >
+                            <Underline className="w-3 h-3 mx-auto" />
+                          </button>
                         </div>
                       </div>
                     </div>
