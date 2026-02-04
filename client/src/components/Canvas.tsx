@@ -1988,22 +1988,21 @@ export function Canvas({
                          <Plus className="w-3 h-3 mr-1" />
                          Footer
                        </Button>
-                       {el.tableConfig?.footer && el.tableConfig.footer.length > 0 && (
-                         <Button
-                           variant="ghost"
-                           size="sm"
-                           className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-                           onClick={(e) => {
-                             e.stopPropagation();
-                             handleRemoveLastFooter(el.id);
-                           }}
-                           title="Remove last footer row"
-                           aria-label="Remove last footer row"
-                         >
-                           <Minus className="w-3 h-3 mr-1" />
-                           Footer
-                         </Button>
-                       )}
+                       <Button
+                         variant="ghost"
+                         size="sm"
+                         className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                         disabled={!el.tableConfig?.footer || el.tableConfig.footer.length === 0}
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           handleRemoveLastFooter(el.id);
+                         }}
+                         title="Remove last footer row"
+                         aria-label="Remove last footer row"
+                       >
+                         <Minus className="w-3 h-3 mr-1" />
+                         Footer
+                       </Button>
                      </>
                    )}
                    <Button
@@ -2135,22 +2134,21 @@ export function Canvas({
                       <Plus className="w-3 h-3 mr-1" />
                       Footer
                     </Button>
-                    {el.gridTableConfig?.footer && el.gridTableConfig.footer.length > 0 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRemoveLastGridTableFooter(el.id);
-                        }}
-                        title="Remove last footer row"
-                        aria-label="Remove last footer row"
-                      >
-                        <Minus className="w-3 h-3 mr-1" />
-                        Footer
-                      </Button>
-                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      disabled={!el.gridTableConfig?.footer || el.gridTableConfig.footer.length === 0}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveLastGridTableFooter(el.id);
+                      }}
+                      title="Remove last footer row"
+                      aria-label="Remove last footer row"
+                    >
+                      <Minus className="w-3 h-3 mr-1" />
+                      Footer
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
