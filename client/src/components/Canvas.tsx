@@ -1166,14 +1166,12 @@ export function Canvas({
       // Calculate row heights and normalize to fit container exactly
       let rowHeights = config.rowHeights || (config.rows > 0 ? Array(config.rows).fill(el.height / config.rows) : [el.height]);
       
-      // Ensure row heights fit within container height
-      if (rowHeights && rowHeights.length > 0) {
-        const totalHeight = rowHeights.reduce((sum, h) => sum + h, 0);
-        if (totalHeight !== el.height && totalHeight > 0) {
-          // Normalize row heights to fit exactly within container
-          const scaleFactor = el.height / totalHeight;
-          rowHeights = rowHeights.map(h => h * scaleFactor);
-        }
+      // Ensure row heights fit within container height to prevent overflow/cropping
+      const totalHeight = rowHeights.reduce((sum, h) => sum + h, 0);
+      if (totalHeight > 0 && Math.abs(totalHeight - el.height) > 0.01) {
+        // Normalize row heights to fit exactly within container
+        const scaleFactor = el.height / totalHeight;
+        rowHeights = rowHeights.map(h => h * scaleFactor);
       }
       
       return (
