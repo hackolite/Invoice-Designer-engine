@@ -405,6 +405,66 @@ export default function Editor() {
             <Download className="w-4 h-4 mr-2" /> Export HTML
           </Button>
           
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => {
+              if (!layout) return;
+              const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${name || 'Template'}</title>
+  <style>
+    @media print {
+      @page { margin: 0; size: A4 portrait; }
+      body { margin: 0; }
+    }
+    body { margin: 0; font-family: sans-serif; }
+    .page { width: 794px; height: 1123px; position: relative; background: white; }
+    .element { position: absolute; overflow: hidden; }
+    .line { background: black; }
+    .badge { border-radius: 9999px; display: flex; align-items: center; justify-content: center; color: white; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    ${layout.elements.map(el => {
+      const style = Object.entries(el.style || {}).map(([k, v]) => `${k.replace(/[A-Z]/g, m => "-" + m.toLowerCase())}: ${v}${typeof v === 'number' ? 'px' : ''}`).join('; ');
+      const content = el.type === 'text' ? (el.binding ? `{{${el.binding}}}` : el.content) : 
+                     el.type === 'badge' ? (el.content || `{{${el.binding}}}`) : '';
+      
+      return `
+      <div class="element" style="left: ${el.x}px; top: ${el.y}px; width: ${el.width}px; height: ${el.height}px; ${style}">
+        ${el.type === 'text' || el.type === 'badge' ? content : ''}
+        ${el.type === 'line' || el.type === 'box' ? '' : ''}
+      </div>`;
+    }).join('')}
+  </div>
+  <script>
+    window.onload = () => {
+      window.print();
+      setTimeout(() => window.close(), 100);
+    };
+  </script>
+</body>
+</html>`;
+              const blob = new Blob([html], { type: 'text/html' });
+              const url = URL.createObjectURL(blob);
+              const printWindow = window.open(url, '_blank');
+              if (printWindow) {
+                printWindow.onload = () => {
+                  URL.revokeObjectURL(url);
+                };
+              }
+            }}
+          >
+            <Download className="w-4 h-4 mr-2" /> Export PDF
+          </Button>
+          
           <Separator orientation="vertical" className="h-6" />
 
           <Button 
