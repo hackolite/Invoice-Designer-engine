@@ -1888,10 +1888,20 @@ export function Canvas({
                    )}
                  />
                )}
-               {!isPreviewMode && isSelected && el.type === 'table' && (
-                 <div 
-                   className="absolute -bottom-14 left-0 right-0 bg-white border rounded-lg shadow-lg p-2 flex items-center gap-3 pointer-events-auto z-40"
-                   onClick={(e) => e.stopPropagation()}
+               {!isPreviewMode && isSelected && el.type === 'table' && (() => {
+                  // Calculate if toolbar should be positioned above or below the table
+                  const toolbarHeight = 56; // Height of the toolbar (14 * 4px)
+                  const tableBottom = el.y + el.height;
+                  const spaceBelow = PAGE_HEIGHT - tableBottom;
+                  const shouldPositionAbove = spaceBelow < toolbarHeight;
+                  
+                  return (
+                    <div 
+                      className={clsx(
+                        "absolute left-0 right-0 bg-white border rounded-lg shadow-lg p-2 flex items-center gap-3 pointer-events-auto z-40",
+                        shouldPositionAbove ? "-top-14" : "-bottom-14"
+                      )}
+                      onClick={(e) => e.stopPropagation()}
                  >
                    <div className="flex items-center gap-2">
                      <Palette className="w-4 h-4 text-muted-foreground" />
@@ -1977,11 +1987,22 @@ export function Canvas({
                      <Copy className="w-4 h-4" />
                    </Button>
                  </div>
-               )}
-                {!isPreviewMode && isSelected && el.type === 'gridtable' && (
-                  <div 
-                    className="absolute -bottom-14 left-0 right-0 bg-white border rounded-lg shadow-lg p-2 flex items-center gap-2 pointer-events-auto z-40"
-                    onClick={(e) => e.stopPropagation()}
+                 );
+               })()}
+                {!isPreviewMode && isSelected && el.type === 'gridtable' && (() => {
+                  // Calculate if toolbar should be positioned above or below the gridtable
+                  const toolbarHeight = 56; // Height of the toolbar (14 * 4px)
+                  const tableBottom = el.y + el.height;
+                  const spaceBelow = PAGE_HEIGHT - tableBottom;
+                  const shouldPositionAbove = spaceBelow < toolbarHeight;
+                  
+                  return (
+                    <div 
+                      className={clsx(
+                        "absolute left-0 right-0 bg-white border rounded-lg shadow-lg p-2 flex items-center gap-2 pointer-events-auto z-40",
+                        shouldPositionAbove ? "-top-14" : "-bottom-14"
+                      )}
+                      onClick={(e) => e.stopPropagation()}
                   >
                     <div className="flex items-center gap-2">
                       <Palette className="w-4 h-4 text-muted-foreground" />
@@ -2119,7 +2140,8 @@ export function Canvas({
                       <Copy className="w-4 h-4" />
                     </Button>
                   </div>
-                )}
+                  );
+                })()}
             </div>
           </Rnd>
         );
