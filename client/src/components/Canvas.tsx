@@ -1530,59 +1530,33 @@ export function Canvas({
               const newX = snapToGrid(position.x);
               const newY = snapToGrid(position.y);
               
-              // For gridtable, handle proportional resizing on both height and width changes
-              if (el.type === 'gridtable' && el.gridTableConfig) {
+              // For gridtable, handle proportional resizing on height change
+              if (el.type === 'gridtable' && el.gridTableConfig && el.height !== newHeight) {
                 const config = el.gridTableConfig;
                 const oldHeight = el.height;
-                const oldWidth = el.width;
-                const heightChanged = oldHeight !== newHeight;
-                const widthChanged = oldWidth !== newWidth;
+                const heightRatio = newHeight / oldHeight;
                 
+                // Scale all row heights proportionally
+                // Note: Column widths are stored as percentages, so they scale naturally with width changes
                 let newRowHeights: number[] | undefined;
-                let newColWidths: number[] | undefined;
-                
-                // Scale row heights proportionally on height change
-                if (heightChanged) {
-                  const heightRatio = newHeight / oldHeight;
-                  if (config.rowHeights && config.rowHeights.length > 0) {
-                    newRowHeights = config.rowHeights.map(h => h * heightRatio);
-                  } else {
-                    // If no custom row heights, create proportional ones based on equal distribution
-                    const scaledRowHeight = (oldHeight / config.rows) * heightRatio;
-                    newRowHeights = Array(config.rows).fill(scaledRowHeight);
-                  }
-                }
-                
-                // Scale column widths proportionally on width change
-                // Column widths are stored as percentages, so they remain proportional
-                // We don't need to modify them, but we should preserve them
-                if (widthChanged) {
-                  // Column widths are already in percentages, so they scale naturally
-                  // Just preserve existing colWidths if they exist
-                  newColWidths = config.colWidths;
-                }
-                
-                // Update config only if changes were made
-                if (heightChanged || widthChanged) {
-                  onElementUpdate(el.id, {
-                    width: newWidth,
-                    height: newHeight,
-                    x: newX,
-                    y: newY,
-                    gridTableConfig: {
-                      ...config,
-                      ...(newRowHeights && { rowHeights: newRowHeights }),
-                      ...(newColWidths && { colWidths: newColWidths })
-                    }
-                  });
+                if (config.rowHeights && config.rowHeights.length > 0) {
+                  newRowHeights = config.rowHeights.map(h => h * heightRatio);
                 } else {
-                  onElementUpdate(el.id, {
-                    width: newWidth,
-                    height: newHeight,
-                    x: newX,
-                    y: newY,
-                  });
+                  // If no custom row heights, create proportional ones based on equal distribution
+                  const scaledRowHeight = (oldHeight / config.rows) * heightRatio;
+                  newRowHeights = Array(config.rows).fill(scaledRowHeight);
                 }
+                
+                onElementUpdate(el.id, {
+                  width: newWidth,
+                  height: newHeight,
+                  x: newX,
+                  y: newY,
+                  gridTableConfig: {
+                    ...config,
+                    rowHeights: newRowHeights
+                  }
+                });
               } else {
                 onElementUpdate(el.id, {
                   width: newWidth,
