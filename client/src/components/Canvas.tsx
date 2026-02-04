@@ -449,7 +449,6 @@ export function Canvas({
     const newTotalRows = currentTotalRows + 1;
     
     // Recalculate row heights to accommodate the new footer row
-    const currentRowHeights = config.rowHeights || Array(currentTotalRows).fill(element.height / currentTotalRows);
     const newRowHeight = element.height / newTotalRows;
     const newRowHeights = Array(newTotalRows).fill(newRowHeight);
     
