@@ -1293,8 +1293,8 @@ export function Canvas({
                   newRowHeights = config.rowHeights.map(h => h * heightRatio);
                 } else {
                   // If no custom row heights, create proportional ones based on equal distribution
-                  const rowHeight = oldHeight / config.rows;
-                  newRowHeights = Array(config.rows).fill(rowHeight * heightRatio);
+                  const scaledRowHeight = (oldHeight / config.rows) * heightRatio;
+                  newRowHeights = Array(config.rows).fill(scaledRowHeight);
                 }
                 
                 onElementUpdate(el.id, {
