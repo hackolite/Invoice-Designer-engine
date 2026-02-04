@@ -18,6 +18,27 @@ import { useToast } from "@/hooks/use-toast";
 import type { TemplateElement, TemplateLayout } from "@shared/schema";
 import { Link } from "wouter";
 
+// CSS properties that should not have 'px' appended when numeric
+const UNITLESS_CSS_PROPERTIES = new Set([
+  'opacity', 'z-index', 'font-weight', 'line-height', 'flex', 'flex-grow', 
+  'flex-shrink', 'order', 'zoom', 'animation-iteration-count'
+]);
+
+// Helper function to convert camelCase style object to CSS string
+const convertStyleObjectToCss = (style: Record<string, string | number>): string => {
+  return Object.entries(style)
+    .map(([key, value]) => {
+      const kebabKey = key.replace(/[A-Z]/g, m => "-" + m.toLowerCase());
+      const cssValue = typeof value === 'number' && !UNITLESS_CSS_PROPERTIES.has(kebabKey)
+        ? `${value}px` 
+        : value;
+      return `${kebabKey}: ${cssValue}`;
+    })
+    .join('; ');
+};
+
+const BLOB_URL_CLEANUP_DELAY_MS = 2000; // Time to allow window to load before cleaning up blob URL
+
 export default function Editor() {
   const [, params] = useRoute("/editor/:id");
   const id = params?.id ? parseInt(params.id) : null;
@@ -381,7 +402,7 @@ export default function Editor() {
 <body>
   <div class="page">
     ${layout.elements.map(el => {
-      const style = Object.entries(el.style || {}).map(([k, v]) => `${k.replace(/[A-Z]/g, m => "-" + m.toLowerCase())}: ${v}${typeof v === 'number' ? 'px' : ''}`).join('; ');
+      const style = convertStyleObjectToCss(el.style || {});
       const content = el.type === 'text' ? (el.binding ? `{{${el.binding}}}` : el.content) : 
                      el.type === 'badge' ? (el.content || `{{${el.binding}}}`) : '';
       
@@ -403,6 +424,68 @@ export default function Editor() {
             }}
           >
             <Download className="w-4 h-4 mr-2" /> Export HTML
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => {
+              if (!layout) return;
+              const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${name || 'Template'}</title>
+  <style>
+    @media print {
+      @page { margin: 0; size: A4 portrait; }
+      body { margin: 0; }
+    }
+    body { margin: 0; font-family: sans-serif; }
+    .page { width: 794px; height: 1123px; position: relative; background: white; }
+    .element { position: absolute; overflow: hidden; }
+    .line { background: black; }
+    .badge { border-radius: 9999px; display: flex; align-items: center; justify-content: center; color: white; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    ${layout.elements.map(el => {
+      const style = convertStyleObjectToCss(el.style || {});
+      const content = el.type === 'text' ? (el.binding ? `{{${el.binding}}}` : el.content) : 
+                     el.type === 'badge' ? (el.content || `{{${el.binding}}}`) : '';
+      
+      return `
+      <div class="element" style="left: ${el.x}px; top: ${el.y}px; width: ${el.width}px; height: ${el.height}px; ${style}">
+        ${el.type === 'text' || el.type === 'badge' ? content : ''}
+        ${el.type === 'line' || el.type === 'box' ? '' : ''}
+      </div>`;
+    }).join('')}
+  </div>
+  <script>
+    window.onload = () => {
+      window.print();
+      // Close window after user finishes printing
+      window.onafterprint = () => {
+        window.close();
+      };
+    };
+  </script>
+</body>
+</html>`;
+              const blob = new Blob([html], { type: 'text/html' });
+              const url = URL.createObjectURL(blob);
+              const printWindow = window.open(url, '_blank');
+              // Clean up the blob URL after a delay to allow the window to load
+              if (printWindow) {
+                setTimeout(() => URL.revokeObjectURL(url), BLOB_URL_CLEANUP_DELAY_MS);
+              }
+            }}
+          >
+            <Download className="w-4 h-4 mr-2" /> Export PDF
           </Button>
           
           <Separator orientation="vertical" className="h-6" />
