@@ -66,6 +66,35 @@ All changes have been validated:
 2. ✅ Application builds successfully (`npm run build`)
 3. ✅ buildDataPathTree function tested with sample invoice data
 4. ✅ All nested paths correctly generated
+5. ✅ Code review completed with no issues
+6. ✅ Security scan (CodeQL) completed with 0 alerts
+
+## Manual Testing Recommendations
+
+To test these features manually:
+
+### 1. Test Context Menu Transparency
+1. Open the Invoice Designer editor
+2. Add a GridTable element to the canvas
+3. Right-click on any table cell
+4. Verify the context menu has a solid, opaque background (not transparent)
+5. Check both light and dark themes
+
+### 2. Test JSON Data Binding Navigation
+1. Create or edit a template with sample data (e.g., invoice with customer info)
+2. Right-click on a GridTable cell
+3. Look for "Bind Data" menu item with Database icon
+4. Click on "Bind Data" to see the cascading menu
+5. Navigate through nested objects (e.g., invoice → customer → address → city)
+6. Select a path and verify the cell content updates to show `{{path}}`
+7. Switch to preview mode and verify the binding resolves correctly
+
+### 3. Test Proportional GridTable Row Resizing
+1. Create a GridTable with multiple rows of different heights
+2. Select the GridTable element
+3. Resize it using the bottom handle to change the height
+4. Verify that all rows scale proportionally (maintain their size ratio)
+5. Example: If row 1 is 2x the height of row 2 before resize, it should remain 2x after resize
 
 ## Key Features
 
