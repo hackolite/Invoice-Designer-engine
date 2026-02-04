@@ -1101,10 +1101,10 @@ export function Canvas({
                             borderWidth: `${gridBorderWidth}px`,
                             borderStyle: 'solid',
                             borderColor: gridBorderColor,
-                            textAlign: (footerRow.style?.textAlign as string) || 'left',
+                            textAlign: footerRow.style?.textAlign || 'left',
                             fontWeight: footerRow.style?.fontWeight || 'bold',
                             fontStyle: footerRow.style?.fontStyle || 'normal',
-                            textDecoration: footerRow.style?.textDecoration as string || 'none'
+                            textDecoration: footerRow.style?.textDecoration || 'none'
                           }}
                           onDoubleClick={(e) => {
                             if (!isPreviewMode) {
@@ -1143,10 +1143,10 @@ export function Canvas({
                             borderWidth: `${gridBorderWidth}px`,
                             borderStyle: 'solid',
                             borderColor: gridBorderColor,
-                            textAlign: (footerRow.style?.textAlign as string) || 'left',
+                            textAlign: footerRow.style?.textAlign || 'left',
                             fontWeight: footerRow.style?.fontWeight || 'bold',
                             fontStyle: footerRow.style?.fontStyle || 'normal',
-                            textDecoration: footerRow.style?.textDecoration as string || 'none'
+                            textDecoration: footerRow.style?.textDecoration || 'none'
                           }}
                           onDoubleClick={(e) => {
                             if (!isPreviewMode) {
@@ -1599,10 +1599,10 @@ export function Canvas({
                           borderWidth: `${gridBorderWidth}px`,
                           borderStyle: 'solid',
                           borderColor: gridBorderColor,
-                          textAlign: (footerRow.style?.textAlign as string) || 'left',
+                          textAlign: footerRow.style?.textAlign || 'left',
                           fontWeight: footerRow.style?.fontWeight || 'bold',
                           fontStyle: footerRow.style?.fontStyle || 'normal',
-                          textDecoration: footerRow.style?.textDecoration as string || 'none'
+                          textDecoration: footerRow.style?.textDecoration || 'none'
                         }}
                         colSpan={config.cols > 1 ? config.cols - 1 : 1}
                         onDoubleClick={(e) => {
@@ -1643,10 +1643,10 @@ export function Canvas({
                             borderWidth: `${gridBorderWidth}px`,
                             borderStyle: 'solid',
                             borderColor: gridBorderColor,
-                            textAlign: (footerRow.style?.textAlign as string) || 'left',
+                            textAlign: footerRow.style?.textAlign || 'left',
                             fontWeight: footerRow.style?.fontWeight || 'bold',
                             fontStyle: footerRow.style?.fontStyle || 'normal',
-                            textDecoration: footerRow.style?.textDecoration as string || 'none'
+                            textDecoration: footerRow.style?.textDecoration || 'none'
                           }}
                           onDoubleClick={(e) => {
                             if (!isPreviewMode) {
