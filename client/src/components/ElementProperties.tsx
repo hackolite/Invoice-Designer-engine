@@ -397,6 +397,10 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                           const newRows = parseInt(e.target.value) || 1;
                           const config = element.gridTableConfig!;
                           
+                          // Calculate new height to maintain consistent row heights
+                          const heightPerRow = element.height / config.rows;
+                          const newHeight = Math.round(heightPerRow * newRows);
+                          
                           // Filter out cells that are now out of bounds
                           const newCells = config.cells.filter(cell => cell.row < newRows);
                           
@@ -414,7 +418,8 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                           }
                           
                           onChange(element.id, {
-                            gridTableConfig: { ...config, rows: newRows, cells: newCells }
+                            gridTableConfig: { ...config, rows: newRows, cells: newCells },
+                            height: newHeight
                           });
                         }}
                         min={1}
