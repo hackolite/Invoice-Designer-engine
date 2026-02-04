@@ -62,6 +62,8 @@ export interface TemplateElement {
     rows: number;
     cols: number;
     heightPerRow?: number; // Stored height per row to maintain consistency when adding/removing rows
+    rowHeights?: number[]; // Individual height for each row (optional, for custom sizing)
+    colWidths?: number[]; // Individual width percentages for each column (optional, for custom sizing)
     cells: {
       row: number;
       col: number;

@@ -46,6 +46,13 @@ const PAGE_WIDTH = 794;  // 210mm * 3.78
 const PAGE_HEIGHT = 1123; // 297mm * 3.78
 const GRID_SIZE = 10;
 
+// GridTable constraints and settings
+const MIN_ROW_HEIGHT = 20; // Minimum height for a row in pixels
+const MIN_COL_WIDTH_PERCENT = 5; // Minimum width for a column as percentage
+const FUSION_THRESHOLD = 15; // Distance in pixels for table fusion snapping
+const RESIZE_HANDLE_SIZE = 4; // Size of resize handle in pixels
+const RESIZE_HANDLE_OFFSET = 2; // Offset for centering resize handle in pixels
+
 export function Canvas({
   layout,
   sampleData,
@@ -59,6 +66,44 @@ export function Canvas({
   const containerRef = useRef<HTMLDivElement>(null);
   const [editingCell, setEditingCell] = useState<{ elementId: string; row: number; col: number } | null>(null);
   const [contextMenuCell, setContextMenuCell] = useState<{ elementId: string; row: number; col: number } | null>(null);
+  const [hoveredRow, setHoveredRow] = useState<{ elementId: string; row: number } | null>(null);
+  const [resizingBorder, setResizingBorder] = useState<{ elementId: string; type: 'row' | 'col'; index: number; startPos: number; startSize: number } | null>(null);
+
+  // Handle resize border dragging
+  useEffect(() => {
+    if (!resizingBorder) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!resizingBorder) return;
+      
+      const element = layout.elements.find(el => el.id === resizingBorder.elementId);
+      if (!element || !element.gridTableConfig) return;
+
+      if (resizingBorder.type === 'row') {
+        const delta = e.clientY - resizingBorder.startPos;
+        const newHeight = Math.max(20, resizingBorder.startSize + delta / scale);
+        handleRowHeightResize(resizingBorder.elementId, resizingBorder.index, newHeight);
+      } else if (resizingBorder.type === 'col') {
+        const delta = e.clientX - resizingBorder.startPos;
+        const elementWidth = element.width;
+        const deltaPercent = (delta / scale / elementWidth) * 100;
+        const newWidthPercent = resizingBorder.startSize + deltaPercent;
+        handleColWidthResize(resizingBorder.elementId, resizingBorder.index, newWidthPercent);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setResizingBorder(null);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [resizingBorder, layout.elements, scale]);
 
   // Magnetic snap helper
   const snapToGrid = (num: number) => {
@@ -305,6 +350,125 @@ export function Canvas({
     onElementUpdate(elementId, {
       gridTableConfig: { ...config, cells: newCells }
     });
+  };
+
+  // Handle row height resizing
+  const handleRowHeightResize = (elementId: string, rowIndex: number, newHeight: number) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element || !element.gridTableConfig) return;
+    
+    const config = element.gridTableConfig;
+    // Guard against division by zero
+    if (config.rows <= 0) return;
+    
+    const rowHeights = config.rowHeights || Array(config.rows).fill(element.height / config.rows);
+    const newRowHeights = [...rowHeights];
+    newRowHeights[rowIndex] = Math.max(MIN_ROW_HEIGHT, newHeight);
+    
+    // Update total element height
+    const newTotalHeight = newRowHeights.reduce((sum, h) => sum + h, 0);
+    
+    onElementUpdate(elementId, {
+      gridTableConfig: { ...config, rowHeights: newRowHeights },
+      height: newTotalHeight
+    });
+  };
+
+  // Handle column width resizing
+  const handleColWidthResize = (elementId: string, colIndex: number, newWidthPercent: number) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element || !element.gridTableConfig) return;
+    
+    const config = element.gridTableConfig;
+    // Guard against division by zero
+    if (config.cols <= 0) return;
+    
+    const colWidths = config.colWidths || Array(config.cols).fill(100 / config.cols);
+    const newColWidths = [...colWidths];
+    
+    // Ensure minimum width and adjust
+    const maxWidth = 100 - (config.cols - 1) * MIN_COL_WIDTH_PERCENT;
+    newColWidths[colIndex] = Math.max(MIN_COL_WIDTH_PERCENT, Math.min(maxWidth, newWidthPercent));
+    
+    // Normalize to ensure total is 100%
+    const total = newColWidths.reduce((sum, w) => sum + w, 0);
+    // Guard against division by zero in normalization
+    if (total <= 0) return;
+    
+    const normalized = newColWidths.map(w => (w / total) * 100);
+    
+    onElementUpdate(elementId, {
+      gridTableConfig: { ...config, colWidths: normalized }
+    });
+  };
+
+  // Detect and apply fusion between nearby gridtables
+  const applyTableFusion = (movedElementId: string, newX: number, newY: number) => {
+    const movedElement = layout.elements.find(e => e.id === movedElementId);
+    if (!movedElement || movedElement.type !== 'gridtable' || !movedElement.gridTableConfig) return { x: newX, y: newY };
+
+    const updates: { id: string; updates: Partial<TemplateElement> }[] = [];
+    let finalX = newX;
+    let finalY = newY;
+
+    // Check against other gridtables
+    for (const otherEl of layout.elements) {
+      if (otherEl.id === movedElementId || otherEl.type !== 'gridtable' || !otherEl.gridTableConfig) continue;
+
+      const movedRight = finalX + movedElement.width;
+      const movedBottom = finalY + movedElement.height;
+      const otherRight = otherEl.x + otherEl.width;
+      const otherBottom = otherEl.y + otherEl.height;
+
+      // Check for horizontal alignment (side by side)
+      const horizontalOverlap = !(movedBottom < otherEl.y || finalY > otherBottom);
+      
+      // Left edge of moved aligns with right edge of other
+      if (horizontalOverlap && Math.abs(finalX - otherRight) < FUSION_THRESHOLD) {
+        finalX = otherRight; // Snap to right edge
+        
+        // Align rows if they're close
+        if (Math.abs(finalY - otherEl.y) < FUSION_THRESHOLD) {
+          finalY = otherEl.y;
+          // Could optionally sync row heights here
+        }
+      }
+      
+      // Right edge of moved aligns with left edge of other
+      if (horizontalOverlap && Math.abs(movedRight - otherEl.x) < FUSION_THRESHOLD) {
+        finalX = otherEl.x - movedElement.width; // Snap to left edge
+        
+        // Align rows if they're close
+        if (Math.abs(finalY - otherEl.y) < FUSION_THRESHOLD) {
+          finalY = otherEl.y;
+        }
+      }
+
+      // Check for vertical alignment (top and bottom)
+      const verticalOverlap = !(movedRight < otherEl.x || finalX > otherRight);
+      
+      // Top edge of moved aligns with bottom edge of other
+      if (verticalOverlap && Math.abs(finalY - otherBottom) < FUSION_THRESHOLD) {
+        finalY = otherBottom; // Snap to bottom edge
+        
+        // Align columns if they're close
+        if (Math.abs(finalX - otherEl.x) < FUSION_THRESHOLD) {
+          finalX = otherEl.x;
+        }
+      }
+      
+      // Bottom edge of moved aligns with top edge of other
+      if (verticalOverlap && Math.abs(movedBottom - otherEl.y) < FUSION_THRESHOLD) {
+        finalY = otherEl.y - movedElement.height; // Snap to top edge
+        
+        // Align columns if they're close
+        if (Math.abs(finalX - otherEl.x) < FUSION_THRESHOLD) {
+          finalX = otherEl.x;
+        }
+      }
+    }
+
+    return { x: snapToGrid(finalX), y: snapToGrid(finalY) };
   };
 
   // Helper to render content based on element type and mode
@@ -604,22 +768,33 @@ export function Canvas({
         }
       });
       
-      // Calculate equal column width percentage
-      const columnWidthPercent = `${(100 / config.cols).toFixed(2)}%`;
+      // Calculate column widths (use custom or equal distribution)
+      // Guard against division by zero
+      const colWidths = config.colWidths || (config.cols > 0 ? Array(config.cols).fill(100 / config.cols) : [100]);
+      const rowHeights = config.rowHeights || (config.rows > 0 ? Array(config.rows).fill(el.height / config.rows) : [el.height]);
       
       return (
-        <div className="w-full h-full overflow-hidden pointer-events-auto" style={{
+        <div className="w-full h-full overflow-hidden pointer-events-auto relative" style={{
           border: `${gridBorderWidth}px solid ${gridBorderColor}`
         }}>
-          <table className="w-full h-full text-sm text-left border-collapse pointer-events-auto">
+          <table className="w-full h-full text-sm text-left border-collapse pointer-events-auto" style={{ tableLayout: 'fixed' }}>
             <colgroup>
-              {Array.from({ length: config.cols }, (_, colIdx) => (
-                <col key={colIdx} style={{ width: columnWidthPercent }} />
+              {colWidths.map((width, colIdx) => (
+                <col key={colIdx} style={{ width: `${width}%` }} />
               ))}
             </colgroup>
             <tbody>
-              {Array.from({ length: config.rows }, (_, rowIdx) => (
-                <tr key={rowIdx}>
+              {Array.from({ length: config.rows }, (_, rowIdx) => {
+                const rowHeight = rowHeights[rowIdx];
+                const isHovered = hoveredRow?.elementId === el.id && hoveredRow?.row === rowIdx;
+                
+                return (
+                  <tr 
+                    key={rowIdx}
+                    style={{ height: `${rowHeight}px` }}
+                    onMouseEnter={() => !isPreviewMode && setHoveredRow({ elementId: el.id, row: rowIdx })}
+                    onMouseLeave={() => !isPreviewMode && setHoveredRow(null)}
+                  >
                   {Array.from({ length: config.cols }, (_, colIdx) => {
                     const key = `${rowIdx}-${colIdx}`;
                     
@@ -786,9 +961,90 @@ export function Canvas({
                     );
                   })}
                 </tr>
-              ))}
+              );
+            })}
             </tbody>
           </table>
+          {/* Overlay delete buttons for rows */}
+          {!isPreviewMode && hoveredRow && hoveredRow.elementId === el.id && config.rows > 1 && (
+            <div
+              className="absolute right-0 pointer-events-auto"
+              style={{
+                top: `${rowHeights.slice(0, hoveredRow.row).reduce((sum, h) => sum + h, 0)}px`,
+                height: `${rowHeights[hoveredRow.row]}px`,
+                display: 'flex',
+                alignItems: 'center',
+                transform: 'translateX(calc(100% + 4px))',
+                zIndex: 10
+              }}
+            >
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 opacity-80 hover:opacity-100 shadow-sm border border-destructive/20"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteRow(el.id, hoveredRow.row);
+                  setHoveredRow(null);
+                }}
+                title={`Delete row ${hoveredRow.row + 1}`}
+                aria-label={`Delete row ${hoveredRow.row + 1}`}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          )}
+          {/* Row resize handles */}
+          {!isPreviewMode && config.rows > 1 && rowHeights.slice(0, -1).map((_, rowIdx) => {
+            const topPos = rowHeights.slice(0, rowIdx + 1).reduce((sum, h) => sum + h, 0);
+            return (
+              <div
+                key={`row-resize-${rowIdx}`}
+                className="absolute left-0 right-0 pointer-events-auto cursor-row-resize hover:bg-blue-500/20"
+                style={{
+                  top: `${topPos - RESIZE_HANDLE_OFFSET}px`,
+                  height: `${RESIZE_HANDLE_SIZE}px`,
+                  zIndex: 5
+                }}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  setResizingBorder({
+                    elementId: el.id,
+                    type: 'row',
+                    index: rowIdx,
+                    startPos: e.clientY,
+                    startSize: rowHeights[rowIdx]
+                  });
+                }}
+              />
+            );
+          })}
+          {/* Column resize handles */}
+          {!isPreviewMode && config.cols > 1 && colWidths.slice(0, -1).map((_, colIdx) => {
+            const leftPercent = colWidths.slice(0, colIdx + 1).reduce((sum, w) => sum + w, 0);
+            return (
+              <div
+                key={`col-resize-${colIdx}`}
+                className="absolute top-0 bottom-0 pointer-events-auto cursor-col-resize hover:bg-blue-500/20"
+                style={{
+                  left: `${leftPercent}%`,
+                  width: `${RESIZE_HANDLE_SIZE}px`,
+                  transform: `translateX(-${RESIZE_HANDLE_OFFSET}px)`,
+                  zIndex: 5
+                }}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  setResizingBorder({
+                    elementId: el.id,
+                    type: 'col',
+                    index: colIdx,
+                    startPos: e.clientX,
+                    startSize: colWidths[colIdx]
+                  });
+                }}
+              />
+            );
+          })}
         </div>
       );
     }
@@ -834,7 +1090,12 @@ export function Canvas({
             dragGrid={[GRID_SIZE, GRID_SIZE]}
             resizeGrid={[GRID_SIZE, GRID_SIZE]}
             onDragStop={(e, d) => {
-              onElementUpdate(el.id, { x: snapToGrid(d.x), y: snapToGrid(d.y) });
+              if (el.type === 'gridtable') {
+                const { x, y } = applyTableFusion(el.id, d.x, d.y);
+                onElementUpdate(el.id, { x, y });
+              } else {
+                onElementUpdate(el.id, { x: snapToGrid(d.x), y: snapToGrid(d.y) });
+              }
             }}
             onResizeStop={(e, direction, ref, delta, position) => {
               onElementUpdate(el.id, {
