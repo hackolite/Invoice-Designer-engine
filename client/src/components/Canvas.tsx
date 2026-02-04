@@ -439,28 +439,31 @@ export function Canvas({
     });
   };
 
-  // Handler to add footer row to price table
-  const handleAddFooter = (elementId: string) => {
-    const element = layout.elements.find(e => e.id === elementId);
-    if (!element || !element.tableConfig) return;
-    
-    const config = element.tableConfig;
-    const currentTotalRows = config.columns.length + (config.footer?.length || 0);
-    const newTotalRows = currentTotalRows + 1;
-    
-    // Recalculate row heights to accommodate the new footer row
-    const newRowHeight = element.height / newTotalRows;
-    const newRowHeights = Array(newTotalRows).fill(newRowHeight);
-    
-    onElementUpdate(elementId, {
-      tableConfig: {
-        ...config,
-        footer: [...(config.footer || []), DEFAULT_FOOTER_ROW],
-        rowHeights: newRowHeights
-      }
-    });
-  };
-
+// Handler to add footer row to price table
+const handleAddFooter = (elementId: string) => {
+  const element = layout.elements.find(e => e.id === elementId);
+  if (!element || !element.tableConfig) return;
+  
+  const config = element.tableConfig;
+  const currentFooterLength = config.footer?.length || 0;
+  const currentTotalRows = config.columns.length + currentFooterLength;
+  const newTotalRows = currentTotalRows + 1;
+  
+  // Recalculate row heights to accommodate the new footer row
+  const newRowHeight = element.height / newTotalRows;
+  const newRowHeights = Array(newTotalRows).fill(newRowHeight);
+  
+  // Create new footer array, ensuring we don't have undefined
+  const newFooter = config.footer ? [...config.footer, DEFAULT_FOOTER_ROW] : [DEFAULT_FOOTER_ROW];
+  
+  onElementUpdate(elementId, {
+    tableConfig: {
+      ...config,
+      footer: newFooter,
+      rowHeights: newRowHeights
+    }
+  });
+};
   // Handler to remove last footer row from price table
   const handleRemoveLastFooter = (elementId: string) => {
     const element = layout.elements.find(e => e.id === elementId);
