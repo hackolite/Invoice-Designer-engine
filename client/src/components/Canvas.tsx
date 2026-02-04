@@ -107,18 +107,29 @@ export function Canvas({
       if (!resizingBorder) return;
       
       const element = layout.elements.find(el => el.id === resizingBorder.elementId);
-      if (!element || !element.gridTableConfig) return;
+      if (!element) return;
 
-      if (resizingBorder.type === 'row') {
-        const delta = e.clientY - resizingBorder.startPos;
-        const newHeight = Math.max(20, resizingBorder.startSize + delta / scale);
-        handleRowHeightResize(resizingBorder.elementId, resizingBorder.index, newHeight);
-      } else if (resizingBorder.type === 'col') {
-        const delta = e.clientX - resizingBorder.startPos;
-        const elementWidth = element.width;
-        const deltaPercent = (delta / scale / elementWidth) * 100;
-        const newWidthPercent = resizingBorder.startSize + deltaPercent;
-        handleColWidthResize(resizingBorder.elementId, resizingBorder.index, newWidthPercent);
+      // Handle GridTable resizing
+      if (element.gridTableConfig) {
+        if (resizingBorder.type === 'row') {
+          const delta = e.clientY - resizingBorder.startPos;
+          const newHeight = Math.max(20, resizingBorder.startSize + delta / scale);
+          handleRowHeightResize(resizingBorder.elementId, resizingBorder.index, newHeight);
+        } else if (resizingBorder.type === 'col') {
+          const delta = e.clientX - resizingBorder.startPos;
+          const elementWidth = element.width;
+          const deltaPercent = (delta / scale / elementWidth) * 100;
+          const newWidthPercent = resizingBorder.startSize + deltaPercent;
+          handleColWidthResize(resizingBorder.elementId, resizingBorder.index, newWidthPercent);
+        }
+      }
+      // Handle PriceTable resizing
+      else if (element.tableConfig && element.tableConfig.tableType === 'price') {
+        if (resizingBorder.type === 'row') {
+          const delta = e.clientY - resizingBorder.startPos;
+          const newHeight = Math.max(20, resizingBorder.startSize + delta / scale);
+          handlePriceTableRowHeightResize(resizingBorder.elementId, resizingBorder.index, newHeight);
+        }
       }
     };
 
@@ -500,7 +511,9 @@ export function Canvas({
     if (!element || !element.gridTableConfig || !element.gridTableConfig.footer) return;
     
     const config = element.gridTableConfig;
-    const footer = config.footer;
+    const footer = config.footer || [];
+    if (footer.length === 0) return;
+    
     const newFooter = [...footer];
     newFooter[footerIdx] = { ...newFooter[footerIdx], [field]: newValue };
     
@@ -662,6 +675,30 @@ export function Canvas({
     
     onElementUpdate(elementId, {
       gridTableConfig: { ...config, colWidths: newColWidths }
+    });
+  };
+
+  // Handle row height resizing for Price Tables
+  const handlePriceTableRowHeightResize = (elementId: string, rowIndex: number, newHeight: number) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element || !element.tableConfig) return;
+    
+    const config = element.tableConfig;
+    const totalRows = config.columns.length + (config.footer?.length || 0);
+    
+    // Guard against invalid row index
+    if (totalRows <= 0 || rowIndex >= totalRows) return;
+    
+    const rowHeights = config.rowHeights || Array(totalRows).fill(element.height / totalRows);
+    const newRowHeights = [...rowHeights];
+    newRowHeights[rowIndex] = Math.max(MIN_ROW_HEIGHT, newHeight);
+    
+    // Update total element height
+    const newTotalHeight = newRowHeights.reduce((sum, h) => sum + h, 0);
+    
+    onElementUpdate(elementId, {
+      tableConfig: { ...config, rowHeights: newRowHeights },
+      height: newTotalHeight
     });
   };
 
@@ -952,21 +989,31 @@ export function Canvas({
           ? getValue(sampleData, config.dataSource, {}) 
           : {}; // Empty object for editor
         
+        // Calculate row heights for price table
+        const totalRows = config.columns.length + (config.footer?.length || 0);
+        const rowHeights = config.rowHeights || (totalRows > 0 ? Array(totalRows).fill(el.height / totalRows) : [el.height]);
+        
         return (
-          <div className={clsx(
-            "w-full h-full overflow-hidden",
-            tableStyle === 'default' && "",
-            tableStyle === 'minimal' && "",
-            tableStyle === 'modern' && "rounded-lg shadow-sm"
-          )}>
-            <table className="w-full text-sm text-left border-collapse">
-              <tbody>
+          <div className="w-full h-full pointer-events-auto relative">
+            <div className={clsx(
+              "w-full h-full overflow-hidden",
+              tableStyle === 'default' && "",
+              tableStyle === 'minimal' && "",
+              tableStyle === 'modern' && "rounded-lg shadow-sm"
+            )}>
+              <table className="w-full text-sm text-left border-collapse">
+                <tbody>
                 {config.columns.map((col, idx) => {
                   let cellValue;
                   if (isPreviewMode) {
                     const rawVal = getValue(sourceData, col.binding);
                     if (col.format === 'currency') {
-                      cellValue = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(rawVal) || 0);
+                      const currency = config.currency || 'USD';
+                      if (currency === 'none') {
+                        cellValue = Number(rawVal) || 0;
+                      } else {
+                        cellValue = new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(rawVal) || 0);
+                      }
                     } else {
                       cellValue = rawVal;
                     }
@@ -1009,7 +1056,12 @@ export function Canvas({
                         if (binding.length > 0) {
                           const rawVal = getValue(sourceData, binding);
                           if (footerRow.format === 'currency') {
-                            footerValue = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(rawVal) || 0);
+                            const currency = config.currency || 'USD';
+                            if (currency === 'none') {
+                              footerValue = Number(rawVal) || 0;
+                            } else {
+                              footerValue = new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(rawVal) || 0);
+                            }
                           } else if (footerRow.format === 'number') {
                             footerValue = new Intl.NumberFormat('en-US').format(Number(rawVal) || 0);
                           } else {
@@ -1115,6 +1167,32 @@ export function Canvas({
               )}
             </table>
           </div>
+          {/* Row resize handles for PriceTable */}
+          {!isPreviewMode && totalRows > 1 && rowHeights.slice(0, -1).map((_, rowIdx) => {
+            const topPos = rowHeights.slice(0, rowIdx + 1).reduce((sum, h) => sum + h, 0);
+            return (
+              <div
+                key={`row-resize-${rowIdx}`}
+                className="absolute left-0 right-0 pointer-events-auto cursor-row-resize hover:bg-blue-500/20"
+                style={{
+                  top: `${topPos - RESIZE_HANDLE_OFFSET}px`,
+                  height: `${RESIZE_HANDLE_SIZE}px`,
+                  zIndex: 5
+                }}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  setResizingBorder({
+                    elementId: el.id,
+                    type: 'row',
+                    index: rowIdx,
+                    startPos: e.clientY,
+                    startSize: rowHeights[rowIdx]
+                  });
+                }}
+              />
+            );
+          })}
+        </div>
         );
       }
 
