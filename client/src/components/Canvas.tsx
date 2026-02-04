@@ -445,11 +445,18 @@ export function Canvas({
     if (!element || !element.tableConfig) return;
     
     const config = element.tableConfig;
+    const currentTotalRows = config.columns.length + (config.footer?.length || 0);
+    const newTotalRows = currentTotalRows + 1;
+    
+    // Recalculate row heights to accommodate the new footer row
+    const newRowHeight = element.height / newTotalRows;
+    const newRowHeights = Array(newTotalRows).fill(newRowHeight);
     
     onElementUpdate(elementId, {
       tableConfig: {
         ...config,
-        footer: [...(config.footer || []), DEFAULT_FOOTER_ROW]
+        footer: [...(config.footer || []), DEFAULT_FOOTER_ROW],
+        rowHeights: newRowHeights
       }
     });
   };
@@ -468,10 +475,18 @@ export function Canvas({
     const newFooter = [...footer];
     newFooter.pop(); // Remove last footer row
     
+    const currentTotalRows = config.columns.length + footer.length;
+    const newTotalRows = currentTotalRows - 1;
+    
+    // Recalculate row heights after removing footer row
+    const newRowHeight = element.height / newTotalRows;
+    const newRowHeights = Array(newTotalRows).fill(newRowHeight);
+    
     onElementUpdate(elementId, {
       tableConfig: {
         ...config,
-        footer: newFooter
+        footer: newFooter,
+        rowHeights: newRowHeights
       }
     });
   };
@@ -1033,7 +1048,10 @@ export function Canvas({
                     <tr key={idx} className={clsx(
                       tableStyle === 'default' && "hover:bg-gray-50",
                       tableStyle === 'modern' && idx % 2 === 0 ? "bg-primary/5" : "bg-white"
-                    )}>
+                    )}
+                    style={{
+                      height: rowHeights[idx] ? `${rowHeights[idx]}px` : 'auto'
+                    }}>
                       <th className="p-2 text-left font-medium" style={{ 
                         width: col.width || '50%',
                         borderWidth: `${gridBorderWidth}px`,
@@ -1089,8 +1107,15 @@ export function Canvas({
                     const isEditingLabel = editingFooterCell?.elementId === el.id && editingFooterCell?.footerIdx === idx && editingFooterCell?.field === 'label';
                     const isEditingValue = editingFooterCell?.elementId === el.id && editingFooterCell?.footerIdx === idx && editingFooterCell?.field === 'value';
                     
+                    // Calculate the row index in the rowHeights array
+                    // Footer rows come after all column rows
+                    const rowHeightIndex = config.columns.length + idx;
+                    
                     return (
-                      <tr key={`footer-${idx}`}>
+                      <tr key={`footer-${idx}`}
+                        style={{
+                          height: rowHeights[rowHeightIndex] ? `${rowHeights[rowHeightIndex]}px` : 'auto'
+                        }}>
                         <th 
                           className={clsx(
                             "p-2 text-left font-semibold",
