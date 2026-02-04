@@ -2066,7 +2066,7 @@ export function Canvas({
                    )}
                  </div>
                )}
-                {!isPreviewMode && isSelected && el.type === 'gridtable' && (
+                {!isPreviewMode && isSelected && el.type === 'gridtable' && !editingFooterCell && (
                   <div 
                     className={clsx(
                       "absolute left-0 right-0 bg-white border rounded-lg shadow-lg p-2 flex items-center gap-2 pointer-events-auto z-40",
