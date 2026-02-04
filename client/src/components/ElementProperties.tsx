@@ -117,6 +117,41 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
     });
   };
 
+  const handleGridTableFooterAdd = () => {
+    if (!element.gridTableConfig) return;
+    const newFooter = { label: "Total", value: "{total}", format: 'currency' as const };
+    onChange(element.id, {
+      gridTableConfig: {
+        ...element.gridTableConfig,
+        footer: [...(element.gridTableConfig.footer || []), newFooter]
+      }
+    });
+  };
+
+  const handleGridTableFooterRemove = (index: number) => {
+    if (!element.gridTableConfig || !element.gridTableConfig.footer) return;
+    const newFooter = [...element.gridTableConfig.footer];
+    newFooter.splice(index, 1);
+    onChange(element.id, {
+      gridTableConfig: {
+        ...element.gridTableConfig,
+        footer: newFooter
+      }
+    });
+  };
+
+  const handleGridTableFooterUpdate = (index: number, field: string, value: any) => {
+    if (!element.gridTableConfig || !element.gridTableConfig.footer) return;
+    const newFooter = [...element.gridTableConfig.footer];
+    newFooter[index] = { ...newFooter[index], [field]: value };
+    onChange(element.id, {
+      gridTableConfig: {
+        ...element.gridTableConfig,
+        footer: newFooter
+      }
+    });
+  };
+
   return (
     <ScrollArea className="h-full">
       <div className="p-4 space-y-6">
@@ -728,6 +763,68 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                       </div>
                     ))}
                   </ScrollArea>
+                </div>
+                
+                <Separator />
+                
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label>Footer Rows</Label>
+                    <Button variant="outline" size="sm" onClick={handleGridTableFooterAdd}>
+                      <Plus className="w-3 h-3 mr-1" /> Add Footer
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Add footer rows to display totals or additional information
+                  </p>
+                  
+                  {element.gridTableConfig.footer && element.gridTableConfig.footer.map((footerRow, idx) => (
+                    <div key={idx} className="bg-muted/30 p-3 rounded-lg border space-y-2 text-sm relative group">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-background border shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => handleGridTableFooterRemove(idx)}
+                      >
+                        <Trash2 className="w-3 h-3 text-destructive" />
+                      </Button>
+                      
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-xs">Label</Label>
+                          <Input 
+                            value={footerRow.label} 
+                            onChange={(e) => handleGridTableFooterUpdate(idx, 'label', e.target.value)}
+                            className="h-8"
+                            placeholder="e.g. Total"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Value</Label>
+                          <Input 
+                            value={footerRow.value} 
+                            onChange={(e) => handleGridTableFooterUpdate(idx, 'value', e.target.value)}
+                            className="h-8 font-mono"
+                            placeholder="e.g. {total}"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-xs">Format</Label>
+                          <select 
+                            className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                            value={footerRow.format || 'text'}
+                            onChange={(e) => handleGridTableFooterUpdate(idx, 'format', e.target.value)}
+                          >
+                            <option value="text">Text</option>
+                            <option value="currency">Currency</option>
+                            <option value="number">Number</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
