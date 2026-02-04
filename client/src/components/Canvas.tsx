@@ -417,6 +417,39 @@ export function Canvas({
     });
   };
 
+  // Handler to add footer row to price table
+  const handleAddFooter = (elementId: string) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element || !element.tableConfig) return;
+    
+    const config = element.tableConfig;
+    const newFooter = { label: "Total", value: "{total}", format: 'currency' as const };
+    
+    onElementUpdate(elementId, {
+      tableConfig: {
+        ...config,
+        footer: [...(config.footer || []), newFooter]
+      }
+    });
+  };
+
+  // Handler to remove last footer row from price table
+  const handleRemoveLastFooter = (elementId: string) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element || !element.tableConfig || !element.tableConfig.footer || element.tableConfig.footer.length === 0) return;
+    
+    const config = element.tableConfig;
+    const newFooter = [...config.footer];
+    newFooter.pop(); // Remove last footer row
+    
+    onElementUpdate(elementId, {
+      tableConfig: {
+        ...config,
+        footer: newFooter
+      }
+    });
+  };
+
   // Recursive function to render JSON data tree in context menu for text elements
   const renderDataTreeForText = (tree: Record<string, any>, elementId: string): JSX.Element[] => {
     return Object.keys(tree).map((key) => {
@@ -1125,9 +1158,7 @@ export function Canvas({
       const rowHeights = config.rowHeights || (config.rows > 0 ? Array(config.rows).fill(el.height / config.rows) : [el.height]);
       
       return (
-        <div className="w-full h-full pointer-events-auto relative" style={{
-          border: `${gridBorderWidth}px solid ${gridBorderColor}`
-        }}>
+        <div className="w-full h-full pointer-events-auto relative">
           <div className="w-full h-full overflow-hidden">
             <table className="w-full h-full text-sm text-left border-collapse pointer-events-auto" style={{ tableLayout: 'fixed' }}>
             <colgroup>
@@ -1633,6 +1664,40 @@ export function Canvas({
                      />
                      <span className="text-xs text-muted-foreground">px</span>
                    </div>
+                   {el.tableConfig?.tableType === 'price' && (
+                     <>
+                       <Button
+                         variant="ghost"
+                         size="sm"
+                         className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/10"
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           handleAddFooter(el.id);
+                         }}
+                         title="Add footer row"
+                         aria-label="Add footer row"
+                       >
+                         <Plus className="w-3 h-3 mr-1" />
+                         Footer
+                       </Button>
+                       {el.tableConfig?.footer && el.tableConfig.footer.length > 0 && (
+                         <Button
+                           variant="ghost"
+                           size="sm"
+                           className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                           onClick={(e) => {
+                             e.stopPropagation();
+                             handleRemoveLastFooter(el.id);
+                           }}
+                           title="Remove last footer row"
+                           aria-label="Remove last footer row"
+                         >
+                           <Minus className="w-3 h-3 mr-1" />
+                           Footer
+                         </Button>
+                       )}
+                     </>
+                   )}
                    <Button
                      variant="ghost"
                      size="sm"
