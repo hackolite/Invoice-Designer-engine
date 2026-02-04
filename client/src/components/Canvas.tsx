@@ -68,6 +68,7 @@ export function Canvas({
   const [contextMenuCell, setContextMenuCell] = useState<{ elementId: string; row: number; col: number } | null>(null);
   const [hoveredRow, setHoveredRow] = useState<{ elementId: string; row: number } | null>(null);
   const [resizingBorder, setResizingBorder] = useState<{ elementId: string; type: 'row' | 'col'; index: number; startPos: number; startSize: number } | null>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Handle resize border dragging
   useEffect(() => {
@@ -386,19 +387,43 @@ export function Canvas({
     const colWidths = config.colWidths || Array(config.cols).fill(100 / config.cols);
     const newColWidths = [...colWidths];
     
-    // Ensure minimum width and adjust
-    const maxWidth = 100 - (config.cols - 1) * MIN_COL_WIDTH_PERCENT;
-    newColWidths[colIndex] = Math.max(MIN_COL_WIDTH_PERCENT, Math.min(maxWidth, newWidthPercent));
+    // Calculate the delta
+    const delta = newWidthPercent - colWidths[colIndex];
     
-    // Normalize to ensure total is 100%
-    const total = newColWidths.reduce((sum, w) => sum + w, 0);
-    // Guard against division by zero in normalization
-    if (total <= 0) return;
+    // Ensure minimum width constraints
+    const clampedNewWidth = Math.max(MIN_COL_WIDTH_PERCENT, newWidthPercent);
+    const actualDelta = clampedNewWidth - colWidths[colIndex];
     
-    const normalized = newColWidths.map(w => (w / total) * 100);
+    // If this is the last column, redistribute to all previous columns proportionally
+    if (colIndex === config.cols - 1) {
+      // For the last column, we need to adjust all other columns
+      const remainingWidth = 100 - clampedNewWidth;
+      const otherColsTotal = colWidths.slice(0, -1).reduce((sum, w) => sum + w, 0);
+      
+      if (otherColsTotal > 0) {
+        for (let i = 0; i < config.cols - 1; i++) {
+          newColWidths[i] = (colWidths[i] / otherColsTotal) * remainingWidth;
+        }
+      }
+      newColWidths[colIndex] = clampedNewWidth;
+    } else {
+      // For non-last columns, only adjust the resized column and the one to its right
+      const rightColIndex = colIndex + 1;
+      const rightColNewWidth = colWidths[rightColIndex] - actualDelta;
+      
+      // Ensure the right column doesn't go below minimum
+      if (rightColNewWidth >= MIN_COL_WIDTH_PERCENT) {
+        newColWidths[colIndex] = clampedNewWidth;
+        newColWidths[rightColIndex] = rightColNewWidth;
+      } else {
+        // If right column would be too small, resize to the limit
+        newColWidths[rightColIndex] = MIN_COL_WIDTH_PERCENT;
+        newColWidths[colIndex] = colWidths[colIndex] + (colWidths[rightColIndex] - MIN_COL_WIDTH_PERCENT);
+      }
+    }
     
     onElementUpdate(elementId, {
-      gridTableConfig: { ...config, colWidths: normalized }
+      gridTableConfig: { ...config, colWidths: newColWidths }
     });
   };
 
@@ -793,8 +818,37 @@ export function Canvas({
                   <tr 
                     key={rowIdx}
                     style={{ height: `${rowHeight}px` }}
-                    onMouseEnter={() => !isPreviewMode && setHoveredRow({ elementId: el.id, row: rowIdx })}
-                    onMouseLeave={() => !isPreviewMode && setHoveredRow(null)}
+                    onMouseEnter={() => {
+                      if (!isPreviewMode) {
+                        // Cancel any pending timeout when entering a row
+                        if (hoverTimeoutRef.current) {
+                          clearTimeout(hoverTimeoutRef.current);
+                          hoverTimeoutRef.current = null;
+                        }
+                        setHoveredRow({ elementId: el.id, row: rowIdx });
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      // Don't clear hover if moving to the delete button
+                      if (!isPreviewMode) {
+                        // Cancel any existing timeout to avoid race conditions
+                        if (hoverTimeoutRef.current) {
+                          clearTimeout(hoverTimeoutRef.current);
+                        }
+                        // Use setTimeout(0) to defer execution until after the current event loop,
+                        // allowing the delete button's onMouseEnter to fire first
+                        hoverTimeoutRef.current = setTimeout(() => {
+                          setHoveredRow(prev => {
+                            // Only clear if we're still on the same row (not re-entered)
+                            if (prev?.elementId === el.id && prev?.row === rowIdx) {
+                              return null;
+                            }
+                            return prev;
+                          });
+                          hoverTimeoutRef.current = null;
+                        }, 0);
+                      }
+                    }}
                   >
                   {Array.from({ length: config.cols }, (_, colIdx) => {
                     const key = `${rowIdx}-${colIdx}`;
@@ -978,6 +1032,27 @@ export function Canvas({
                 alignItems: 'center',
                 transform: 'translateX(calc(100% + 4px))',
                 zIndex: 10
+              }}
+              onMouseEnter={() => {
+                // Cancel any pending timeout when entering the delete button
+                if (hoverTimeoutRef.current) {
+                  clearTimeout(hoverTimeoutRef.current);
+                  hoverTimeoutRef.current = null;
+                }
+                // Maintain the hover state when entering the delete button area
+                // The hoveredRow is already validated in the parent condition
+                if (hoveredRow && hoveredRow.elementId === el.id) {
+                  setHoveredRow({ elementId: el.id, row: hoveredRow.row });
+                }
+              }}
+              onMouseLeave={() => {
+                // Clear hover state when leaving the delete button area
+                setHoveredRow(null);
+                // Clear any pending timeout
+                if (hoverTimeoutRef.current) {
+                  clearTimeout(hoverTimeoutRef.current);
+                  hoverTimeoutRef.current = null;
+                }
               }}
             >
               <Button
