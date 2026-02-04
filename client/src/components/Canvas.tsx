@@ -774,10 +774,11 @@ export function Canvas({
       const rowHeights = config.rowHeights || (config.rows > 0 ? Array(config.rows).fill(el.height / config.rows) : [el.height]);
       
       return (
-        <div className="w-full h-full overflow-hidden pointer-events-auto relative" style={{
+        <div className="w-full h-full pointer-events-auto relative" style={{
           border: `${gridBorderWidth}px solid ${gridBorderColor}`
         }}>
-          <table className="w-full h-full text-sm text-left border-collapse pointer-events-auto" style={{ tableLayout: 'fixed' }}>
+          <div className="w-full h-full overflow-hidden">
+            <table className="w-full h-full text-sm text-left border-collapse pointer-events-auto" style={{ tableLayout: 'fixed' }}>
             <colgroup>
               {colWidths.map((width, colIdx) => (
                 <col key={colIdx} style={{ width: `${width}%` }} />
@@ -965,6 +966,7 @@ export function Canvas({
             })}
             </tbody>
           </table>
+          </div>
           {/* Overlay delete buttons for rows */}
           {!isPreviewMode && hoveredRow && hoveredRow.elementId === el.id && config.rows > 1 && (
             <div
