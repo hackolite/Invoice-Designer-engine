@@ -1029,7 +1029,8 @@ export function Canvas({
           </table>
           </div>
           {/* Overlay delete buttons for rows */}
-          {!isPreviewMode && (selectedRow || hoveredRow) && (selectedRow?.elementId === el.id || hoveredRow?.elementId === el.id) && config.rows > 1 && (() => {
+          {!isPreviewMode && (selectedRow || hoveredRow) && config.rows > 1 && (() => {
+            // Priority: hoveredRow takes precedence over selectedRow to provide immediate visual feedback
             const displayRow = hoveredRow?.elementId === el.id ? hoveredRow : selectedRow;
             if (!displayRow || displayRow.elementId !== el.id) return null;
             
