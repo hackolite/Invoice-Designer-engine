@@ -17,6 +17,9 @@ import {
   ContextMenuSubTrigger,
 } from "@/components/ui/context-menu";
 
+// Constants for table height normalization
+const HEIGHT_NORMALIZATION_THRESHOLD = 0.5; // Threshold in pixels for detecting height mismatches
+
 // Simple lodash.get alternative for binding resolution
 function getValue(obj: any, path: string, defaultValue?: any) {
   const keys = path.split('.');
@@ -26,6 +29,30 @@ function getValue(obj: any, path: string, defaultValue?: any) {
     result = result[key];
   }
   return result === undefined ? defaultValue : result;
+}
+
+// Normalize row heights to fit exactly within container using integer pixels
+// This prevents floating-point rounding gaps between fused tables
+function normalizeRowHeights(rowHeights: number[], containerHeight: number): number[] {
+  const totalHeight = rowHeights.reduce((sum, h) => sum + h, 0);
+  
+  // Only normalize if there's a significant difference
+  if (totalHeight > 0 && Math.abs(totalHeight - containerHeight) > HEIGHT_NORMALIZATION_THRESHOLD) {
+    const scaleFactor = containerHeight / totalHeight;
+    let remainingHeight = containerHeight;
+    
+    return rowHeights.map((h, i) => {
+      if (i === rowHeights.length - 1) {
+        // Assign all remaining height to last row to ensure perfect fit
+        return remainingHeight;
+      }
+      const scaledHeight = Math.round(h * scaleFactor);
+      remainingHeight -= scaledHeight;
+      return scaledHeight;
+    });
+  }
+  
+  return rowHeights;
 }
 
 // Build JSON data path tree for navigation
@@ -1084,21 +1111,8 @@ const handleAddFooter = (elementId: string) => {
         const totalRows = config.columns.length + (config.footer?.length || 0);
         let rowHeights = config.rowHeights || (totalRows > 0 ? Array(totalRows).fill(el.height / totalRows) : []);
         
-        // Normalize row heights to fit exactly within container using integer pixels
-        const totalHeight = rowHeights.reduce((sum, h) => sum + h, 0);
-        if (totalHeight > 0 && Math.abs(totalHeight - el.height) > 0.5) {
-          const scaleFactor = el.height / totalHeight;
-          let remainingHeight = el.height;
-          rowHeights = rowHeights.map((h, i) => {
-            if (i === rowHeights.length - 1) {
-              // Assign all remaining height to last row to ensure perfect fit
-              return remainingHeight;
-            }
-            const scaledHeight = Math.round(h * scaleFactor);
-            remainingHeight -= scaledHeight;
-            return scaledHeight;
-          });
-        }
+        // Normalize row heights to prevent floating-point gaps
+        rowHeights = normalizeRowHeights(rowHeights, el.height);
         
         // Detect adjacent tables for border merging
         const adjacentTables = detectAdjacentTables(el);
@@ -1467,23 +1481,8 @@ const handleAddFooter = (elementId: string) => {
       // Calculate row heights and normalize to fit container exactly
       let rowHeights = config.rowHeights || (config.rows > 0 ? Array(config.rows).fill(el.height / config.rows) : [el.height]);
       
-      // Ensure row heights fit within container height to prevent overflow/cropping
-      // Use integer pixel heights to avoid floating-point rounding gaps
-      const totalHeight = rowHeights.reduce((sum, h) => sum + h, 0);
-      if (totalHeight > 0 && Math.abs(totalHeight - el.height) > 0.5) {
-        // Normalize row heights to fit exactly within container using integer pixels
-        const scaleFactor = el.height / totalHeight;
-        let remainingHeight = el.height;
-        rowHeights = rowHeights.map((h, i) => {
-          if (i === rowHeights.length - 1) {
-            // Assign all remaining height to last row to ensure perfect fit
-            return remainingHeight;
-          }
-          const scaledHeight = Math.round(h * scaleFactor);
-          remainingHeight -= scaledHeight;
-          return scaledHeight;
-        });
-      }
+      // Normalize row heights to prevent floating-point gaps
+      rowHeights = normalizeRowHeights(rowHeights, el.height);
       
       return (
         <div className="w-full h-full pointer-events-auto relative">
