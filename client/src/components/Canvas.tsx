@@ -803,6 +803,62 @@ const handleAddFooter = (elementId: string) => {
     return { x: snapToGrid(finalX), y: snapToGrid(finalY) };
   };
 
+  // Detect which edges of a table are adjacent to other tables (for border merging)
+  const detectAdjacentTables = (element: TemplateElement): { top: boolean; right: boolean; bottom: boolean; left: boolean } => {
+    const adjacent = { top: false, right: false, bottom: false, left: false };
+    
+    // Only check for gridtables and price tables
+    const isGridTable = element.type === 'gridtable' && element.gridTableConfig;
+    const isPriceTable = element.type === 'table' && element.tableConfig?.tableType === 'price';
+    
+    if (!isGridTable && !isPriceTable) return adjacent;
+
+    const elementRight = element.x + element.width;
+    const elementBottom = element.y + element.height;
+
+    // Check against all other tables
+    for (const otherEl of layout.elements) {
+      if (otherEl.id === element.id) continue;
+      
+      // Check if the other element is a gridtable or a price table
+      const isOtherGridTable = otherEl.type === 'gridtable' && otherEl.gridTableConfig;
+      const isOtherPriceTable = otherEl.type === 'table' && otherEl.tableConfig?.tableType === 'price';
+      
+      if (!isOtherGridTable && !isOtherPriceTable) continue;
+
+      const otherRight = otherEl.x + otherEl.width;
+      const otherBottom = otherEl.y + otherEl.height;
+
+      // Check for horizontal alignment (same Y range)
+      const horizontalOverlap = !(elementBottom <= otherEl.y || element.y >= otherBottom);
+      
+      // Check if left edge of element touches right edge of other table
+      if (horizontalOverlap && Math.abs(element.x - otherRight) <= 1) {
+        adjacent.left = true;
+      }
+      
+      // Check if right edge of element touches left edge of other table
+      if (horizontalOverlap && Math.abs(elementRight - otherEl.x) <= 1) {
+        adjacent.right = true;
+      }
+
+      // Check for vertical alignment (same X range)
+      const verticalOverlap = !(elementRight <= otherEl.x || element.x >= otherRight);
+      
+      // Check if top edge of element touches bottom edge of other table
+      if (verticalOverlap && Math.abs(element.y - otherBottom) <= 1) {
+        adjacent.top = true;
+      }
+      
+      // Check if bottom edge of element touches top edge of other table
+      if (verticalOverlap && Math.abs(elementBottom - otherEl.y) <= 1) {
+        adjacent.bottom = true;
+      }
+    }
+
+    return adjacent;
+  };
+
   // Helper to render content based on element type and mode
   const renderElementContent = (el: TemplateElement) => {
     // Determine the text content
@@ -1025,6 +1081,9 @@ const handleAddFooter = (elementId: string) => {
         const totalRows = config.columns.length + (config.footer?.length || 0);
         const rowHeights = config.rowHeights || (totalRows > 0 ? Array(totalRows).fill(el.height / totalRows) : []);
         
+        // Detect adjacent tables for border merging
+        const adjacentTables = detectAdjacentTables(el);
+        
         return (
           <div className="w-full h-full pointer-events-auto relative">
             <div className={clsx(
@@ -1058,6 +1117,9 @@ const handleAddFooter = (elementId: string) => {
                     cellValue = `{${col.binding}}`;
                   }
                   
+                  const isFirstRow = idx === 0;
+                  const isLastRow = idx === config.columns.length - 1 && (!config.footer || config.footer.length === 0);
+                  
                   return (
                     <tr key={idx} className={clsx(
                       tableStyle === 'default' && "hover:bg-gray-50",
@@ -1070,14 +1132,20 @@ const handleAddFooter = (elementId: string) => {
                         width: col.width || '50%',
                         borderWidth: `${gridBorderWidth}px`,
                         borderStyle: 'solid',
-                        borderColor: gridBorderColor
+                        borderColor: gridBorderColor,
+                        borderTopWidth: (adjacentTables.top && isFirstRow) ? 0 : `${gridBorderWidth}px`,
+                        borderLeftWidth: adjacentTables.left ? 0 : `${gridBorderWidth}px`,
+                        borderBottomWidth: (adjacentTables.bottom && isLastRow) ? 0 : `${gridBorderWidth}px`,
                       }}>
                         {col.header}
                       </th>
                       <td className="p-2" style={{ 
                         borderWidth: `${gridBorderWidth}px`,
                         borderStyle: 'solid',
-                        borderColor: gridBorderColor
+                        borderColor: gridBorderColor,
+                        borderTopWidth: (adjacentTables.top && isFirstRow) ? 0 : `${gridBorderWidth}px`,
+                        borderRightWidth: adjacentTables.right ? 0 : `${gridBorderWidth}px`,
+                        borderBottomWidth: (adjacentTables.bottom && isLastRow) ? 0 : `${gridBorderWidth}px`,
                       }}>
                         {cellValue}
                       </td>
@@ -1125,6 +1193,8 @@ const handleAddFooter = (elementId: string) => {
                     // Footer rows come after all column rows
                     const rowHeightIndex = config.columns.length + idx;
                     
+                    const isLastFooterRow = idx === config.footer!.length - 1;
+                    
                     return (
                       <tr key={`footer-${idx}`}
                         style={{
@@ -1139,6 +1209,8 @@ const handleAddFooter = (elementId: string) => {
                             borderWidth: `${gridBorderWidth}px`,
                             borderStyle: 'solid',
                             borderColor: gridBorderColor,
+                            borderLeftWidth: adjacentTables.left ? 0 : `${gridBorderWidth}px`,
+                            borderBottomWidth: (adjacentTables.bottom && isLastFooterRow) ? 0 : `${gridBorderWidth}px`,
                             textAlign: footerRow.style?.textAlign || 'left',
                             fontWeight: footerRow.style?.fontWeight || 'bold',
                             fontStyle: footerRow.style?.fontStyle || 'normal',
@@ -1181,6 +1253,8 @@ const handleAddFooter = (elementId: string) => {
                             borderWidth: `${gridBorderWidth}px`,
                             borderStyle: 'solid',
                             borderColor: gridBorderColor,
+                            borderRightWidth: adjacentTables.right ? 0 : `${gridBorderWidth}px`,
+                            borderBottomWidth: (adjacentTables.bottom && isLastFooterRow) ? 0 : `${gridBorderWidth}px`,
                             textAlign: footerRow.style?.textAlign || 'left',
                             fontWeight: footerRow.style?.fontWeight || 'bold',
                             fontStyle: footerRow.style?.fontStyle || 'normal',
@@ -1325,6 +1399,9 @@ const handleAddFooter = (elementId: string) => {
       const gridBorderColor = (el.style?.gridBorderColor as string) || '#000000';
       const gridBorderWidth = (el.style?.gridBorderWidth as number) || 1;
       
+      // Detect adjacent tables for border merging
+      const adjacentTables = detectAdjacentTables(el);
+      
       // Create a map of cells by position for easier lookup
       const cellMap = new Map<string, typeof config.cells[0]>();
       const occupiedCells = new Set<string>();
@@ -1441,6 +1518,12 @@ const handleAddFooter = (elementId: string) => {
                     
                     const isEditing = editingCell?.elementId === el.id && editingCell?.row === rowIdx && editingCell?.col === colIdx;
                     
+                    // Determine which borders to hide based on adjacent tables and cell position
+                    const isFirstRow = rowIdx === 0;
+                    const isLastRow = rowIdx === config.rows - 1;
+                    const isFirstCol = colIdx === 0;
+                    const isLastCol = colIdx === config.cols - 1;
+                    
                     return (
                       <ContextMenu key={colIdx}>
                         <ContextMenuTrigger asChild>
@@ -1455,6 +1538,10 @@ const handleAddFooter = (elementId: string) => {
                               borderColor: gridBorderColor,
                               borderWidth: `${gridBorderWidth}px`,
                               borderStyle: 'solid',
+                              borderTopWidth: (adjacentTables.top && isFirstRow) ? 0 : `${gridBorderWidth}px`,
+                              borderRightWidth: (adjacentTables.right && (isLastCol || (colIdx + colSpan) === config.cols)) ? 0 : `${gridBorderWidth}px`,
+                              borderBottomWidth: (adjacentTables.bottom && (isLastRow || (rowIdx + rowSpan) === config.rows)) ? 0 : `${gridBorderWidth}px`,
+                              borderLeftWidth: (adjacentTables.left && isFirstCol) ? 0 : `${gridBorderWidth}px`,
                               ...getCellStyle(cell)
                             }}
                             tabIndex={isPreviewMode ? undefined : 0}
@@ -1626,6 +1713,8 @@ const handleAddFooter = (elementId: string) => {
                   const isEditingLabel = editingFooterCell?.elementId === el.id && editingFooterCell?.footerIdx === idx && editingFooterCell?.field === 'label';
                   const isEditingValue = editingFooterCell?.elementId === el.id && editingFooterCell?.footerIdx === idx && editingFooterCell?.field === 'value';
                   
+                  const isLastFooterRow = idx === config.footer!.length - 1;
+                  
                   return (
                     <tr key={`footer-${idx}`}>
                       <th 
@@ -1637,6 +1726,8 @@ const handleAddFooter = (elementId: string) => {
                           borderWidth: `${gridBorderWidth}px`,
                           borderStyle: 'solid',
                           borderColor: gridBorderColor,
+                          borderLeftWidth: adjacentTables.left ? 0 : `${gridBorderWidth}px`,
+                          borderBottomWidth: (adjacentTables.bottom && isLastFooterRow) ? 0 : `${gridBorderWidth}px`,
                           textAlign: footerRow.style?.textAlign || 'left',
                           fontWeight: footerRow.style?.fontWeight || 'bold',
                           fontStyle: footerRow.style?.fontStyle || 'normal',
@@ -1681,6 +1772,8 @@ const handleAddFooter = (elementId: string) => {
                             borderWidth: `${gridBorderWidth}px`,
                             borderStyle: 'solid',
                             borderColor: gridBorderColor,
+                            borderRightWidth: adjacentTables.right ? 0 : `${gridBorderWidth}px`,
+                            borderBottomWidth: (adjacentTables.bottom && isLastFooterRow) ? 0 : `${gridBorderWidth}px`,
                             textAlign: footerRow.style?.textAlign || 'left',
                             fontWeight: footerRow.style?.fontWeight || 'bold',
                             fontStyle: footerRow.style?.fontStyle || 'normal',
