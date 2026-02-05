@@ -105,7 +105,7 @@ const RESIZE_HANDLE_SIZE = 4; // Size of resize handle in pixels
 const RESIZE_HANDLE_OFFSET = 2; // Offset for centering resize handle in pixels
 const ALIGNMENT_TOLERANCE = 1.5; // Tolerance in pixels for detecting table alignment during fusion
 
-// Default footer row for price tables
+// Default footer row for price tables (used when adding summary rows inline)
 const DEFAULT_FOOTER_ROW = { label: "Total", value: "{total}", format: 'currency' as const };
 
 // Helper function to determine toolbar positioning based on available space
@@ -641,38 +641,78 @@ export function Canvas({
     );
   };
 
+  const getPriceTableRowHeights = (element: TemplateElement, config: NonNullable<TemplateElement['tableConfig']>, totalRows: number) => {
+    if (config.rowHeights && config.rowHeights.length === totalRows) {
+      return config.rowHeights;
+    }
+    if (totalRows > 0) {
+      return Array(totalRows).fill(element.height / totalRows);
+    }
+    return [];
+  };
+
   // Handle adding additional rows to Price Tables
   const handlePriceTableAddRow = (elementId: string) => {
     const element = layout.elements.find(e => e.id === elementId);
     if (!element || !element.tableConfig) return;
     
     const config = element.tableConfig;
-    const newAdditionalRow = { label: "Total", value: "{total}", format: 'currency' as const };
+    const currentAdditionalRows = config.additionalRows || [];
+    const totalRowsBefore = config.columns.length + currentAdditionalRows.length;
+    const existingRowHeights = getPriceTableRowHeights(element, config, totalRowsBefore);
+    const newRowHeight = Math.max(
+      MIN_ROW_HEIGHT,
+      existingRowHeights[existingRowHeights.length - 1] ?? (element.height / Math.max(1, totalRowsBefore + 1))
+    );
+    const newRowHeights = [...existingRowHeights, newRowHeight];
+    const newHeight = newRowHeights.reduce((sum, h) => sum + h, 0);
     
     onElementUpdate(elementId, {
       tableConfig: {
         ...config,
-        additionalRows: [...(config.additionalRows || []), newAdditionalRow]
-      }
+        additionalRows: [...currentAdditionalRows, { ...DEFAULT_FOOTER_ROW }],
+        rowHeights: newRowHeights
+      },
+      height: newHeight
     });
+    
+    adjustVerticallyFusedTables(
+      { ...element, height: newHeight },
+      element.height,
+      newHeight
+    );
   };
 
   // Handle removing additional rows from Price Tables
   const handlePriceTableRemoveRow = (elementId: string) => {
     const element = layout.elements.find(e => e.id === elementId);
     const tableConfig = element?.tableConfig;
-    if (!tableConfig?.additionalRows || tableConfig.additionalRows.length === 0) return;
+    if (!element || !tableConfig?.additionalRows || tableConfig.additionalRows.length === 0) return;
     
     const additionalRows = tableConfig.additionalRows;
     const newAdditionalRows = [...additionalRows];
     newAdditionalRows.pop();
     
+    const totalRowsBefore = tableConfig.columns.length + additionalRows.length;
+    const existingRowHeights = getPriceTableRowHeights(element, tableConfig, totalRowsBefore);
+    const newTotalRows = tableConfig.columns.length + newAdditionalRows.length;
+    const newRowHeights = existingRowHeights.slice(0, newTotalRows);
+    const newHeight = newRowHeights.reduce((sum, h) => sum + h, 0);
+    
     onElementUpdate(elementId, {
       tableConfig: {
         ...tableConfig,
-        additionalRows: newAdditionalRows
-      }
+        additionalRows: newAdditionalRows,
+        rowHeights: newRowHeights
+      },
+      height: newHeight
     });
+    
+    adjustVerticallyFusedTables(
+      { ...element, height: newHeight },
+      element.height,
+      newHeight
+    );
   };
 
   // Detect and apply fusion between nearby gridtables and price tables
