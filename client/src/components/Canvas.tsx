@@ -1059,7 +1059,7 @@ export function Canvas({
                         borderColor: gridBorderColor,
                         borderTopWidth: (adjacentTables.top && isFirstRow) ? 0 : `${gridBorderWidth}px`,
                         borderLeftWidth: adjacentTables.left ? 0 : `${gridBorderWidth}px`,
-                        borderBottomWidth: (adjacentTables.bottom && isLastRow) ? 0 : `${gridBorderWidth}px`,
+                        borderBottomWidth: `${gridBorderWidth}px`,
                       }}>
                         {col.header}
                       </th>
@@ -1069,7 +1069,7 @@ export function Canvas({
                         borderColor: gridBorderColor,
                         borderTopWidth: (adjacentTables.top && isFirstRow) ? 0 : `${gridBorderWidth}px`,
                         borderRightWidth: `${gridBorderWidth}px`,
-                        borderBottomWidth: (adjacentTables.bottom && isLastRow) ? 0 : `${gridBorderWidth}px`,
+                        borderBottomWidth: `${gridBorderWidth}px`,
                       }}>
                         {cellValue}
                       </td>
@@ -1134,7 +1134,7 @@ export function Canvas({
                             borderStyle: 'solid',
                             borderColor: gridBorderColor,
                             borderLeftWidth: adjacentTables.left ? 0 : `${gridBorderWidth}px`,
-                            borderBottomWidth: (adjacentTables.bottom && isLastFooterRow) ? 0 : `${gridBorderWidth}px`,
+                            borderBottomWidth: `${gridBorderWidth}px`,
                             textAlign: (footerRow.style?.textAlign as React.CSSProperties['textAlign']) || 'left',
                             fontWeight: footerRow.style?.fontWeight || 'bold',
                             fontStyle: (footerRow.style?.fontStyle as React.CSSProperties['fontStyle']) || 'normal',
@@ -1159,7 +1159,7 @@ export function Canvas({
                             borderStyle: 'solid',
                             borderColor: gridBorderColor,
                             borderRightWidth: `${gridBorderWidth}px`,
-                            borderBottomWidth: (adjacentTables.bottom && isLastFooterRow) ? 0 : `${gridBorderWidth}px`,
+                            borderBottomWidth: `${gridBorderWidth}px`,
                             textAlign: (footerRow.style?.textAlign as React.CSSProperties['textAlign']) || 'left',
                             fontWeight: footerRow.style?.fontWeight || 'bold',
                             fontStyle: (footerRow.style?.fontStyle as React.CSSProperties['fontStyle']) || 'normal',
@@ -1242,7 +1242,7 @@ export function Canvas({
                       borderWidth: `${gridBorderWidth}px`,
                       borderStyle: 'solid',
                       borderColor: gridBorderColor,
-                      borderTopWidth: `${gridBorderWidth}px`,
+                      borderTopWidth: adjacentTables.top ? 0 : `${gridBorderWidth}px`,
                       borderLeftWidth: (adjacentTables.left && isFirstCol) ? 0 : `${gridBorderWidth}px`,
                       borderRightWidth: `${gridBorderWidth}px`,
                     }}>
@@ -1284,7 +1284,7 @@ export function Canvas({
                           borderColor: gridBorderColor,
                           borderLeftWidth: (adjacentTables.left && isFirstCol) ? 0 : `${gridBorderWidth}px`,
                           borderRightWidth: `${gridBorderWidth}px`,
-                          borderBottomWidth: (adjacentTables.bottom && isLastRow) ? 0 : `${gridBorderWidth}px`,
+                          borderBottomWidth: `${gridBorderWidth}px`,
                         }}>
                           {cellValue}
                         </td>
@@ -1441,7 +1441,7 @@ export function Canvas({
                               borderWidth: `${gridBorderWidth}px`,
                               borderStyle: 'solid',
                               borderTopWidth: (adjacentTables.top && isFirstRow) ? 0 : `${gridBorderWidth}px`,
-                              borderRightWidth: (adjacentTables.right && (colIdx + colSpan >= config.cols)) ? 0 : `${gridBorderWidth}px`,
+                              borderRightWidth: `${gridBorderWidth}px`,
                               borderBottomWidth: `${gridBorderWidth}px`,
                               borderLeftWidth: (adjacentTables.left && isFirstCol) ? 0 : `${gridBorderWidth}px`,
                               ...getCellStyle(cell)
@@ -1629,7 +1629,7 @@ export function Canvas({
                           borderStyle: 'solid',
                           borderColor: gridBorderColor,
                           borderLeftWidth: adjacentTables.left ? 0 : `${gridBorderWidth}px`,
-                          borderBottomWidth: (adjacentTables.bottom && isLastFooterRow) ? 0 : `${gridBorderWidth}px`,
+                          borderBottomWidth: `${gridBorderWidth}px`,
                           textAlign: (footerRow.style?.textAlign as React.CSSProperties['textAlign']) || 'left',
                           fontWeight: footerRow.style?.fontWeight || 'bold',
                           fontStyle: (footerRow.style?.fontStyle as React.CSSProperties['fontStyle']) || 'normal',
@@ -1656,7 +1656,7 @@ export function Canvas({
                             borderStyle: 'solid',
                             borderColor: gridBorderColor,
                             borderRightWidth: `${gridBorderWidth}px`,
-                            borderBottomWidth: (adjacentTables.bottom && isLastFooterRow) ? 0 : `${gridBorderWidth}px`,
+                            borderBottomWidth: `${gridBorderWidth}px`,
                             textAlign: (footerRow.style?.textAlign as React.CSSProperties['textAlign']) || 'left',
                             fontWeight: footerRow.style?.fontWeight || 'bold',
                             fontStyle: (footerRow.style?.fontStyle as React.CSSProperties['fontStyle']) || 'normal',
