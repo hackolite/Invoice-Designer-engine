@@ -798,7 +798,6 @@ export function Canvas({
     
     if (!isChangedTable) return;
 
-    const changedRight = changedElement.x + changedElement.width;
     const oldBottom = changedElement.y + oldHeight;
     const newBottom = changedElement.y + newHeight;
     const heightDelta = newHeight - oldHeight;
@@ -816,8 +815,6 @@ export function Canvas({
         (otherEl.type === 'table' && otherEl.tableConfig);
       
       if (!isOtherTable) continue;
-
-      const otherRight = otherEl.x + otherEl.width;
       
       // Check for full horizontal alignment (same X and width)
       const fullyAlignedX = isFullyAligned(changedElement.x, otherEl.x, changedElement.width, otherEl.width, ALIGNMENT_TOLERANCE);
