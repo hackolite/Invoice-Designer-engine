@@ -209,6 +209,7 @@ PORT=3000
 - [GRID_PRICE_TABLES.md](GRID_PRICE_TABLES.md) - Tables de prix
 - [UI_CHANGES.md](UI_CHANGES.md) - Changements de l'interface utilisateur
 - [VISUAL_GUIDE.md](VISUAL_GUIDE.md) - Guide visuel
+- [INVOICE_TABLE_BUILDER.md](docs/INVOICE_TABLE_BUILDER.md) - Invoice Table Builder API
 
 ## 🤝 Contribution
 
