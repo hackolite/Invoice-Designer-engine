@@ -17,6 +17,9 @@ import {
   ContextMenuSubTrigger,
 } from "@/components/ui/context-menu";
 
+// Constants for table height normalization
+const HEIGHT_NORMALIZATION_THRESHOLD = 0.5; // Threshold in pixels for detecting height mismatches
+
 // Simple lodash.get alternative for binding resolution
 function getValue(obj: any, path: string, defaultValue?: any) {
   const keys = path.split('.');
@@ -26,6 +29,30 @@ function getValue(obj: any, path: string, defaultValue?: any) {
     result = result[key];
   }
   return result === undefined ? defaultValue : result;
+}
+
+// Normalize row heights to fit exactly within container using integer pixels
+// This prevents floating-point rounding gaps between fused tables
+function normalizeRowHeights(rowHeights: number[], containerHeight: number): number[] {
+  const totalHeight = rowHeights.reduce((sum, h) => sum + h, 0);
+  
+  // Only normalize if there's a significant difference
+  if (totalHeight > 0 && Math.abs(totalHeight - containerHeight) > HEIGHT_NORMALIZATION_THRESHOLD) {
+    const scaleFactor = containerHeight / totalHeight;
+    let remainingHeight = containerHeight;
+    
+    return rowHeights.map((h, i) => {
+      if (i === rowHeights.length - 1) {
+        // Assign all remaining height to last row to ensure perfect fit
+        return remainingHeight;
+      }
+      const scaledHeight = Math.round(h * scaleFactor);
+      remainingHeight -= scaledHeight;
+      return scaledHeight;
+    });
+  }
+  
+  return rowHeights;
 }
 
 // Build JSON data path tree for navigation
@@ -835,12 +862,13 @@ const handleAddFooter = (elementId: string) => {
       const horizontalOverlap = !(elementBottom <= otherEl.y || element.y >= otherBottom);
       
       // Check if left edge of element touches right edge of other table
-      if (horizontalOverlap && Math.abs(element.x - otherRight) <= 1) {
+      // Use 1.5px tolerance to handle sub-pixel positioning from scaling/transforms
+      if (horizontalOverlap && Math.abs(element.x - otherRight) <= 1.5) {
         adjacent.left = true;
       }
       
       // Check if right edge of element touches left edge of other table
-      if (horizontalOverlap && Math.abs(elementRight - otherEl.x) <= 1) {
+      if (horizontalOverlap && Math.abs(elementRight - otherEl.x) <= 1.5) {
         adjacent.right = true;
       }
 
@@ -848,12 +876,12 @@ const handleAddFooter = (elementId: string) => {
       const verticalOverlap = !(elementRight <= otherEl.x || element.x >= otherRight);
       
       // Check if top edge of element touches bottom edge of other table
-      if (verticalOverlap && Math.abs(element.y - otherBottom) <= 1) {
+      if (verticalOverlap && Math.abs(element.y - otherBottom) <= 1.5) {
         adjacent.top = true;
       }
       
       // Check if bottom edge of element touches top edge of other table
-      if (verticalOverlap && Math.abs(elementBottom - otherEl.y) <= 1) {
+      if (verticalOverlap && Math.abs(elementBottom - otherEl.y) <= 1.5) {
         adjacent.bottom = true;
       }
     }
@@ -1081,7 +1109,10 @@ const handleAddFooter = (elementId: string) => {
         
         // Calculate row heights for price table
         const totalRows = config.columns.length + (config.footer?.length || 0);
-        const rowHeights = config.rowHeights || (totalRows > 0 ? Array(totalRows).fill(el.height / totalRows) : []);
+        let rowHeights = config.rowHeights || (totalRows > 0 ? Array(totalRows).fill(el.height / totalRows) : []);
+        
+        // Normalize row heights to prevent floating-point gaps
+        rowHeights = normalizeRowHeights(rowHeights, el.height);
         
         // Detect adjacent tables for border merging
         const adjacentTables = detectAdjacentTables(el);
@@ -1450,13 +1481,8 @@ const handleAddFooter = (elementId: string) => {
       // Calculate row heights and normalize to fit container exactly
       let rowHeights = config.rowHeights || (config.rows > 0 ? Array(config.rows).fill(el.height / config.rows) : [el.height]);
       
-      // Ensure row heights fit within container height to prevent overflow/cropping
-      const totalHeight = rowHeights.reduce((sum, h) => sum + h, 0);
-      if (totalHeight > 0 && Math.abs(totalHeight - el.height) > 0.01) {
-        // Normalize row heights to fit exactly within container
-        const scaleFactor = el.height / totalHeight;
-        rowHeights = rowHeights.map(h => h * scaleFactor);
-      }
+      // Normalize row heights to prevent floating-point gaps
+      rowHeights = normalizeRowHeights(rowHeights, el.height);
       
       return (
         <div className="w-full h-full pointer-events-auto relative">
