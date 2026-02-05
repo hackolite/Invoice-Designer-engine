@@ -641,6 +641,39 @@ export function Canvas({
     );
   };
 
+  // Handle adding additional rows to Price Tables
+  const handlePriceTableAddRow = (elementId: string) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element || !element.tableConfig) return;
+    
+    const config = element.tableConfig;
+    const newAdditionalRow = { label: "Total", value: "{total}", format: 'currency' as const };
+    
+    onElementUpdate(elementId, {
+      tableConfig: {
+        ...config,
+        additionalRows: [...(config.additionalRows || []), newAdditionalRow]
+      }
+    });
+  };
+
+  // Handle removing additional rows from Price Tables
+  const handlePriceTableRemoveRow = (elementId: string) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element || !element.tableConfig || !element.tableConfig.additionalRows || element.tableConfig.additionalRows.length === 0) return;
+    
+    const config = element.tableConfig;
+    const newAdditionalRows = [...config.additionalRows];
+    newAdditionalRows.pop(); // Remove last row
+    
+    onElementUpdate(elementId, {
+      tableConfig: {
+        ...config,
+        additionalRows: newAdditionalRows
+      }
+    });
+  };
+
   // Detect and apply fusion between nearby gridtables and price tables
   const applyTableFusion = (movedElementId: string, newX: number, newY: number) => {
     const movedElement = layout.elements.find(e => e.id === movedElementId);
@@ -1981,6 +2014,39 @@ export function Canvas({
                      <span className="text-xs text-muted-foreground">px</span>
                    </div>
                    <div className="flex-1" />
+                    {el.tableConfig?.tableType === 'price' && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePriceTableAddRow(el.id);
+                          }}
+                          title="Add row"
+                          aria-label="Add row"
+                        >
+                          <Plus className="w-3 h-3 mr-1" />
+                          <Rows className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePriceTableRemoveRow(el.id);
+                          }}
+                          title="Remove last row"
+                          aria-label="Remove last row"
+                          disabled={!el.tableConfig?.additionalRows || el.tableConfig.additionalRows.length === 0}
+                        >
+                          <Minus className="w-3 h-3 mr-1" />
+                          <Rows className="w-4 h-4" />
+                        </Button>
+                      </>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"

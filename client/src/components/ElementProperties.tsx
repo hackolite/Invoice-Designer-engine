@@ -294,25 +294,6 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
             {element.type === 'table' && element.tableConfig && (
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Table Type</Label>
-                  <select 
-                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                    value={element.tableConfig.tableType || 'grid'}
-                    onChange={(e) => onChange(element.id, { 
-                      tableConfig: { ...element.tableConfig!, tableType: e.target.value as 'grid' | 'price' } 
-                    })}
-                  >
-                    <option value="grid">Grid Table (Items/Data Array)</option>
-                    <option value="price">Price Table (Summary/Totals)</option>
-                  </select>
-                  <p className="text-xs text-muted-foreground">
-                    {element.tableConfig.tableType === 'price' 
-                      ? 'Price tables display summary data from JSON object' 
-                      : 'Grid tables display arrays of data with editable rows'}
-                  </p>
-                </div>
-                
-                <div className="space-y-2">
                   <Label>Table Style</Label>
                   <select 
                     className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
@@ -485,20 +466,15 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                             </span>
                           )}
                         </div>
-                        <div className="flex gap-1">
-                          <Button variant="outline" size="sm" onClick={handleTableAdditionalRowAdd}>
-                            <Plus className="w-3 h-3 mr-1" /> Add Row
-                          </Button>
-                        </div>
                       </div>
                       
                       <p className="text-xs text-muted-foreground">
-                        Manage additional rows for displaying totals and summaries after the items loop
+                        Configure additional rows for displaying totals and summaries after the items loop. Use the toolbar buttons to add or remove rows.
                       </p>
                       
                       {(!element.tableConfig.additionalRows || element.tableConfig.additionalRows.length === 0) && (
                         <p className="text-xs text-muted-foreground italic">
-                          No additional rows yet. Click "Add Row" to create one.
+                          No additional rows yet. Click "Add Row" in the toolbar to create one.
                         </p>
                       )}
                     
@@ -513,15 +489,6 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                               title="Duplicate row"
                             >
                               <CopyPlus className="w-3 h-3" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-6 w-6 rounded-full bg-background border shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={() => handleTableAdditionalRowRemove(idx)}
-                              title="Remove row"
-                            >
-                              <Trash2 className="w-3 h-3 text-destructive" />
                             </Button>
                           </div>
                           
@@ -1121,31 +1088,14 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                         </span>
                       )}
                     </div>
-                    <div className="flex gap-1">
-                      <Button variant="outline" size="sm" onClick={handleTableAdditionalRowAdd}>
-                        <Plus className="w-3 h-3 mr-1" /> Add
-                      </Button>
-                    </div>
                   </div>
                   
                   <p className="text-xs text-muted-foreground">
-                    Manage additional rows for displaying totals and summaries
+                    Use the toolbar buttons to add or remove additional rows for displaying totals and summaries
                   </p>
                   
                   {element.tableConfig.additionalRows && element.tableConfig.additionalRows.map((additionalRow, idx) => (
                       <div key={idx} className="bg-muted/30 p-3 rounded-lg border space-y-2 text-sm relative group">
-                        <div className="absolute -top-2 -right-2 flex gap-1">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-6 w-6 rounded-full bg-background border shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => handleTableAdditionalRowRemove(idx)}
-                            title="Remove row"
-                          >
-                            <Trash2 className="w-3 h-3 text-destructive" />
-                          </Button>
-                        </div>
-                        
                         <div className="text-xs font-medium text-muted-foreground">
                           Row {idx + 1}: {additionalRow.label}
                         </div>
