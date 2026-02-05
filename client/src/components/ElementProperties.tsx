@@ -340,6 +340,35 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                   </div>
                 </div>
                 
+                {element.tableConfig.tableType === 'price' && (
+                  <div className="space-y-2">
+                    <Label>Additional Rows</Label>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={handleTableAdditionalRowAdd}
+                        className="flex-1"
+                      >
+                        <Plus className="w-3 h-3 mr-1" /> Add Row
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => {
+                          if (element.tableConfig?.additionalRows && element.tableConfig.additionalRows.length > 0) {
+                            handleTableAdditionalRowRemove(element.tableConfig.additionalRows.length - 1);
+                          }
+                        }}
+                        className="flex-1"
+                        disabled={!element.tableConfig?.additionalRows || element.tableConfig.additionalRows.length === 0}
+                      >
+                        <Trash2 className="w-3 h-3 mr-1" /> Remove Row
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                
                 <Separator />
                 
                 <div className="space-y-2">
