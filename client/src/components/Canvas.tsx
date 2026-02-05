@@ -1086,7 +1086,7 @@ const handleAddFooter = (elementId: string) => {
         
         // Normalize row heights to fit exactly within container using integer pixels
         const totalHeight = rowHeights.reduce((sum, h) => sum + h, 0);
-        if (totalHeight > 0 && Math.abs(totalHeight - el.height) > 1) {
+        if (totalHeight > 0 && Math.abs(totalHeight - el.height) > 0.5) {
           const scaleFactor = el.height / totalHeight;
           let remainingHeight = el.height;
           rowHeights = rowHeights.map((h, i) => {
@@ -1470,7 +1470,7 @@ const handleAddFooter = (elementId: string) => {
       // Ensure row heights fit within container height to prevent overflow/cropping
       // Use integer pixel heights to avoid floating-point rounding gaps
       const totalHeight = rowHeights.reduce((sum, h) => sum + h, 0);
-      if (totalHeight > 0 && Math.abs(totalHeight - el.height) > 1) {
+      if (totalHeight > 0 && Math.abs(totalHeight - el.height) > 0.5) {
         // Normalize row heights to fit exactly within container using integer pixels
         const scaleFactor = el.height / totalHeight;
         let remainingHeight = el.height;
