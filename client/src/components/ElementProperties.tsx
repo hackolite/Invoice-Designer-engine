@@ -106,6 +106,18 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
     });
   };
 
+  const removeMostRecentRow = () => {
+    const rows = element.tableConfig?.additionalRows;
+    if (rows && rows.length > 0) {
+      handleTableAdditionalRowRemove(rows.length - 1);
+    }
+  };
+
+  const canRemoveRows = () => {
+    return element.tableConfig?.additionalRows && 
+           element.tableConfig.additionalRows.length > 0;
+  };
+
   const handleTableAdditionalRowUpdate = (index: number, field: string, value: any) => {
     if (!element.tableConfig || !element.tableConfig.additionalRows) return;
     const newAdditionalRows = [...element.tableConfig.additionalRows];
@@ -339,6 +351,32 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                     <span className="text-sm text-muted-foreground">px</span>
                   </div>
                 </div>
+                
+                {element.tableConfig.tableType === 'price' && (
+                  <>
+                    <Separator />
+                    <div className="space-y-2">
+                      <Label>Manage Summary Rows</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={handleTableAdditionalRowAdd}
+                        >
+                          <Plus className="w-3 h-3 mr-1" /> Add Row
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={removeMostRecentRow}
+                          disabled={!canRemoveRows()}
+                        >
+                          <Trash2 className="w-3 h-3 mr-1" /> Remove Row
+                        </Button>
+                      </div>
+                    </div>
+                  </>
+                )}
                 
                 <Separator />
                 
