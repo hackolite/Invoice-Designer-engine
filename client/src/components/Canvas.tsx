@@ -1665,6 +1665,47 @@ export function Canvas({
               );
             })}
             </tbody>
+            {!isPreviewMode && (
+              <tfoot>
+                <tr>
+                  <td colSpan={config.cols} className="p-0 border-t" style={{ borderColor: gridBorderColor, borderWidth: `${gridBorderWidth}px` }}>
+                    <div className="flex items-center justify-center gap-2 py-2 bg-gray-50/50">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-3 text-primary hover:text-primary hover:bg-primary/10 pointer-events-auto"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAddRow(el.id);
+                        }}
+                        title="Add row"
+                        aria-label="Add row"
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        <Rows className="w-4 h-4" />
+                        <span className="ml-1 text-xs">Add Row</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-3 text-destructive hover:text-destructive hover:bg-destructive/10 pointer-events-auto"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteRow(el.id);
+                        }}
+                        title="Delete last row"
+                        aria-label="Delete last row"
+                        disabled={config.rows === 1}
+                      >
+                        <Minus className="w-4 h-4 mr-1" />
+                        <Rows className="w-4 h-4" />
+                        <span className="ml-1 text-xs">Remove Row</span>
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              </tfoot>
+            )}
           </table>
           </div>
           {/* Overlay delete buttons for rows */}
