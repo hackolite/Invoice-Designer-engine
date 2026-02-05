@@ -476,18 +476,29 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                     <Separator />
                     
                     <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Label>Additional Rows Configuration</Label>
-                        {element.tableConfig.additionalRows && element.tableConfig.additionalRows.length > 0 && (
-                          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                            {element.tableConfig.additionalRows.length}
-                          </span>
-                        )}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Label>Additional Rows Configuration</Label>
+                          {element.tableConfig.additionalRows && element.tableConfig.additionalRows.length > 0 && (
+                            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                              {element.tableConfig.additionalRows.length}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex gap-1">
+                          <Button variant="outline" size="sm" onClick={handleTableAdditionalRowAdd}>
+                            <Plus className="w-3 h-3 mr-1" /> Add Row
+                          </Button>
+                        </div>
                       </div>
                       
+                      <p className="text-xs text-muted-foreground">
+                        Manage additional rows for displaying totals and summaries after the items loop
+                      </p>
+                      
                       {(!element.tableConfig.additionalRows || element.tableConfig.additionalRows.length === 0) && (
-                        <p className="text-xs text-muted-foreground">
-                          No additional rows. Use the Style tab to add additional rows.
+                        <p className="text-xs text-muted-foreground italic">
+                          No additional rows yet. Click "Add Row" to create one.
                         </p>
                       )}
                     
