@@ -114,8 +114,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
   };
 
   const canRemoveRows = () => {
-    return element.tableConfig?.additionalRows && 
-           element.tableConfig.additionalRows.length > 0;
+    return (element.tableConfig?.additionalRows?.length ?? 0) > 0;
   };
 
   const handleTableAdditionalRowUpdate = (index: number, field: string, value: any) => {
