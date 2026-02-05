@@ -663,7 +663,8 @@ export function Canvas({
     if (!element || !element.tableConfig || !element.tableConfig.additionalRows || element.tableConfig.additionalRows.length === 0) return;
     
     const config = element.tableConfig;
-    const newAdditionalRows = [...(config.additionalRows || [])];
+    // TypeScript needs a hint that additionalRows is defined after the check above
+    const newAdditionalRows = [...config.additionalRows!];
     newAdditionalRows.pop();
     
     onElementUpdate(elementId, {
