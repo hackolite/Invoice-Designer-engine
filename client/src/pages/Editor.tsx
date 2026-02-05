@@ -38,6 +38,7 @@ const convertStyleObjectToCss = (style: Record<string, string | number>): string
 };
 
 const BLOB_URL_CLEANUP_DELAY_MS = 2000; // Time to allow window to load before cleaning up blob URL
+const HORIZONTAL_OVERLAP_TOLERANCE_PX = 5; // Tolerance in pixels for detecting horizontal overlap when repositioning elements
 
 // Helper function to resolve nested object paths for data binding
 function getNestedValue(obj: any, path: string, defaultValue?: any) {
@@ -613,9 +614,8 @@ export default function Editor() {
         // Check if element was below the old bottom edge
         const wasBelow = elementTop >= updatedY + oldHeight;
         
-        // Check horizontal overlap (allowing 5px tolerance for alignment)
-        const tolerance = 5;
-        const hasHorizontalOverlap = !(elementRight < priceTableLeft - tolerance || elementLeft > priceTableRight + tolerance);
+        // Check horizontal overlap (allowing tolerance for alignment)
+        const hasHorizontalOverlap = !(elementRight < priceTableLeft - HORIZONTAL_OVERLAP_TOLERANCE_PX || elementLeft > priceTableRight + HORIZONTAL_OVERLAP_TOLERANCE_PX);
         
         // If element was below and overlaps horizontally, move it
         if (wasBelow && hasHorizontalOverlap) {

@@ -1832,9 +1832,10 @@ export function Canvas({
             dragGrid={[GRID_SIZE, GRID_SIZE]}
             resizeGrid={[GRID_SIZE, GRID_SIZE]}
             onDragStop={(e, d) => {
+              // d.x and d.y are already snapped by dragGrid prop
               // Calculate the delta for this element
-              const deltaX = snapToGrid(d.x) - el.x;
-              const deltaY = snapToGrid(d.y) - el.y;
+              const deltaX = d.x - el.x;
+              const deltaY = d.y - el.y;
               
               // If multiple elements are selected, move them all
               if (selectedElementIds.length > 1 && selectedElementIds.includes(el.id)) {
@@ -1846,8 +1847,8 @@ export function Canvas({
                       onElementUpdate(element.id, { x, y });
                     } else {
                       onElementUpdate(element.id, { 
-                        x: snapToGrid(element.x + deltaX), 
-                        y: snapToGrid(element.y + deltaY) 
+                        x: element.x + deltaX, 
+                        y: element.y + deltaY 
                       });
                     }
                   }
@@ -1858,7 +1859,7 @@ export function Canvas({
                   const { x, y } = applyTableFusion(el.id, d.x, d.y);
                   onElementUpdate(el.id, { x, y });
                 } else {
-                  onElementUpdate(el.id, { x: snapToGrid(d.x), y: snapToGrid(d.y) });
+                  onElementUpdate(el.id, { x: d.x, y: d.y });
                 }
               }
             }}
