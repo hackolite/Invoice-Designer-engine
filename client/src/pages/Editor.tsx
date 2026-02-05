@@ -295,7 +295,7 @@ export default function Editor() {
 
   const [layout, setLayout] = useState<TemplateLayout | null>(null);
   const [sampleData, setSampleData] = useState<string>("");
-  const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+  const [selectedElementIds, setSelectedElementIds] = useState<string[]>([]);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [scale, setScale] = useState(1);
   const [name, setName] = useState("");
@@ -350,8 +350,14 @@ export default function Editor() {
   }, [template]);
 
   const selectedElement = useMemo(() => 
-    layout?.elements.find(el => el.id === selectedElementId) || null
-  , [layout, selectedElementId]);
+    selectedElementIds.length === 1 
+      ? layout?.elements.find(el => el.id === selectedElementIds[0]) || null
+      : null
+  , [layout, selectedElementIds]);
+
+  const selectedElements = useMemo(() => 
+    layout?.elements.filter(el => selectedElementIds.includes(el.id)) || []
+  , [layout, selectedElementIds]);
 
   // Save layout to history
   const saveToHistory = (newLayout: TemplateLayout) => {
@@ -417,10 +423,11 @@ export default function Editor() {
         return;
       }
 
-      // Ctrl+C / Cmd+C - Copy element to clipboard
-      if ((e.ctrlKey || e.metaKey) && e.key === 'c' && selectedElementId) {
+      // Ctrl+C / Cmd+C - Copy element(s) to clipboard
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c' && selectedElementIds.length > 0) {
         e.preventDefault();
-        const elementToCopy = layout?.elements.find(el => el.id === selectedElementId);
+        // For now, only copy single selection (first element)
+        const elementToCopy = layout?.elements.find(el => el.id === selectedElementIds[0]);
         if (elementToCopy) {
           setCopiedElement(structuredClone(elementToCopy));
           toast({
@@ -436,16 +443,16 @@ export default function Editor() {
         handlePasteElement();
       }
       
-      // Delete / Backspace - Delete element
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedElementId) {
+      // Delete / Backspace - Delete selected element(s)
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedElementIds.length > 0) {
         e.preventDefault();
-        handleDeleteElement(selectedElementId);
+        handleDeleteElements(selectedElementIds);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedElementId, copiedElement, layout, historyIndex, history]);
+  }, [selectedElementIds, copiedElement, layout, historyIndex, history]);
 
   const handleAddElement = (type: TemplateElement['type']) => {
     if (!layout) return;
@@ -505,16 +512,73 @@ export default function Editor() {
     setLayout(newLayout);
     saveToHistory(newLayout);
     
-    setSelectedElementId(newElement.id);
+    setSelectedElementIds([newElement.id]);
   };
 
   const handleElementUpdate = (id: string, updates: Partial<TemplateElement>) => {
     if (!layout) return;
+    
+    // Find the element being updated
+    const updatedElement = layout.elements.find(el => el.id === id);
+    if (!updatedElement) return;
+    
+    // Check if this is a price table with height change
+    const isPriceTable = updatedElement.type === 'table' && updatedElement.tableConfig?.tableType === 'price';
+    const hasHeightChange = updates.height !== undefined && updates.height !== updatedElement.height;
+    
+    let elementsToUpdate = layout.elements.map(el => 
+      el.id === id ? { ...el, ...updates } : el
+    );
+    
+    // If a price table's height changed, move elements below it
+    if (isPriceTable && hasHeightChange) {
+      const oldHeight = updatedElement.height;
+      const newHeight = updates.height!;
+      const heightDelta = newHeight - oldHeight;
+      
+      // Get the updated element's position
+      const updatedX = updates.x !== undefined ? updates.x : updatedElement.x;
+      const updatedY = updates.y !== undefined ? updates.y : updatedElement.y;
+      const updatedWidth = updates.width !== undefined ? updates.width : updatedElement.width;
+      const updatedBottom = updatedY + newHeight;
+      
+      // Find elements that are directly below this price table
+      // An element is "below" if:
+      // 1. Its top edge is at or below the bottom of the price table
+      // 2. It horizontally overlaps with the price table
+      elementsToUpdate = elementsToUpdate.map(el => {
+        if (el.id === id) return el; // Skip the updated element itself
+        
+        const elementTop = el.y;
+        const elementBottom = el.y + el.height;
+        const elementLeft = el.x;
+        const elementRight = el.x + el.width;
+        
+        const priceTableLeft = updatedX;
+        const priceTableRight = updatedX + updatedWidth;
+        
+        // Check if element was below the old bottom edge
+        const wasBelow = elementTop >= updatedY + oldHeight;
+        
+        // Check horizontal overlap (allowing 5px tolerance for alignment)
+        const tolerance = 5;
+        const hasHorizontalOverlap = !(elementRight < priceTableLeft - tolerance || elementLeft > priceTableRight + tolerance);
+        
+        // If element was below and overlaps horizontally, move it
+        if (wasBelow && hasHorizontalOverlap) {
+          return {
+            ...el,
+            y: el.y + heightDelta
+          };
+        }
+        
+        return el;
+      });
+    }
+    
     const newLayout = {
       ...layout,
-      elements: layout.elements.map(el => 
-        el.id === id ? { ...el, ...updates } : el
-      )
+      elements: elementsToUpdate
     };
     setLayout(newLayout);
     saveToHistory(newLayout);
@@ -528,7 +592,18 @@ export default function Editor() {
     };
     setLayout(newLayout);
     saveToHistory(newLayout);
-    setSelectedElementId(null);
+    setSelectedElementIds([]);
+  };
+
+  const handleDeleteElements = (ids: string[]) => {
+    if (!layout) return;
+    const newLayout = {
+      ...layout,
+      elements: layout.elements.filter(el => !ids.includes(el.id))
+    };
+    setLayout(newLayout);
+    saveToHistory(newLayout);
+    setSelectedElementIds([]);
   };
 
   const handleCloneElement = (id: string) => {
@@ -901,8 +976,8 @@ export default function Editor() {
              <Canvas 
                 layout={layout}
                 sampleData={parseSampleData(sampleData)}
-                selectedElementId={selectedElementId}
-                onElementSelect={setSelectedElementId}
+                selectedElementIds={selectedElementIds}
+                onElementSelect={(ids, isMultiSelect) => setSelectedElementIds(ids)}
                 onElementUpdate={handleElementUpdate}
                 onClone={handleCloneElement}
                 isPreviewMode={isPreviewMode}

@@ -81,8 +81,8 @@ function buildDataPathTree(data: any, currentPath: string = ''): Record<string, 
 interface CanvasProps {
   layout: TemplateLayout;
   sampleData: any;
-  selectedElementId: string | null;
-  onElementSelect: (id: string | null) => void;
+  selectedElementIds: string[];
+  onElementSelect: (ids: string[], isMultiSelect: boolean) => void;
   onElementUpdate: (id: string, updates: Partial<TemplateElement>) => void;
   onClone: (id: string) => void;
   isPreviewMode: boolean;
@@ -118,7 +118,7 @@ function getToolbarPositionClass(element: TemplateElement, pageHeight: number): 
 export function Canvas({
   layout,
   sampleData,
-  selectedElementId,
+  selectedElementIds,
   onElementSelect,
   onElementUpdate,
   onClone,
@@ -1806,7 +1806,7 @@ export function Canvas({
       onMouseDown={(e) => {
         // Only deselect if clicking directly on the canvas background
         if (e.target === e.currentTarget) {
-          onElementSelect(null);
+          onElementSelect([], false);
           setSelectedRow(null);
         }
       }}
@@ -1822,7 +1822,7 @@ export function Canvas({
         />
       )}
       {layout.elements.map((el) => {
-        const isSelected = selectedElementId === el.id;
+        const isSelected = selectedElementIds.includes(el.id);
 
         return (
           <Rnd
@@ -1832,11 +1832,34 @@ export function Canvas({
             dragGrid={[GRID_SIZE, GRID_SIZE]}
             resizeGrid={[GRID_SIZE, GRID_SIZE]}
             onDragStop={(e, d) => {
-              if (el.type === 'gridtable') {
-                const { x, y } = applyTableFusion(el.id, d.x, d.y);
-                onElementUpdate(el.id, { x, y });
+              // Calculate the delta for this element
+              const deltaX = snapToGrid(d.x) - el.x;
+              const deltaY = snapToGrid(d.y) - el.y;
+              
+              // If multiple elements are selected, move them all
+              if (selectedElementIds.length > 1 && selectedElementIds.includes(el.id)) {
+                selectedElementIds.forEach(id => {
+                  const element = layout.elements.find(e => e.id === id);
+                  if (element) {
+                    if (element.type === 'gridtable') {
+                      const { x, y } = applyTableFusion(element.id, element.x + deltaX, element.y + deltaY);
+                      onElementUpdate(element.id, { x, y });
+                    } else {
+                      onElementUpdate(element.id, { 
+                        x: snapToGrid(element.x + deltaX), 
+                        y: snapToGrid(element.y + deltaY) 
+                      });
+                    }
+                  }
+                });
               } else {
-                onElementUpdate(el.id, { x: snapToGrid(d.x), y: snapToGrid(d.y) });
+                // Single element move
+                if (el.type === 'gridtable') {
+                  const { x, y } = applyTableFusion(el.id, d.x, d.y);
+                  onElementUpdate(el.id, { x, y });
+                } else {
+                  onElementUpdate(el.id, { x: snapToGrid(d.x), y: snapToGrid(d.y) });
+                }
               }
             }}
             onResizeStop={(e, direction, ref, delta, position) => {
@@ -1925,7 +1948,19 @@ export function Canvas({
             onMouseDown={(e) => {
               if (!isPreviewMode) {
                 e.stopPropagation();
-                onElementSelect(el.id);
+                const isMultiSelect = e.ctrlKey || e.metaKey;
+                
+                if (isMultiSelect) {
+                  // Toggle selection
+                  if (selectedElementIds.includes(el.id)) {
+                    onElementSelect(selectedElementIds.filter(id => id !== el.id), true);
+                  } else {
+                    onElementSelect([...selectedElementIds, el.id], true);
+                  }
+                } else {
+                  // Single selection
+                  onElementSelect([el.id], false);
+                }
               }
             }}
           >
