@@ -660,15 +660,16 @@ export function Canvas({
   // Handle removing additional rows from Price Tables
   const handlePriceTableRemoveRow = (elementId: string) => {
     const element = layout.elements.find(e => e.id === elementId);
-    if (!element?.tableConfig?.additionalRows || element.tableConfig.additionalRows.length === 0) return;
+    const tableConfig = element?.tableConfig;
+    if (!tableConfig?.additionalRows || tableConfig.additionalRows.length === 0) return;
     
-    const additionalRows = element.tableConfig.additionalRows;
+    const additionalRows = tableConfig.additionalRows;
     const newAdditionalRows = [...additionalRows];
     newAdditionalRows.pop();
     
     onElementUpdate(elementId, {
       tableConfig: {
-        ...element.tableConfig,
+        ...tableConfig,
         additionalRows: newAdditionalRows
       }
     });
