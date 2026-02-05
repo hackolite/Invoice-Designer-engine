@@ -16,7 +16,6 @@ interface ElementPropertiesProps {
 }
 
 export function ElementProperties({ element, onChange, onDelete, onClone }: ElementPropertiesProps) {
-  
   if (!element) {
     return (
       <div className="h-full flex flex-col items-center justify-center p-6 text-center text-muted-foreground">
@@ -472,24 +471,25 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                   ))}
                 </div>
                 
-                <>
-                  <Separator />
-                  
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Label>Footer Rows Configuration</Label>
-                      {element.tableConfig.footer && element.tableConfig.footer.length > 0 && (
-                        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                          {element.tableConfig.footer.length}
-                        </span>
-                      )}
-                    </div>
+                {element.tableConfig.tableType === 'price' && (
+                  <>
+                    <Separator />
                     
-                    {(!element.tableConfig.footer || element.tableConfig.footer.length === 0) && (
-                      <p className="text-xs text-muted-foreground">
-                        No footer rows. Use the Style tab to add footer rows.
-                      </p>
-                    )}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Label>Footer Rows Configuration</Label>
+                        {element.tableConfig.footer && element.tableConfig.footer.length > 0 && (
+                          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                            {element.tableConfig.footer.length}
+                          </span>
+                        )}
+                      </div>
+                      
+                      {(!element.tableConfig.footer || element.tableConfig.footer.length === 0) && (
+                        <p className="text-xs text-muted-foreground">
+                          No footer rows. Use the Style tab to add footer rows.
+                        </p>
+                      )}
                     
                     {element.tableConfig.footer && element.tableConfig.footer.map((footerRow, idx) => (
                         <div key={idx} className="bg-muted/30 p-3 rounded-lg border space-y-2 text-sm relative group">
@@ -650,6 +650,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                       ))}
                     </div>
                   </>
+                )}
               </div>
             )}
 
@@ -1102,7 +1103,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Label>Footer Rows (PriceTable)</Label>
+                      <Label>Footer Rows</Label>
                       {element.tableConfig.footer && element.tableConfig.footer.length > 0 && (
                         <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
                           {element.tableConfig.footer.length}
