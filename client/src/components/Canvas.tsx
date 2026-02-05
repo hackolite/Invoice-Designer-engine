@@ -861,27 +861,39 @@ const handleAddFooter = (elementId: string) => {
       // Check for horizontal alignment (same Y range)
       const horizontalOverlap = !(elementBottom <= otherEl.y || element.y >= otherBottom);
       
+      // For left/right fusion, tables should be nearly fully aligned in Y to avoid partial border removal
+      // Check that both tables have similar Y positions and heights (within tolerance)
+      const yAligned = Math.abs(element.y - otherEl.y) <= 1.5;
+      const heightsMatch = Math.abs(element.height - otherEl.height) <= 1.5;
+      const fullyAlignedY = yAligned && heightsMatch;
+      
       // Check if left edge of element touches right edge of other table
       // Use 1.5px tolerance to handle sub-pixel positioning from scaling/transforms
-      if (horizontalOverlap && Math.abs(element.x - otherRight) <= 1.5) {
+      if (horizontalOverlap && fullyAlignedY && Math.abs(element.x - otherRight) <= 1.5) {
         adjacent.left = true;
       }
       
       // Check if right edge of element touches left edge of other table
-      if (horizontalOverlap && Math.abs(elementRight - otherEl.x) <= 1.5) {
+      if (horizontalOverlap && fullyAlignedY && Math.abs(elementRight - otherEl.x) <= 1.5) {
         adjacent.right = true;
       }
 
       // Check for vertical alignment (same X range)
       const verticalOverlap = !(elementRight <= otherEl.x || element.x >= otherRight);
       
+      // For top/bottom fusion, tables should be nearly fully aligned in X to avoid partial border removal
+      // Check that both tables have similar X positions and widths (within tolerance)
+      const xAligned = Math.abs(element.x - otherEl.x) <= 1.5;
+      const widthsMatch = Math.abs(element.width - otherEl.width) <= 1.5;
+      const fullyAlignedX = xAligned && widthsMatch;
+      
       // Check if top edge of element touches bottom edge of other table
-      if (verticalOverlap && Math.abs(element.y - otherBottom) <= 1.5) {
+      if (verticalOverlap && fullyAlignedX && Math.abs(element.y - otherBottom) <= 1.5) {
         adjacent.top = true;
       }
       
       // Check if bottom edge of element touches top edge of other table
-      if (verticalOverlap && Math.abs(elementBottom - otherEl.y) <= 1.5) {
+      if (verticalOverlap && fullyAlignedX && Math.abs(elementBottom - otherEl.y) <= 1.5) {
         adjacent.bottom = true;
       }
     }
