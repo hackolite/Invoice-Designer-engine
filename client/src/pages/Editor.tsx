@@ -38,6 +38,7 @@ const convertStyleObjectToCss = (style: Record<string, string | number>): string
 };
 
 const BLOB_URL_CLEANUP_DELAY_MS = 2000; // Time to allow window to load before cleaning up blob URL
+const HORIZONTAL_OVERLAP_TOLERANCE_PX = 5; // Tolerance in pixels for detecting horizontal overlap when repositioning elements
 
 // Helper function to resolve nested object paths for data binding
 function getNestedValue(obj: any, path: string, defaultValue?: any) {
@@ -259,7 +260,18 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
         const cell = cellMap.get(key);
         const rowSpan = cell?.rowSpan || 1;
         const colSpan = cell?.colSpan || 1;
-        const content = cell?.content || '';
+        
+        // Handle content with data binding support
+        let content = '';
+        if (cell) {
+          if (isPreviewMode && cell.binding) {
+            // Resolve binding in preview mode
+            content = String(getNestedValue(sampleData, cell.binding, cell.content || ''));
+          } else {
+            // Show static content or binding placeholder
+            content = cell.content || (cell.binding ? `{{${cell.binding}}}` : '');
+          }
+        }
         
         // Build cell style
         const cellStyle = cell?.style || {};
@@ -276,7 +288,49 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
       return `<tr>${cellsHtml}</tr>`;
     }).join('');
     
-    const tableHtml = `<table style="width: 100%; height: 100%; border-collapse: collapse; border: ${gridBorderWidth}px solid ${gridBorderColor};"><tbody>${rowsHtml}</tbody></table>`;
+    // Add footer if present
+    let footerHtml = '';
+    if (config.footer && config.footer.length > 0) {
+      footerHtml = `<tfoot>${config.footer.map(footerRow => {
+        let footerValue;
+        if (isPreviewMode) {
+          // Try to parse as binding first - check for pattern {bindingName}
+          if (footerRow.value.startsWith('{') && footerRow.value.endsWith('}') && footerRow.value.length > 2) {
+            const binding = footerRow.value.slice(1, -1).trim();
+            if (binding.length > 0) {
+              const rawVal = getNestedValue(sampleData, binding);
+              if (footerRow.format === 'currency') {
+                footerValue = formatCurrency(rawVal);
+              } else if (footerRow.format === 'number') {
+                footerValue = new Intl.NumberFormat('en-US').format(Number(rawVal) || 0);
+              } else {
+                footerValue = rawVal;
+              }
+            } else {
+              footerValue = footerRow.value;
+            }
+          } else {
+            // Static text
+            footerValue = footerRow.value;
+          }
+        } else {
+          footerValue = footerRow.value;
+        }
+        
+        const footerStyle = footerRow.style || {};
+        const textAlign = footerStyle.textAlign || 'left';
+        const fontWeight = footerStyle.fontWeight || 'bold';
+        const fontStyle = footerStyle.fontStyle || 'normal';
+        const textDecoration = footerStyle.textDecoration || 'none';
+        
+        return `<tr>
+          <th colspan="${Math.floor(config.cols / 2)}" style="padding: 8px; border: ${gridBorderWidth}px solid ${gridBorderColor}; text-align: ${textAlign}; font-weight: ${fontWeight}; font-style: ${fontStyle}; text-decoration: ${textDecoration};">${footerRow.label}</th>
+          <td colspan="${config.cols - Math.floor(config.cols / 2)}" style="padding: 8px; border: ${gridBorderWidth}px solid ${gridBorderColor}; text-align: ${textAlign}; font-weight: ${fontWeight}; font-style: ${fontStyle}; text-decoration: ${textDecoration};">${footerValue}</td>
+        </tr>`;
+      }).join('')}</tfoot>`;
+    }
+    
+    const tableHtml = `<table style="width: 100%; height: 100%; border-collapse: collapse; border: ${gridBorderWidth}px solid ${gridBorderColor};"><tbody>${rowsHtml}</tbody>${footerHtml}</table>`;
     
     return `<div class="element" style="left: ${el.x}px; top: ${el.y}px; width: ${el.width}px; height: ${el.height}px; overflow: hidden;">${tableHtml}</div>`;
   }
@@ -295,7 +349,7 @@ export default function Editor() {
 
   const [layout, setLayout] = useState<TemplateLayout | null>(null);
   const [sampleData, setSampleData] = useState<string>("");
-  const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+  const [selectedElementIds, setSelectedElementIds] = useState<string[]>([]);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [scale, setScale] = useState(1);
   const [name, setName] = useState("");
@@ -350,8 +404,14 @@ export default function Editor() {
   }, [template]);
 
   const selectedElement = useMemo(() => 
-    layout?.elements.find(el => el.id === selectedElementId) || null
-  , [layout, selectedElementId]);
+    selectedElementIds.length === 1 
+      ? layout?.elements.find(el => el.id === selectedElementIds[0]) || null
+      : null
+  , [layout, selectedElementIds]);
+
+  const selectedElements = useMemo(() => 
+    layout?.elements.filter(el => selectedElementIds.includes(el.id)) || []
+  , [layout, selectedElementIds]);
 
   // Save layout to history
   const saveToHistory = (newLayout: TemplateLayout) => {
@@ -417,10 +477,11 @@ export default function Editor() {
         return;
       }
 
-      // Ctrl+C / Cmd+C - Copy element to clipboard
-      if ((e.ctrlKey || e.metaKey) && e.key === 'c' && selectedElementId) {
+      // Ctrl+C / Cmd+C - Copy element(s) to clipboard
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c' && selectedElementIds.length > 0) {
         e.preventDefault();
-        const elementToCopy = layout?.elements.find(el => el.id === selectedElementId);
+        // For now, only copy single selection (first element)
+        const elementToCopy = layout?.elements.find(el => el.id === selectedElementIds[0]);
         if (elementToCopy) {
           setCopiedElement(structuredClone(elementToCopy));
           toast({
@@ -436,16 +497,16 @@ export default function Editor() {
         handlePasteElement();
       }
       
-      // Delete / Backspace - Delete element
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedElementId) {
+      // Delete / Backspace - Delete selected element(s)
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedElementIds.length > 0) {
         e.preventDefault();
-        handleDeleteElement(selectedElementId);
+        handleDeleteElements(selectedElementIds);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedElementId, copiedElement, layout, historyIndex, history]);
+  }, [selectedElementIds, copiedElement, layout, historyIndex, history]);
 
   const handleAddElement = (type: TemplateElement['type']) => {
     if (!layout) return;
@@ -505,16 +566,72 @@ export default function Editor() {
     setLayout(newLayout);
     saveToHistory(newLayout);
     
-    setSelectedElementId(newElement.id);
+    setSelectedElementIds([newElement.id]);
   };
 
   const handleElementUpdate = (id: string, updates: Partial<TemplateElement>) => {
     if (!layout) return;
+    
+    // Find the element being updated
+    const updatedElement = layout.elements.find(el => el.id === id);
+    if (!updatedElement) return;
+    
+    // Check if this is a price table with height change
+    const isPriceTable = updatedElement.type === 'table' && updatedElement.tableConfig?.tableType === 'price';
+    const hasHeightChange = updates.height !== undefined && updates.height !== updatedElement.height;
+    
+    let elementsToUpdate = layout.elements.map(el => 
+      el.id === id ? { ...el, ...updates } : el
+    );
+    
+    // If a price table's height changed, move elements below it
+    if (isPriceTable && hasHeightChange) {
+      const oldHeight = updatedElement.height;
+      const newHeight = updates.height!;
+      const heightDelta = newHeight - oldHeight;
+      
+      // Get the updated element's position
+      const updatedX = updates.x !== undefined ? updates.x : updatedElement.x;
+      const updatedY = updates.y !== undefined ? updates.y : updatedElement.y;
+      const updatedWidth = updates.width !== undefined ? updates.width : updatedElement.width;
+      const updatedBottom = updatedY + newHeight;
+      
+      // Find elements that are directly below this price table
+      // An element is "below" if:
+      // 1. Its top edge is at or below the bottom of the price table
+      // 2. It horizontally overlaps with the price table
+      elementsToUpdate = elementsToUpdate.map(el => {
+        if (el.id === id) return el; // Skip the updated element itself
+        
+        const elementTop = el.y;
+        const elementBottom = el.y + el.height;
+        const elementLeft = el.x;
+        const elementRight = el.x + el.width;
+        
+        const priceTableLeft = updatedX;
+        const priceTableRight = updatedX + updatedWidth;
+        
+        // Check if element was below the old bottom edge
+        const wasBelow = elementTop >= updatedY + oldHeight;
+        
+        // Check horizontal overlap (allowing tolerance for alignment)
+        const hasHorizontalOverlap = !(elementRight < priceTableLeft - HORIZONTAL_OVERLAP_TOLERANCE_PX || elementLeft > priceTableRight + HORIZONTAL_OVERLAP_TOLERANCE_PX);
+        
+        // If element was below and overlaps horizontally, move it
+        if (wasBelow && hasHorizontalOverlap) {
+          return {
+            ...el,
+            y: el.y + heightDelta
+          };
+        }
+        
+        return el;
+      });
+    }
+    
     const newLayout = {
       ...layout,
-      elements: layout.elements.map(el => 
-        el.id === id ? { ...el, ...updates } : el
-      )
+      elements: elementsToUpdate
     };
     setLayout(newLayout);
     saveToHistory(newLayout);
@@ -528,7 +645,18 @@ export default function Editor() {
     };
     setLayout(newLayout);
     saveToHistory(newLayout);
-    setSelectedElementId(null);
+    setSelectedElementIds([]);
+  };
+
+  const handleDeleteElements = (ids: string[]) => {
+    if (!layout) return;
+    const newLayout = {
+      ...layout,
+      elements: layout.elements.filter(el => !ids.includes(el.id))
+    };
+    setLayout(newLayout);
+    saveToHistory(newLayout);
+    setSelectedElementIds([]);
   };
 
   const handleCloneElement = (id: string) => {
@@ -901,8 +1029,8 @@ export default function Editor() {
              <Canvas 
                 layout={layout}
                 sampleData={parseSampleData(sampleData)}
-                selectedElementId={selectedElementId}
-                onElementSelect={setSelectedElementId}
+                selectedElementIds={selectedElementIds}
+                onElementSelect={(ids, isMultiSelect) => setSelectedElementIds(ids)}
                 onElementUpdate={handleElementUpdate}
                 onClone={handleCloneElement}
                 isPreviewMode={isPreviewMode}
