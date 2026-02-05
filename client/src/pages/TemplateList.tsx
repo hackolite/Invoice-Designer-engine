@@ -82,10 +82,7 @@ export default function TemplateList() {
     e.stopPropagation();
     try {
       await deleteTemplate.mutateAsync(id);
-      toast({
-        title: "Template Deleted",
-        description: "The template has been successfully deleted.",
-      });
+      // Success feedback is provided by React Query cache invalidation
     } catch (error) {
       toast({
         title: "Deletion Failed",
