@@ -16,7 +16,8 @@ interface ElementPropertiesProps {
 }
 
 export function ElementProperties({ element, onChange, onDelete, onClone }: ElementPropertiesProps) {
-  const [bulkAddCount, setBulkAddCount] = useState<string>("1");
+  const [priceBulkAddCount, setPriceBulkAddCount] = useState<string>("1");
+  const [gridBulkAddCount, setGridBulkAddCount] = useState<string>("1");
   
   if (!element) {
     return (
@@ -159,8 +160,9 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
 
   const handleTableFooterAddMultiple = (count: number) => {
     if (!element.tableConfig || count < 1) return;
+    const currentCount = element.tableConfig.footer?.length || 0;
     const newFooters = Array.from({ length: count }, (_, i) => ({
-      label: `Row ${i + 1}`,
+      label: `Row ${currentCount + i + 1}`,
       value: "",
       format: 'text' as const
     }));
@@ -246,8 +248,9 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
 
   const handleGridTableFooterAddMultiple = (count: number) => {
     if (!element.gridTableConfig || count < 1) return;
+    const currentCount = element.gridTableConfig.footer?.length || 0;
     const newFooters = Array.from({ length: count }, (_, i) => ({
-      label: `Row ${i + 1}`,
+      label: `Row ${currentCount + i + 1}`,
       value: "",
       format: 'text' as const
     }));
@@ -602,8 +605,8 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                           type="number" 
                           min="1" 
                           max="20"
-                          value={bulkAddCount}
-                          onChange={(e) => setBulkAddCount(e.target.value)}
+                          value={priceBulkAddCount}
+                          onChange={(e) => setPriceBulkAddCount(e.target.value)}
                           className="h-8"
                           placeholder="Number of rows"
                         />
@@ -612,13 +615,15 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                         variant="secondary" 
                         size="sm" 
                         onClick={() => {
-                          const count = parseInt(bulkAddCount);
-                          if (count > 0 && count <= 20) {
+                          const count = parseInt(priceBulkAddCount);
+                          if (!isNaN(count) && count > 0 && count <= 20) {
                             handleTableFooterAddMultiple(count);
-                            setBulkAddCount("1");
+                            setPriceBulkAddCount("1");
                           }
                         }}
+                        disabled={!priceBulkAddCount || isNaN(parseInt(priceBulkAddCount)) || parseInt(priceBulkAddCount) < 1 || parseInt(priceBulkAddCount) > 20}
                         className="h-8"
+                        title={!priceBulkAddCount || isNaN(parseInt(priceBulkAddCount)) || parseInt(priceBulkAddCount) < 1 || parseInt(priceBulkAddCount) > 20 ? "Enter a number between 1 and 20" : ""}
                       >
                         <CopyPlus className="w-3 h-3 mr-1" /> Add
                       </Button>
@@ -1097,8 +1102,8 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                         type="number" 
                         min="1" 
                         max="20"
-                        value={bulkAddCount}
-                        onChange={(e) => setBulkAddCount(e.target.value)}
+                        value={gridBulkAddCount}
+                        onChange={(e) => setGridBulkAddCount(e.target.value)}
                         className="h-8"
                         placeholder="Number of rows"
                       />
@@ -1107,13 +1112,15 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                       variant="secondary" 
                       size="sm" 
                       onClick={() => {
-                        const count = parseInt(bulkAddCount);
-                        if (count > 0 && count <= 20) {
+                        const count = parseInt(gridBulkAddCount);
+                        if (!isNaN(count) && count > 0 && count <= 20) {
                           handleGridTableFooterAddMultiple(count);
-                          setBulkAddCount("1");
+                          setGridBulkAddCount("1");
                         }
                       }}
+                      disabled={!gridBulkAddCount || isNaN(parseInt(gridBulkAddCount)) || parseInt(gridBulkAddCount) < 1 || parseInt(gridBulkAddCount) > 20}
                       className="h-8"
+                      title={!gridBulkAddCount || isNaN(parseInt(gridBulkAddCount)) || parseInt(gridBulkAddCount) < 1 || parseInt(gridBulkAddCount) > 20 ? "Enter a number between 1 and 20" : ""}
                     >
                       <CopyPlus className="w-3 h-3 mr-1" /> Add
                     </Button>
