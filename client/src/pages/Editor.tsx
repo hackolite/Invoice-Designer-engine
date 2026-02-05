@@ -259,7 +259,18 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
         const cell = cellMap.get(key);
         const rowSpan = cell?.rowSpan || 1;
         const colSpan = cell?.colSpan || 1;
-        const content = cell?.content || '';
+        
+        // Handle content with data binding support
+        let content = '';
+        if (cell) {
+          if (isPreviewMode && cell.binding) {
+            // Resolve binding in preview mode
+            content = String(getNestedValue(sampleData, cell.binding, cell.content || ''));
+          } else {
+            // Show static content or binding placeholder
+            content = cell.content || (cell.binding ? `{{${cell.binding}}}` : '');
+          }
+        }
         
         // Build cell style
         const cellStyle = cell?.style || {};
@@ -276,7 +287,49 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
       return `<tr>${cellsHtml}</tr>`;
     }).join('');
     
-    const tableHtml = `<table style="width: 100%; height: 100%; border-collapse: collapse; border: ${gridBorderWidth}px solid ${gridBorderColor};"><tbody>${rowsHtml}</tbody></table>`;
+    // Add footer if present
+    let footerHtml = '';
+    if (config.footer && config.footer.length > 0) {
+      footerHtml = `<tfoot>${config.footer.map(footerRow => {
+        let footerValue;
+        if (isPreviewMode) {
+          // Try to parse as binding first - check for pattern {bindingName}
+          if (footerRow.value.startsWith('{') && footerRow.value.endsWith('}') && footerRow.value.length > 2) {
+            const binding = footerRow.value.slice(1, -1).trim();
+            if (binding.length > 0) {
+              const rawVal = getNestedValue(sampleData, binding);
+              if (footerRow.format === 'currency') {
+                footerValue = formatCurrency(rawVal);
+              } else if (footerRow.format === 'number') {
+                footerValue = new Intl.NumberFormat('en-US').format(Number(rawVal) || 0);
+              } else {
+                footerValue = rawVal;
+              }
+            } else {
+              footerValue = footerRow.value;
+            }
+          } else {
+            // Static text
+            footerValue = footerRow.value;
+          }
+        } else {
+          footerValue = footerRow.value;
+        }
+        
+        const footerStyle = footerRow.style || {};
+        const textAlign = footerStyle.textAlign || 'left';
+        const fontWeight = footerStyle.fontWeight || 'bold';
+        const fontStyle = footerStyle.fontStyle || 'normal';
+        const textDecoration = footerStyle.textDecoration || 'none';
+        
+        return `<tr>
+          <th colspan="${Math.floor(config.cols / 2)}" style="padding: 8px; border: ${gridBorderWidth}px solid ${gridBorderColor}; text-align: ${textAlign}; font-weight: ${fontWeight}; font-style: ${fontStyle}; text-decoration: ${textDecoration};">${footerRow.label}</th>
+          <td colspan="${config.cols - Math.floor(config.cols / 2)}" style="padding: 8px; border: ${gridBorderWidth}px solid ${gridBorderColor}; text-align: ${textAlign}; font-weight: ${fontWeight}; font-style: ${fontStyle}; text-decoration: ${textDecoration};">${footerValue}</td>
+        </tr>`;
+      }).join('')}</tfoot>`;
+    }
+    
+    const tableHtml = `<table style="width: 100%; height: 100%; border-collapse: collapse; border: ${gridBorderWidth}px solid ${gridBorderColor};"><tbody>${rowsHtml}</tbody>${footerHtml}</table>`;
     
     return `<div class="element" style="left: ${el.x}px; top: ${el.y}px; width: ${el.width}px; height: ${el.height}px; overflow: hidden;">${tableHtml}</div>`;
   }
