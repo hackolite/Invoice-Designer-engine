@@ -625,12 +625,20 @@ export function Canvas({
     newRowHeights[rowIndex] = Math.max(MIN_ROW_HEIGHT, newHeight);
     
     // Update total element height
+    const oldHeight = element.height;
     const newTotalHeight = newRowHeights.reduce((sum, h) => sum + h, 0);
     
     onElementUpdate(elementId, {
       tableConfig: { ...config, rowHeights: newRowHeights },
       height: newTotalHeight
     });
+    
+    // Adjust any tables that are vertically fused below this price table
+    adjustVerticallyFusedTables(
+      { ...element, height: newTotalHeight },
+      oldHeight,
+      newTotalHeight
+    );
   };
 
   // Detect and apply fusion between nearby gridtables and price tables
@@ -778,6 +786,46 @@ export function Canvas({
     }
 
     return adjacent;
+  };
+
+  // Find and adjust position of tables that are vertically fused below a given table
+  // This ensures that when a table's height changes, any table directly below it moves to stay fused
+  const adjustVerticallyFusedTables = (changedElement: TemplateElement, oldHeight: number, newHeight: number) => {
+    // Only applicable for tables
+    const isChangedTable = 
+      (changedElement.type === 'gridtable' && changedElement.gridTableConfig) ||
+      (changedElement.type === 'table' && changedElement.tableConfig);
+    
+    if (!isChangedTable) return;
+
+    const oldBottom = changedElement.y + oldHeight;
+    const newBottom = changedElement.y + newHeight;
+    const heightDelta = newHeight - oldHeight;
+
+    // No height change, no adjustment needed
+    if (Math.abs(heightDelta) < HEIGHT_NORMALIZATION_THRESHOLD) return;
+
+    // Find all tables that were vertically fused below this table
+    for (const otherEl of layout.elements) {
+      if (otherEl.id === changedElement.id) continue;
+      
+      // Check if the other element is a table type that can be fused
+      const isOtherTable = 
+        (otherEl.type === 'gridtable' && otherEl.gridTableConfig) ||
+        (otherEl.type === 'table' && otherEl.tableConfig);
+      
+      if (!isOtherTable) continue;
+      
+      // Check for full horizontal alignment (same X and width)
+      const fullyAlignedX = isFullyAligned(changedElement.x, otherEl.x, changedElement.width, otherEl.width, ALIGNMENT_TOLERANCE);
+      
+      // Check if this table's top edge was touching the changed table's old bottom edge
+      if (fullyAlignedX && Math.abs(otherEl.y - oldBottom) <= ALIGNMENT_TOLERANCE) {
+        // This table is vertically fused below - adjust its Y position
+        const newY = newBottom;
+        onElementUpdate(otherEl.id, { y: newY });
+      }
+    }
   };
 
   // Helper to render content based on element type and mode
@@ -1928,6 +1976,13 @@ export function Canvas({
                     rowHeights: newRowHeights
                   }
                 });
+                
+                // Adjust any tables that are vertically fused below this price table
+                adjustVerticallyFusedTables(
+                  { ...el, width: newWidth, height: newHeight, x: newX, y: newY },
+                  oldHeight,
+                  newHeight
+                );
               } else {
                 onElementUpdate(el.id, {
                   width: newWidth,
