@@ -615,7 +615,7 @@ export function Canvas({
     if (!element || !element.tableConfig) return;
     
     const config = element.tableConfig;
-    const totalRows = config.columns.length + (config.footer?.length || 0);
+    const totalRows = config.columns.length + (config.additionalRows?.length || 0);
     
     // Guard against invalid row index (resize handles exist between rows, so max index is totalRows - 2)
     if (totalRows <= 0 || rowIndex >= totalRows - 1) return;
@@ -1857,8 +1857,8 @@ export function Canvas({
                 const oldHeight = el.height;
                 const heightRatio = newHeight / oldHeight;
                 
-                // Calculate total rows for price table (columns + footer rows)
-                const totalRows = config.columns.length + (config.footer?.length || 0);
+                // Calculate total rows for price table (columns + additional rows)
+                const totalRows = config.columns.length + (config.additionalRows?.length || 0);
                 
                 // Scale all row heights proportionally
                 let newRowHeights: number[] | undefined;
