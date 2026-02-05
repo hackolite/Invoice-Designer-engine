@@ -451,130 +451,7 @@ export function Canvas({
     });
   };
 
-  // Handlers for footer cell updates in price tables
-  const handleFooterCellUpdate = (elementId: string, footerIdx: number, field: 'label' | 'value', newValue: string) => {
-    const element = layout.elements.find(e => e.id === elementId);
-    if (!element || !element.tableConfig || !element.tableConfig.footer) return;
-    
-    const config = element.tableConfig;
-    const footer = config.footer; // Extract footer for type narrowing
-    if (!footer) return; // Additional safety check
-    const newFooter = [...footer];
-    newFooter[footerIdx] = { ...newFooter[footerIdx], [field]: newValue };
-    
-    onElementUpdate(elementId, {
-      tableConfig: { ...config, footer: newFooter }
-    });
-  };
 
-// Handler to add footer row to price table
-const handleAddFooter = (elementId: string) => {
-  const element = layout.elements.find(e => e.id === elementId);
-  if (!element || !element.tableConfig) return;
-  
-  const config = element.tableConfig;
-  const currentFooterLength = config.footer?.length || 0;
-  const currentTotalRows = config.columns.length + currentFooterLength;
-  const newTotalRows = currentTotalRows + 1;
-  
-  // Recalculate row heights to accommodate the new footer row
-  const newRowHeight = element.height / newTotalRows;
-  const newRowHeights = Array(newTotalRows).fill(newRowHeight);
-  
-  // Create new footer array, ensuring we don't have undefined
-  const newFooter = config.footer ? [...config.footer, DEFAULT_FOOTER_ROW] : [DEFAULT_FOOTER_ROW];
-  
-  onElementUpdate(elementId, {
-    tableConfig: {
-      ...config,
-      footer: newFooter,
-      rowHeights: newRowHeights
-    }
-  });
-};
-  // Handler to remove last footer row from price table
-  const handleRemoveLastFooter = (elementId: string) => {
-    const element = layout.elements.find(e => e.id === elementId);
-    if (!element || !element.tableConfig) return;
-    
-    const config = element.tableConfig;
-    const footer = config.footer;
-    
-    // Early return if no footer or empty footer array
-    if (!footer || footer.length === 0) return;
-    
-    const newFooter = [...footer];
-    newFooter.pop(); // Remove last footer row
-    
-    const currentTotalRows = config.columns.length + footer.length;
-    const newTotalRows = currentTotalRows - 1;
-    
-    // Recalculate row heights after removing footer row
-    const newRowHeight = element.height / newTotalRows;
-    const newRowHeights = Array(newTotalRows).fill(newRowHeight);
-    
-    onElementUpdate(elementId, {
-      tableConfig: {
-        ...config,
-        footer: newFooter,
-        rowHeights: newRowHeights
-      }
-    });
-  };
-
-  // Handler to add footer row to gridtable
-  const handleAddGridTableFooter = (elementId: string) => {
-    const element = layout.elements.find(e => e.id === elementId);
-    if (!element || !element.gridTableConfig) return;
-    
-    const config = element.gridTableConfig;
-    
-    onElementUpdate(elementId, {
-      gridTableConfig: {
-        ...config,
-        footer: [...(config.footer || []), DEFAULT_FOOTER_ROW]
-      }
-    });
-  };
-
-  // Handler to remove last footer row from gridtable
-  const handleRemoveLastGridTableFooter = (elementId: string) => {
-    const element = layout.elements.find(e => e.id === elementId);
-    if (!element || !element.gridTableConfig) return;
-    
-    const config = element.gridTableConfig;
-    const footer = config.footer;
-    
-    // Early return if no footer or empty footer array
-    if (!footer || footer.length === 0) return;
-    
-    const newFooter = [...footer];
-    newFooter.pop(); // Remove last footer row
-    
-    onElementUpdate(elementId, {
-      gridTableConfig: {
-        ...config,
-        footer: newFooter
-      }
-    });
-  };
-
-  // Handler to update footer cell in gridtable
-  const handleGridTableFooterCellUpdate = (elementId: string, footerIdx: number, field: 'label' | 'value', newValue: string) => {
-    const element = layout.elements.find(e => e.id === elementId);
-    if (!element || !element.gridTableConfig || !element.gridTableConfig.footer) return;
-    
-    const config = element.gridTableConfig;
-    const footer = config.footer || [];
-    if (footer.length === 0) return;
-    
-    const newFooter = [...footer];
-    newFooter[footerIdx] = { ...newFooter[footerIdx], [field]: newValue };
-    
-    onElementUpdate(elementId, {
-      gridTableConfig: { ...config, footer: newFooter }
-    });
-  };
 
   // Recursive function to render JSON data tree in context menu for text elements
   const renderDataTreeForText = (tree: Record<string, any>, elementId: string): JSX.Element[] => {
@@ -1182,7 +1059,7 @@ const handleAddFooter = (elementId: string) => {
                         borderColor: gridBorderColor,
                         borderTopWidth: (adjacentTables.top && isFirstRow) ? 0 : `${gridBorderWidth}px`,
                         borderLeftWidth: adjacentTables.left ? 0 : `${gridBorderWidth}px`,
-                        borderBottomWidth: (adjacentTables.bottom && isLastRow) ? 0 : `${gridBorderWidth}px`,
+                        borderBottomWidth: `${gridBorderWidth}px`,
                       }}>
                         {col.header}
                       </th>
@@ -1191,8 +1068,8 @@ const handleAddFooter = (elementId: string) => {
                         borderStyle: 'solid',
                         borderColor: gridBorderColor,
                         borderTopWidth: (adjacentTables.top && isFirstRow) ? 0 : `${gridBorderWidth}px`,
-                        borderRightWidth: adjacentTables.right ? 0 : `${gridBorderWidth}px`,
-                        borderBottomWidth: (adjacentTables.bottom && isLastRow) ? 0 : `${gridBorderWidth}px`,
+                        borderRightWidth: `${gridBorderWidth}px`,
+                        borderBottomWidth: `${gridBorderWidth}px`,
                       }}>
                         {cellValue}
                       </td>
@@ -1257,10 +1134,10 @@ const handleAddFooter = (elementId: string) => {
                             borderStyle: 'solid',
                             borderColor: gridBorderColor,
                             borderLeftWidth: adjacentTables.left ? 0 : `${gridBorderWidth}px`,
-                            borderBottomWidth: (adjacentTables.bottom && isLastFooterRow) ? 0 : `${gridBorderWidth}px`,
-                            textAlign: footerRow.style?.textAlign || 'left',
+                            borderBottomWidth: `${gridBorderWidth}px`,
+                            textAlign: (footerRow.style?.textAlign as React.CSSProperties['textAlign']) || 'left',
                             fontWeight: footerRow.style?.fontWeight || 'bold',
-                            fontStyle: footerRow.style?.fontStyle || 'normal',
+                            fontStyle: (footerRow.style?.fontStyle as React.CSSProperties['fontStyle']) || 'normal',
                             textDecoration: footerRow.style?.textDecoration || 'none'
                           }}
                           onDoubleClick={(e) => {
@@ -1270,26 +1147,7 @@ const handleAddFooter = (elementId: string) => {
                             }
                           }}
                         >
-                          {isEditingLabel && !isPreviewMode ? (
-                            <input
-                              autoFocus
-                              className="w-full pointer-events-auto border-none outline-none bg-transparent font-semibold"
-                              value={footerRow.label}
-                              onChange={(e) => {
-                                handleFooterCellUpdate(el.id, idx, 'label', e.target.value);
-                              }}
-                              onBlur={() => setEditingFooterCell(null)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Escape' || e.key === 'Enter') {
-                                  setEditingFooterCell(null);
-                                  e.stopPropagation();
-                                }
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                          ) : (
-                            footerRow.label
-                          )}
+                          {footerRow.label}
                         </th>
                         <td 
                           className={clsx(
@@ -1300,11 +1158,11 @@ const handleAddFooter = (elementId: string) => {
                             borderWidth: `${gridBorderWidth}px`,
                             borderStyle: 'solid',
                             borderColor: gridBorderColor,
-                            borderRightWidth: adjacentTables.right ? 0 : `${gridBorderWidth}px`,
-                            borderBottomWidth: (adjacentTables.bottom && isLastFooterRow) ? 0 : `${gridBorderWidth}px`,
-                            textAlign: footerRow.style?.textAlign || 'left',
+                            borderRightWidth: `${gridBorderWidth}px`,
+                            borderBottomWidth: `${gridBorderWidth}px`,
+                            textAlign: (footerRow.style?.textAlign as React.CSSProperties['textAlign']) || 'left',
                             fontWeight: footerRow.style?.fontWeight || 'bold',
-                            fontStyle: footerRow.style?.fontStyle || 'normal',
+                            fontStyle: (footerRow.style?.fontStyle as React.CSSProperties['fontStyle']) || 'normal',
                             textDecoration: footerRow.style?.textDecoration || 'none'
                           }}
                           onDoubleClick={(e) => {
@@ -1314,26 +1172,7 @@ const handleAddFooter = (elementId: string) => {
                             }
                           }}
                         >
-                          {isEditingValue && !isPreviewMode ? (
-                            <input
-                              autoFocus
-                              className="w-full pointer-events-auto border-none outline-none bg-transparent font-semibold"
-                              value={footerRow.value}
-                              onChange={(e) => {
-                                handleFooterCellUpdate(el.id, idx, 'value', e.target.value);
-                              }}
-                              onBlur={() => setEditingFooterCell(null)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Escape' || e.key === 'Enter') {
-                                  setEditingFooterCell(null);
-                                  e.stopPropagation();
-                                }
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                          ) : (
-                            footerValue
-                          )}
+                          {footerValue}
                         </td>
                       </tr>
                     );
@@ -1405,7 +1244,7 @@ const handleAddFooter = (elementId: string) => {
                       borderColor: gridBorderColor,
                       borderTopWidth: adjacentTables.top ? 0 : `${gridBorderWidth}px`,
                       borderLeftWidth: (adjacentTables.left && isFirstCol) ? 0 : `${gridBorderWidth}px`,
-                      borderRightWidth: (adjacentTables.right && isLastCol) ? 0 : `${gridBorderWidth}px`,
+                      borderRightWidth: `${gridBorderWidth}px`,
                     }}>
                       {col.header}
                     </th>
@@ -1444,8 +1283,8 @@ const handleAddFooter = (elementId: string) => {
                           borderStyle: 'solid',
                           borderColor: gridBorderColor,
                           borderLeftWidth: (adjacentTables.left && isFirstCol) ? 0 : `${gridBorderWidth}px`,
-                          borderRightWidth: (adjacentTables.right && isLastCol) ? 0 : `${gridBorderWidth}px`,
-                          borderBottomWidth: (adjacentTables.bottom && isLastRow) ? 0 : `${gridBorderWidth}px`,
+                          borderRightWidth: `${gridBorderWidth}px`,
+                          borderBottomWidth: `${gridBorderWidth}px`,
                         }}>
                           {cellValue}
                         </td>
@@ -1602,8 +1441,8 @@ const handleAddFooter = (elementId: string) => {
                               borderWidth: `${gridBorderWidth}px`,
                               borderStyle: 'solid',
                               borderTopWidth: (adjacentTables.top && isFirstRow) ? 0 : `${gridBorderWidth}px`,
-                              borderRightWidth: (adjacentTables.right && (colIdx + colSpan >= config.cols)) ? 0 : `${gridBorderWidth}px`,
-                              borderBottomWidth: (adjacentTables.bottom && (rowIdx + rowSpan >= config.rows)) ? 0 : `${gridBorderWidth}px`,
+                              borderRightWidth: `${gridBorderWidth}px`,
+                              borderBottomWidth: `${gridBorderWidth}px`,
                               borderLeftWidth: (adjacentTables.left && isFirstCol) ? 0 : `${gridBorderWidth}px`,
                               ...getCellStyle(cell)
                             }}
@@ -1790,10 +1629,10 @@ const handleAddFooter = (elementId: string) => {
                           borderStyle: 'solid',
                           borderColor: gridBorderColor,
                           borderLeftWidth: adjacentTables.left ? 0 : `${gridBorderWidth}px`,
-                          borderBottomWidth: (adjacentTables.bottom && isLastFooterRow) ? 0 : `${gridBorderWidth}px`,
-                          textAlign: footerRow.style?.textAlign || 'left',
+                          borderBottomWidth: `${gridBorderWidth}px`,
+                          textAlign: (footerRow.style?.textAlign as React.CSSProperties['textAlign']) || 'left',
                           fontWeight: footerRow.style?.fontWeight || 'bold',
-                          fontStyle: footerRow.style?.fontStyle || 'normal',
+                          fontStyle: (footerRow.style?.fontStyle as React.CSSProperties['fontStyle']) || 'normal',
                           textDecoration: footerRow.style?.textDecoration || 'none'
                         }}
                         colSpan={config.cols > 1 ? config.cols - 1 : 1}
@@ -1804,26 +1643,7 @@ const handleAddFooter = (elementId: string) => {
                           }
                         }}
                       >
-                        {isEditingLabel && !isPreviewMode ? (
-                          <input
-                            autoFocus
-                            className="w-full pointer-events-auto border-none outline-none bg-transparent font-semibold"
-                            value={footerRow.label}
-                            onChange={(e) => {
-                              handleGridTableFooterCellUpdate(el.id, idx, 'label', e.target.value);
-                            }}
-                            onBlur={() => setEditingFooterCell(null)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Escape' || e.key === 'Enter') {
-                                setEditingFooterCell(null);
-                                e.stopPropagation();
-                              }
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        ) : (
-                          footerRow.label
-                        )}
+                        {footerRow.label}
                       </th>
                       {config.cols > 1 && (
                         <td 
@@ -1835,11 +1655,11 @@ const handleAddFooter = (elementId: string) => {
                             borderWidth: `${gridBorderWidth}px`,
                             borderStyle: 'solid',
                             borderColor: gridBorderColor,
-                            borderRightWidth: adjacentTables.right ? 0 : `${gridBorderWidth}px`,
-                            borderBottomWidth: (adjacentTables.bottom && isLastFooterRow) ? 0 : `${gridBorderWidth}px`,
-                            textAlign: footerRow.style?.textAlign || 'left',
+                            borderRightWidth: `${gridBorderWidth}px`,
+                            borderBottomWidth: `${gridBorderWidth}px`,
+                            textAlign: (footerRow.style?.textAlign as React.CSSProperties['textAlign']) || 'left',
                             fontWeight: footerRow.style?.fontWeight || 'bold',
-                            fontStyle: footerRow.style?.fontStyle || 'normal',
+                            fontStyle: (footerRow.style?.fontStyle as React.CSSProperties['fontStyle']) || 'normal',
                             textDecoration: footerRow.style?.textDecoration || 'none'
                           }}
                           onDoubleClick={(e) => {
@@ -1849,26 +1669,7 @@ const handleAddFooter = (elementId: string) => {
                             }
                           }}
                         >
-                          {isEditingValue && !isPreviewMode ? (
-                            <input
-                              autoFocus
-                              className="w-full pointer-events-auto border-none outline-none bg-transparent font-semibold"
-                              value={footerRow.value}
-                              onChange={(e) => {
-                                handleGridTableFooterCellUpdate(el.id, idx, 'value', e.target.value);
-                              }}
-                              onBlur={() => setEditingFooterCell(null)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Escape' || e.key === 'Enter') {
-                                  setEditingFooterCell(null);
-                                  e.stopPropagation();
-                                }
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                          ) : (
-                            footerValue
-                          )}
+                          {footerValue}
                         </td>
                       )}
                     </tr>
@@ -2182,53 +1983,19 @@ const handleAddFooter = (elementId: string) => {
                      <span className="text-xs text-muted-foreground">px</span>
                    </div>
                    <div className="flex-1" />
-                   {el.tableConfig?.tableType === 'price' ? (
-                     <>
-                       <Button
-                         variant="ghost"
-                         size="sm"
-                         className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/10 pointer-events-auto"
-                         onClick={(e) => {
-                           e.stopPropagation();
-                           handleAddFooter(el.id);
-                         }}
-                         title="Add footer row"
-                         aria-label="Add footer row"
-                       >
-                         <Plus className="w-3 h-3 mr-1" />
-                         Footer
-                       </Button>
-                       <Button
-                         variant="ghost"
-                         size="sm"
-                         className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10 pointer-events-auto"
-                         disabled={!el.tableConfig?.footer || el.tableConfig.footer.length === 0}
-                         onClick={(e) => {
-                           e.stopPropagation();
-                           handleRemoveLastFooter(el.id);
-                         }}
-                         title="Remove last footer row"
-                         aria-label="Remove last footer row"
-                       >
-                         <Minus className="w-3 h-3 mr-1" />
-                         Footer
-                       </Button>
-                      </>
-                   ) : (
-                     <Button
-                       variant="ghost"
-                       size="sm"
-                       className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/10"
-                       onClick={(e) => {
-                         e.stopPropagation();
-                         onClone(el.id);
-                       }}
-                       title="Clone table"
-                       aria-label="Clone table"
-                     >
-                       <Copy className="w-4 h-4" />
-                     </Button>
-                   )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onClone(el.id);
+                      }}
+                      title="Clone table"
+                      aria-label="Clone table"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
                  </div>
                )}
                 {!isPreviewMode && isSelected && el.type === 'gridtable' && (
@@ -2329,36 +2096,6 @@ const handleAddFooter = (elementId: string) => {
                     >
                       <Minus className="w-3 h-3 mr-1" />
                       <Columns className="w-4 h-4" />
-                    </Button>
-                    <div className="w-px h-6 bg-border mx-1" />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/10"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleAddGridTableFooter(el.id);
-                      }}
-                      title="Add footer row"
-                      aria-label="Add footer row"
-                    >
-                      <Plus className="w-3 h-3 mr-1" />
-                      Footer
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-                      disabled={!el.gridTableConfig?.footer || el.gridTableConfig.footer.length === 0}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRemoveLastGridTableFooter(el.id);
-                      }}
-                      title="Remove last footer row"
-                      aria-label="Remove last footer row"
-                    >
-                      <Minus className="w-3 h-3 mr-1" />
-                      Footer
                     </Button>
                     <Button
                       variant="ghost"
