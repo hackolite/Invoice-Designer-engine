@@ -1088,31 +1088,14 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                         </span>
                       )}
                     </div>
-                    <div className="flex gap-1">
-                      <Button variant="outline" size="sm" onClick={handleTableAdditionalRowAdd}>
-                        <Plus className="w-3 h-3 mr-1" /> Add
-                      </Button>
-                    </div>
                   </div>
                   
                   <p className="text-xs text-muted-foreground">
-                    Manage additional rows for displaying totals and summaries
+                    Use the toolbar buttons to add or remove additional rows for displaying totals and summaries
                   </p>
                   
                   {element.tableConfig.additionalRows && element.tableConfig.additionalRows.map((additionalRow, idx) => (
                       <div key={idx} className="bg-muted/30 p-3 rounded-lg border space-y-2 text-sm relative group">
-                        <div className="absolute -top-2 -right-2 flex gap-1">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-6 w-6 rounded-full bg-background border shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => handleTableAdditionalRowRemove(idx)}
-                            title="Remove row"
-                          >
-                            <Trash2 className="w-3 h-3 text-destructive" />
-                          </Button>
-                        </div>
-                        
                         <div className="text-xs font-medium text-muted-foreground">
                           Row {idx + 1}: {additionalRow.label}
                         </div>
