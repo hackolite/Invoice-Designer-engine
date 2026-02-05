@@ -103,6 +103,7 @@ const MIN_COL_WIDTH_PERCENT = 5; // Minimum width for a column as percentage
 const FUSION_THRESHOLD = 15; // Distance in pixels for table fusion snapping
 const RESIZE_HANDLE_SIZE = 4; // Size of resize handle in pixels
 const RESIZE_HANDLE_OFFSET = 2; // Offset for centering resize handle in pixels
+const ALIGNMENT_TOLERANCE = 1.5; // Tolerance in pixels for detecting table alignment during fusion
 
 // Default footer row for price tables
 const DEFAULT_FOOTER_ROW = { label: "Total", value: "{total}", format: 'currency' as const };
@@ -830,6 +831,13 @@ const handleAddFooter = (elementId: string) => {
     return { x: snapToGrid(finalX), y: snapToGrid(finalY) };
   };
 
+  // Helper to check if two tables are fully aligned (same position and size)
+  const isFullyAligned = (pos1: number, pos2: number, size1: number, size2: number, tolerance: number): boolean => {
+    const posAligned = Math.abs(pos1 - pos2) <= tolerance;
+    const sizesMatch = Math.abs(size1 - size2) <= tolerance;
+    return posAligned && sizesMatch;
+  };
+
   // Detect which edges of a table are adjacent to other tables (for border merging)
   const detectAdjacentTables = (element: TemplateElement): { top: boolean; right: boolean; bottom: boolean; left: boolean } => {
     const adjacent = { top: false, right: false, bottom: false, left: false };
@@ -861,27 +869,33 @@ const handleAddFooter = (elementId: string) => {
       // Check for horizontal alignment (same Y range)
       const horizontalOverlap = !(elementBottom <= otherEl.y || element.y >= otherBottom);
       
+      // For left/right fusion, tables should be nearly fully aligned in Y to avoid partial border removal
+      const fullyAlignedY = isFullyAligned(element.y, otherEl.y, element.height, otherEl.height, ALIGNMENT_TOLERANCE);
+      
       // Check if left edge of element touches right edge of other table
-      // Use 1.5px tolerance to handle sub-pixel positioning from scaling/transforms
-      if (horizontalOverlap && Math.abs(element.x - otherRight) <= 1.5) {
+      // Use ALIGNMENT_TOLERANCE to handle sub-pixel positioning from scaling/transforms
+      if (horizontalOverlap && fullyAlignedY && Math.abs(element.x - otherRight) <= ALIGNMENT_TOLERANCE) {
         adjacent.left = true;
       }
       
       // Check if right edge of element touches left edge of other table
-      if (horizontalOverlap && Math.abs(elementRight - otherEl.x) <= 1.5) {
+      if (horizontalOverlap && fullyAlignedY && Math.abs(elementRight - otherEl.x) <= ALIGNMENT_TOLERANCE) {
         adjacent.right = true;
       }
 
       // Check for vertical alignment (same X range)
       const verticalOverlap = !(elementRight <= otherEl.x || element.x >= otherRight);
       
+      // For top/bottom fusion, tables should be nearly fully aligned in X to avoid partial border removal
+      const fullyAlignedX = isFullyAligned(element.x, otherEl.x, element.width, otherEl.width, ALIGNMENT_TOLERANCE);
+      
       // Check if top edge of element touches bottom edge of other table
-      if (verticalOverlap && Math.abs(element.y - otherBottom) <= 1.5) {
+      if (verticalOverlap && fullyAlignedX && Math.abs(element.y - otherBottom) <= ALIGNMENT_TOLERANCE) {
         adjacent.top = true;
       }
       
       // Check if bottom edge of element touches top edge of other table
-      if (verticalOverlap && Math.abs(elementBottom - otherEl.y) <= 1.5) {
+      if (verticalOverlap && fullyAlignedX && Math.abs(elementBottom - otherEl.y) <= ALIGNMENT_TOLERANCE) {
         adjacent.bottom = true;
       }
     }
