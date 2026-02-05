@@ -16,9 +16,6 @@ interface ElementPropertiesProps {
 }
 
 export function ElementProperties({ element, onChange, onDelete, onClone }: ElementPropertiesProps) {
-  const [priceBulkAddCount, setPriceBulkAddCount] = useState<string>("1");
-  const [gridBulkAddCount, setGridBulkAddCount] = useState<string>("1");
-  
   if (!element) {
     return (
       <div className="h-full flex flex-col items-center justify-center p-6 text-center text-muted-foreground">
@@ -174,94 +171,6 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
     });
   };
 
-  const handleGridTableFooterAdd = () => {
-    if (!element.gridTableConfig) return;
-    const newFooter = { label: "Total", value: "{total}", format: 'currency' as const };
-    onChange(element.id, {
-      gridTableConfig: {
-        ...element.gridTableConfig,
-        footer: [...(element.gridTableConfig.footer || []), newFooter]
-      }
-    });
-  };
-
-  const handleGridTableFooterRemove = (index: number) => {
-    if (!element.gridTableConfig || !element.gridTableConfig.footer) return;
-    const newFooter = [...element.gridTableConfig.footer];
-    newFooter.splice(index, 1);
-    onChange(element.id, {
-      gridTableConfig: {
-        ...element.gridTableConfig,
-        footer: newFooter
-      }
-    });
-  };
-
-  const handleGridTableFooterUpdate = (index: number, field: string, value: any) => {
-    if (!element.gridTableConfig || !element.gridTableConfig.footer) return;
-    const newFooter = [...element.gridTableConfig.footer];
-    newFooter[index] = { ...newFooter[index], [field]: value };
-    onChange(element.id, {
-      gridTableConfig: {
-        ...element.gridTableConfig,
-        footer: newFooter
-      }
-    });
-  };
-
-  const handleGridTableFooterDuplicate = (index: number) => {
-    if (!element.gridTableConfig || !element.gridTableConfig.footer) return;
-    const footerToDuplicate = element.gridTableConfig.footer[index];
-    const newFooter = [...element.gridTableConfig.footer];
-    newFooter.splice(index + 1, 0, { ...footerToDuplicate });
-    onChange(element.id, {
-      gridTableConfig: {
-        ...element.gridTableConfig,
-        footer: newFooter
-      }
-    });
-  };
-
-  const handleGridTableFooterMoveUp = (index: number) => {
-    if (!element.gridTableConfig || !element.gridTableConfig.footer || index === 0) return;
-    const newFooter = [...element.gridTableConfig.footer];
-    [newFooter[index - 1], newFooter[index]] = [newFooter[index], newFooter[index - 1]];
-    onChange(element.id, {
-      gridTableConfig: {
-        ...element.gridTableConfig,
-        footer: newFooter
-      }
-    });
-  };
-
-  const handleGridTableFooterMoveDown = (index: number) => {
-    if (!element.gridTableConfig || !element.gridTableConfig.footer || index === element.gridTableConfig.footer.length - 1) return;
-    const newFooter = [...element.gridTableConfig.footer];
-    [newFooter[index], newFooter[index + 1]] = [newFooter[index + 1], newFooter[index]];
-    onChange(element.id, {
-      gridTableConfig: {
-        ...element.gridTableConfig,
-        footer: newFooter
-      }
-    });
-  };
-
-  const handleGridTableFooterAddMultiple = (count: number) => {
-    if (!element.gridTableConfig || count < 1) return;
-    const currentCount = element.gridTableConfig.footer?.length || 0;
-    const newFooters = Array.from({ length: count }, (_, i) => ({
-      label: `Row ${currentCount + i + 1}`,
-      value: "",
-      format: 'text' as const
-    }));
-    onChange(element.id, {
-      gridTableConfig: {
-        ...element.gridTableConfig,
-        footer: [...(element.gridTableConfig.footer || []), ...newFooters]
-      }
-    });
-  };
-
   const handleTableFooterStyleChange = (index: number, styleKey: string, styleValue: string | number) => {
     if (!element.tableConfig || !element.tableConfig.footer) return;
     const newFooter = [...element.tableConfig.footer];
@@ -272,21 +181,6 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
     onChange(element.id, {
       tableConfig: {
         ...element.tableConfig,
-        footer: newFooter
-      }
-    });
-  };
-
-  const handleGridTableFooterStyleChange = (index: number, styleKey: string, styleValue: string | number) => {
-    if (!element.gridTableConfig || !element.gridTableConfig.footer) return;
-    const newFooter = [...element.gridTableConfig.footer];
-    newFooter[index] = { 
-      ...newFooter[index], 
-      style: { ...(newFooter[index].style || {}), [styleKey]: styleValue } 
-    };
-    onChange(element.id, {
-      gridTableConfig: {
-        ...element.gridTableConfig,
         footer: newFooter
       }
     });
@@ -577,61 +471,25 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                   ))}
                 </div>
                 
-                <>
-                  <Separator />
-                  
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
+                {element.tableConfig.tableType === 'price' && (
+                  <>
+                    <Separator />
+                    
+                    <div className="space-y-3">
                       <div className="flex items-center gap-2">
-                        <Label>Footer Rows</Label>
+                        <Label>Footer Rows Configuration</Label>
                         {element.tableConfig.footer && element.tableConfig.footer.length > 0 && (
                           <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
                             {element.tableConfig.footer.length}
                           </span>
                         )}
                       </div>
-                      <div className="flex gap-1">
-                        <Button variant="outline" size="sm" onClick={handleTableFooterAdd}>
-                          <Plus className="w-3 h-3 mr-1" /> Add
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    {/* Bulk add section */}
-                    <div className="flex gap-2 items-end">
-                      <div className="flex-1">
-                        <Label className="text-xs">Add Multiple Rows</Label>
-                        <Input 
-                          type="number" 
-                          min="1" 
-                          max="20"
-                          value={priceBulkAddCount}
-                          onChange={(e) => setPriceBulkAddCount(e.target.value)}
-                          className="h-8"
-                          placeholder="Number of rows"
-                        />
-                      </div>
-                      <Button 
-                        variant="secondary" 
-                        size="sm" 
-                        onClick={() => {
-                          const count = parseInt(priceBulkAddCount);
-                          if (!isNaN(count) && count > 0 && count <= 20) {
-                            handleTableFooterAddMultiple(count);
-                            setPriceBulkAddCount("1");
-                          }
-                        }}
-                        disabled={!priceBulkAddCount || isNaN(parseInt(priceBulkAddCount)) || parseInt(priceBulkAddCount) < 1 || parseInt(priceBulkAddCount) > 20}
-                        className="h-8"
-                        title={!priceBulkAddCount || isNaN(parseInt(priceBulkAddCount)) || parseInt(priceBulkAddCount) < 1 || parseInt(priceBulkAddCount) > 20 ? "Enter a number between 1 and 20" : ""}
-                      >
-                        <CopyPlus className="w-3 h-3 mr-1" /> Add
-                      </Button>
-                    </div>
-                    
-                    <p className="text-xs text-muted-foreground">
-                      Add footer rows to display totals or additional information
-                    </p>
+                      
+                      {(!element.tableConfig.footer || element.tableConfig.footer.length === 0) && (
+                        <p className="text-xs text-muted-foreground">
+                          No footer rows. Use the Style tab to add footer rows.
+                        </p>
+                      )}
                     
                     {element.tableConfig.footer && element.tableConfig.footer.map((footerRow, idx) => (
                         <div key={idx} className="bg-muted/30 p-3 rounded-lg border space-y-2 text-sm relative group">
@@ -792,6 +650,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                       ))}
                     </div>
                   </>
+                )}
               </div>
             )}
 
@@ -1074,220 +933,6 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                     ))}
                   </ScrollArea>
                 </div>
-                
-                <Separator />
-                
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Label>Footer Rows</Label>
-                      {element.gridTableConfig.footer && element.gridTableConfig.footer.length > 0 && (
-                        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                          {element.gridTableConfig.footer.length}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex gap-1">
-                      <Button variant="outline" size="sm" onClick={handleGridTableFooterAdd}>
-                        <Plus className="w-3 h-3 mr-1" /> Add
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {/* Bulk add section */}
-                  <div className="flex gap-2 items-end">
-                    <div className="flex-1">
-                      <Label className="text-xs">Add Multiple Rows</Label>
-                      <Input 
-                        type="number" 
-                        min="1" 
-                        max="20"
-                        value={gridBulkAddCount}
-                        onChange={(e) => setGridBulkAddCount(e.target.value)}
-                        className="h-8"
-                        placeholder="Number of rows"
-                      />
-                    </div>
-                    <Button 
-                      variant="secondary" 
-                      size="sm" 
-                      onClick={() => {
-                        const count = parseInt(gridBulkAddCount);
-                        if (!isNaN(count) && count > 0 && count <= 20) {
-                          handleGridTableFooterAddMultiple(count);
-                          setGridBulkAddCount("1");
-                        }
-                      }}
-                      disabled={!gridBulkAddCount || isNaN(parseInt(gridBulkAddCount)) || parseInt(gridBulkAddCount) < 1 || parseInt(gridBulkAddCount) > 20}
-                      className="h-8"
-                      title={!gridBulkAddCount || isNaN(parseInt(gridBulkAddCount)) || parseInt(gridBulkAddCount) < 1 || parseInt(gridBulkAddCount) > 20 ? "Enter a number between 1 and 20" : ""}
-                    >
-                      <CopyPlus className="w-3 h-3 mr-1" /> Add
-                    </Button>
-                  </div>
-                  
-                  <p className="text-xs text-muted-foreground">
-                    Add footer rows to display totals or additional information
-                  </p>
-                  
-                  {element.gridTableConfig.footer && element.gridTableConfig.footer.map((footerRow, idx) => (
-                    <div key={idx} className="bg-muted/30 p-3 rounded-lg border space-y-2 text-sm relative group">
-                      <div className="absolute -top-2 -right-2 flex gap-1">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-6 w-6 rounded-full bg-background border shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => handleGridTableFooterDuplicate(idx)}
-                          title="Duplicate row"
-                        >
-                          <CopyPlus className="w-3 h-3" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-6 w-6 rounded-full bg-background border shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => handleGridTableFooterRemove(idx)}
-                          title="Remove row"
-                        >
-                          <Trash2 className="w-3 h-3 text-destructive" />
-                        </Button>
-                      </div>
-                      
-                      {/* Move up/down buttons */}
-                      {element.gridTableConfig?.footer && element.gridTableConfig.footer.length > 1 && (
-                        <div className="absolute -left-2 top-1/2 -translate-y-1/2 flex flex-col gap-1">
-                          {idx > 0 && (
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-6 w-6 rounded-full bg-background border shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={() => handleGridTableFooterMoveUp(idx)}
-                              title="Move up"
-                            >
-                              <ArrowUp className="w-3 h-3" />
-                            </Button>
-                          )}
-                          {element.gridTableConfig?.footer && idx < element.gridTableConfig.footer.length - 1 && (
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-6 w-6 rounded-full bg-background border shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={() => handleGridTableFooterMoveDown(idx)}
-                              title="Move down"
-                            >
-                              <ArrowDown className="w-3 h-3" />
-                            </Button>
-                          )}
-                        </div>
-                      )}
-                      
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <Label className="text-xs">Label</Label>
-                          <Input 
-                            value={footerRow.label} 
-                            onChange={(e) => handleGridTableFooterUpdate(idx, 'label', e.target.value)}
-                            className="h-8"
-                            placeholder="e.g. Total"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Value</Label>
-                          <Input 
-                            value={footerRow.value} 
-                            onChange={(e) => handleGridTableFooterUpdate(idx, 'value', e.target.value)}
-                            className="h-8 font-mono"
-                            placeholder="e.g. {total}"
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <Label className="text-xs">Format</Label>
-                          <select 
-                            className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                            value={footerRow.format || 'text'}
-                            onChange={(e) => handleGridTableFooterUpdate(idx, 'format', e.target.value)}
-                          >
-                            <option value="text">Text</option>
-                            <option value="currency">Currency</option>
-                            <option value="number">Number</option>
-                          </select>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <Label className="text-xs">Text Align</Label>
-                        <div className="flex border rounded-md overflow-hidden divide-x">
-                          <button 
-                            className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.textAlign === 'left' ? 'bg-muted' : ''}`}
-                            onClick={() => handleGridTableFooterStyleChange(idx, 'textAlign', 'left')}
-                            title="Align Left"
-                          >
-                            <AlignLeft className="w-3 h-3 mx-auto" />
-                          </button>
-                          <button 
-                            className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.textAlign === 'center' ? 'bg-muted' : ''}`}
-                            onClick={() => handleGridTableFooterStyleChange(idx, 'textAlign', 'center')}
-                            title="Align Center"
-                          >
-                            <AlignCenter className="w-3 h-3 mx-auto" />
-                          </button>
-                          <button 
-                            className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.textAlign === 'right' ? 'bg-muted' : ''}`}
-                            onClick={() => handleGridTableFooterStyleChange(idx, 'textAlign', 'right')}
-                            title="Align Right"
-                          >
-                            <AlignRight className="w-3 h-3 mx-auto" />
-                          </button>
-                          <button 
-                            className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.textAlign === 'justify' ? 'bg-muted' : ''}`}
-                            onClick={() => handleGridTableFooterStyleChange(idx, 'textAlign', 'justify')}
-                            title="Justify"
-                          >
-                            <AlignJustify className="w-3 h-3 mx-auto" />
-                          </button>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <Label className="text-xs">Text Style</Label>
-                        <div className="flex border rounded-md overflow-hidden divide-x">
-                          <button 
-                            className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.fontWeight === 'bold' ? 'bg-muted' : ''}`}
-                            onClick={() => {
-                              const currentWeight = footerRow.style?.fontWeight;
-                              handleGridTableFooterStyleChange(idx, 'fontWeight', currentWeight === 'bold' ? 'normal' : 'bold');
-                            }}
-                            title="Bold"
-                          >
-                            <Bold className="w-3 h-3 mx-auto" />
-                          </button>
-                          <button 
-                            className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.fontStyle === 'italic' ? 'bg-muted' : ''}`}
-                            onClick={() => {
-                              const currentStyle = footerRow.style?.fontStyle;
-                              handleGridTableFooterStyleChange(idx, 'fontStyle', currentStyle === 'italic' ? 'normal' : 'italic');
-                            }}
-                            title="Italic"
-                          >
-                            <Italic className="w-3 h-3 mx-auto" />
-                          </button>
-                          <button 
-                            className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.textDecoration === 'underline' ? 'bg-muted' : ''}`}
-                            onClick={() => {
-                              const currentDecoration = footerRow.style?.textDecoration;
-                              handleGridTableFooterStyleChange(idx, 'textDecoration', currentDecoration === 'underline' ? 'none' : 'underline');
-                            }}
-                            title="Underline"
-                          >
-                            <Underline className="w-3 h-3 mx-auto" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
               </div>
             )}
           </TabsContent>
@@ -1449,6 +1094,54 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                  </div>
                </div>
                </div>
+            )}
+
+            {element.type === 'table' && element.tableConfig && element.tableConfig.tableType === 'price' && (
+              <>
+                <Separator />
+                
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Label>Footer Rows</Label>
+                      {element.tableConfig.footer && element.tableConfig.footer.length > 0 && (
+                        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                          {element.tableConfig.footer.length}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-1">
+                      <Button variant="outline" size="sm" onClick={handleTableFooterAdd}>
+                        <Plus className="w-3 h-3 mr-1" /> Add
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <p className="text-xs text-muted-foreground">
+                    Manage footer rows for displaying totals and summaries
+                  </p>
+                  
+                  {element.tableConfig.footer && element.tableConfig.footer.map((footerRow, idx) => (
+                      <div key={idx} className="bg-muted/30 p-3 rounded-lg border space-y-2 text-sm relative group">
+                        <div className="absolute -top-2 -right-2 flex gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6 rounded-full bg-background border shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => handleTableFooterRemove(idx)}
+                            title="Remove row"
+                          >
+                            <Trash2 className="w-3 h-3 text-destructive" />
+                          </Button>
+                        </div>
+                        
+                        <div className="text-xs font-medium text-muted-foreground">
+                          Row {idx + 1}: {footerRow.label}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
             )}
           </TabsContent>
         </Tabs>
