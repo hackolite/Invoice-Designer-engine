@@ -170,9 +170,10 @@ After fix:
 
 ## Compatibility
 
-- ✅ Works with gridtables
-- ✅ Works with price tables
-- ✅ Works with mixed table types (gridtable + price table)
+- ✅ Works with gridtables (type: 'gridtable')
+- ✅ Works with price tables (type: 'table', tableType: 'price')
+- ✅ Works with grid tables (type: 'table', tableType: 'grid')
+- ✅ Works with mixed table types (any combination)
 - ✅ Works with custom border widths
 - ✅ Works with custom border colors
 - ✅ Compatible with table footers
@@ -181,7 +182,6 @@ After fix:
 ## Future Enhancements
 
 Potential improvements:
-- Support for grid tables (non-price, non-gridtable type)
 - Configurable tolerance for adjacency detection
 - Visual indicator when tables are fused
 - Auto-alignment of row heights between fused tables

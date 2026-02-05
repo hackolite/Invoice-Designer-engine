@@ -1562,8 +1562,8 @@ const handleAddFooter = (elementId: string) => {
                               borderWidth: `${gridBorderWidth}px`,
                               borderStyle: 'solid',
                               borderTopWidth: (adjacentTables.top && isFirstRow) ? 0 : `${gridBorderWidth}px`,
-                              borderRightWidth: (adjacentTables.right && (isLastCol || (colIdx + colSpan) === config.cols)) ? 0 : `${gridBorderWidth}px`,
-                              borderBottomWidth: (adjacentTables.bottom && (isLastRow || (rowIdx + rowSpan) === config.rows)) ? 0 : `${gridBorderWidth}px`,
+                              borderRightWidth: (adjacentTables.right && (colIdx + colSpan >= config.cols)) ? 0 : `${gridBorderWidth}px`,
+                              borderBottomWidth: (adjacentTables.bottom && (rowIdx + rowSpan >= config.rows)) ? 0 : `${gridBorderWidth}px`,
                               borderLeftWidth: (adjacentTables.left && isFirstCol) ? 0 : `${gridBorderWidth}px`,
                               ...getCellStyle(cell)
                             }}
