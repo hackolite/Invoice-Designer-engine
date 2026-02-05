@@ -133,7 +133,7 @@ export function Canvas({
   const [resizingBorder, setResizingBorder] = useState<{ elementId: string; type: 'row' | 'col'; index: number; startPos: number; startSize: number } | null>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [editingTextElement, setEditingTextElement] = useState<string | null>(null);
-  const [editingFooterCell, setEditingFooterCell] = useState<{ elementId: string; footerIdx: number; field: 'label' | 'value' } | null>(null);
+  const [editingAdditionalRowCell, setEditingAdditionalRowCell] = useState<{ elementId: string; additionalRowIdx: number; field: 'label' | 'value' } | null>(null);
 
   // Handle resize border dragging
   useEffect(() => {
@@ -615,7 +615,7 @@ export function Canvas({
     if (!element || !element.tableConfig) return;
     
     const config = element.tableConfig;
-    const totalRows = config.columns.length + (config.footer?.length || 0);
+    const totalRows = config.columns.length + (config.additionalRows?.length || 0);
     
     // Guard against invalid row index (resize handles exist between rows, so max index is totalRows - 2)
     if (totalRows <= 0 || rowIndex >= totalRows - 1) return;
@@ -1047,7 +1047,7 @@ export function Canvas({
           : {}; // Empty object for editor
         
         // Calculate row heights for price table
-        const totalRows = config.columns.length + (config.footer?.length || 0);
+        const totalRows = config.columns.length + (config.additionalRows?.length || 0);
         let rowHeights = config.rowHeights || (totalRows > 0 ? Array(totalRows).fill(el.height / totalRows) : []);
         
         // Normalize row heights to prevent floating-point gaps
@@ -1090,7 +1090,7 @@ export function Canvas({
                   }
                   
                   const isFirstRow = idx === 0;
-                  const isLastRow = idx === config.columns.length - 1 && (!config.footer || config.footer.length === 0);
+                  const isLastRow = idx === config.columns.length - 1 && (!config.additionalRows || config.additionalRows.length === 0);
                   
                   return (
                     <tr key={idx} className={clsx(
@@ -1124,109 +1124,109 @@ export function Canvas({
                     </tr>
                   );
                 })}
-              </tbody>
-              {config.footer && config.footer.length > 0 && (
-                <tfoot className="bg-gray-50 font-semibold">
-                  {config.footer.map((footerRow, idx) => {
-                    let footerValue;
-                    if (isPreviewMode) {
-                      // Try to parse as binding first - check for pattern {bindingName}
-                      if (footerRow.value.startsWith('{') && footerRow.value.endsWith('}') && footerRow.value.length > 2) {
-                        const binding = footerRow.value.slice(1, -1).trim();
-                        if (binding.length > 0) {
-                          const rawVal = getValue(sourceData, binding);
-                          if (footerRow.format === 'currency') {
-                            const currency = config.currency || 'USD';
-                            if (currency === 'none') {
-                              footerValue = Number(rawVal) || 0;
-                            } else {
-                              footerValue = new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(rawVal) || 0);
-                            }
-                          } else if (footerRow.format === 'number') {
-                            footerValue = new Intl.NumberFormat('en-US').format(Number(rawVal) || 0);
+                {/* Additional rows that come after the columns loop */}
+                {config.additionalRows && config.additionalRows.map((additionalRow, idx) => {
+                  let additionalValue;
+                  if (isPreviewMode) {
+                    // Try to parse as binding first - check for pattern {bindingName}
+                    if (additionalRow.value.startsWith('{') && additionalRow.value.endsWith('}') && additionalRow.value.length > 2) {
+                      const binding = additionalRow.value.slice(1, -1).trim();
+                      if (binding.length > 0) {
+                        const rawVal = getValue(sourceData, binding);
+                        if (additionalRow.format === 'currency') {
+                          const currency = config.currency || 'USD';
+                          if (currency === 'none') {
+                            additionalValue = Number(rawVal) || 0;
                           } else {
-                            footerValue = rawVal;
+                            additionalValue = new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(rawVal) || 0);
                           }
+                        } else if (additionalRow.format === 'number') {
+                          additionalValue = new Intl.NumberFormat('en-US').format(Number(rawVal) || 0);
                         } else {
-                          footerValue = footerRow.value;
+                          additionalValue = rawVal;
                         }
                       } else {
-                        // Static text
-                        footerValue = footerRow.value;
+                        additionalValue = additionalRow.value;
                       }
                     } else {
-                      footerValue = footerRow.value;
+                      // Static text
+                      additionalValue = additionalRow.value;
                     }
-                    
-                    const isEditingLabel = editingFooterCell?.elementId === el.id && editingFooterCell?.footerIdx === idx && editingFooterCell?.field === 'label';
-                    const isEditingValue = editingFooterCell?.elementId === el.id && editingFooterCell?.footerIdx === idx && editingFooterCell?.field === 'value';
-                    
-                    // Calculate the row index in the rowHeights array
-                    // Footer rows come after all column rows
-                    const rowHeightIndex = config.columns.length + idx;
-                    
-                    const isLastFooterRow = idx === config.footer!.length - 1;
-                    
-                    return (
-                      <tr key={`footer-${idx}`}
+                  } else {
+                    additionalValue = additionalRow.value;
+                  }
+                  
+                  const isEditingLabel = editingAdditionalRowCell?.elementId === el.id && editingAdditionalRowCell?.additionalRowIdx === idx && editingAdditionalRowCell?.field === 'label';
+                  const isEditingValue = editingAdditionalRowCell?.elementId === el.id && editingAdditionalRowCell?.additionalRowIdx === idx && editingAdditionalRowCell?.field === 'value';
+                  
+                  // Calculate the row index in the rowHeights array
+                  // Additional rows come after all column rows
+                  const rowHeightIndex = config.columns.length + idx;
+                  
+                  const isLastAdditionalRow = idx === config.additionalRows!.length - 1;
+                  
+                  return (
+                    <tr key={`additional-${idx}`} className={clsx(
+                      tableStyle === 'default' && "hover:bg-gray-50 bg-gray-50",
+                      tableStyle === 'modern' && "bg-primary/10"
+                    )}
+                      style={{
+                        height: rowHeights[rowHeightIndex] ? `${rowHeights[rowHeightIndex]}px` : 'auto'
+                      }}>
+                      <th 
+                        className={clsx(
+                          "p-2 text-left font-semibold",
+                          !isPreviewMode && "cursor-text hover:bg-blue-50"
+                        )}
                         style={{
-                          height: rowHeights[rowHeightIndex] ? `${rowHeights[rowHeightIndex]}px` : 'auto'
-                        }}>
-                        <th 
-                          className={clsx(
-                            "p-2 text-left font-semibold",
-                            !isPreviewMode && "cursor-text hover:bg-blue-50"
-                          )}
-                          style={{
-                            borderWidth: `${gridBorderWidth}px`,
-                            borderStyle: 'solid',
-                            borderColor: gridBorderColor,
-                            borderLeftWidth: adjacentTables.left ? 0 : `${gridBorderWidth}px`,
-                            borderBottomWidth: `${gridBorderWidth}px`,
-                            textAlign: (footerRow.style?.textAlign as React.CSSProperties['textAlign']) || 'left',
-                            fontWeight: footerRow.style?.fontWeight || 'bold',
-                            fontStyle: (footerRow.style?.fontStyle as React.CSSProperties['fontStyle']) || 'normal',
-                            textDecoration: footerRow.style?.textDecoration || 'none'
-                          }}
-                          onDoubleClick={(e) => {
-                            if (!isPreviewMode) {
-                              e.stopPropagation();
-                              setEditingFooterCell({ elementId: el.id, footerIdx: idx, field: 'label' });
-                            }
-                          }}
-                        >
-                          {footerRow.label}
-                        </th>
-                        <td 
-                          className={clsx(
-                            "p-2 font-semibold",
-                            !isPreviewMode && "cursor-text hover:bg-blue-50"
-                          )}
-                          style={{
-                            borderWidth: `${gridBorderWidth}px`,
-                            borderStyle: 'solid',
-                            borderColor: gridBorderColor,
-                            borderRightWidth: `${gridBorderWidth}px`,
-                            borderBottomWidth: `${gridBorderWidth}px`,
-                            textAlign: (footerRow.style?.textAlign as React.CSSProperties['textAlign']) || 'left',
-                            fontWeight: footerRow.style?.fontWeight || 'bold',
-                            fontStyle: (footerRow.style?.fontStyle as React.CSSProperties['fontStyle']) || 'normal',
-                            textDecoration: footerRow.style?.textDecoration || 'none'
-                          }}
-                          onDoubleClick={(e) => {
-                            if (!isPreviewMode) {
-                              e.stopPropagation();
-                              setEditingFooterCell({ elementId: el.id, footerIdx: idx, field: 'value' });
-                            }
-                          }}
-                        >
-                          {footerValue}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tfoot>
-              )}
+                          borderWidth: `${gridBorderWidth}px`,
+                          borderStyle: 'solid',
+                          borderColor: gridBorderColor,
+                          borderLeftWidth: adjacentTables.left ? 0 : `${gridBorderWidth}px`,
+                          borderBottomWidth: `${gridBorderWidth}px`,
+                          textAlign: (additionalRow.style?.textAlign as React.CSSProperties['textAlign']) || 'left',
+                          fontWeight: additionalRow.style?.fontWeight || 'bold',
+                          fontStyle: (additionalRow.style?.fontStyle as React.CSSProperties['fontStyle']) || 'normal',
+                          textDecoration: additionalRow.style?.textDecoration || 'none'
+                        }}
+                        onDoubleClick={(e) => {
+                          if (!isPreviewMode) {
+                            e.stopPropagation();
+                            setEditingAdditionalRowCell({ elementId: el.id, additionalRowIdx: idx, field: 'label' });
+                          }
+                        }}
+                      >
+                        {additionalRow.label}
+                      </th>
+                      <td 
+                        className={clsx(
+                          "p-2 font-semibold",
+                          !isPreviewMode && "cursor-text hover:bg-blue-50"
+                        )}
+                        style={{
+                          borderWidth: `${gridBorderWidth}px`,
+                          borderStyle: 'solid',
+                          borderColor: gridBorderColor,
+                          borderRightWidth: `${gridBorderWidth}px`,
+                          borderBottomWidth: `${gridBorderWidth}px`,
+                          textAlign: (additionalRow.style?.textAlign as React.CSSProperties['textAlign']) || 'left',
+                          fontWeight: additionalRow.style?.fontWeight || 'bold',
+                          fontStyle: (additionalRow.style?.fontStyle as React.CSSProperties['fontStyle']) || 'normal',
+                          textDecoration: additionalRow.style?.textDecoration || 'none'
+                        }}
+                        onDoubleClick={(e) => {
+                          if (!isPreviewMode) {
+                            e.stopPropagation();
+                            setEditingAdditionalRowCell({ elementId: el.id, additionalRowIdx: idx, field: 'value' });
+                          }
+                        }}
+                      >
+                        {additionalValue}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
             </table>
           </div>
           {/* Row resize handles for PriceTable */}
@@ -1857,8 +1857,8 @@ export function Canvas({
                 const oldHeight = el.height;
                 const heightRatio = newHeight / oldHeight;
                 
-                // Calculate total rows for price table (columns + footer rows)
-                const totalRows = config.columns.length + (config.footer?.length || 0);
+                // Calculate total rows for price table (columns + additional rows)
+                const totalRows = config.columns.length + (config.additionalRows?.length || 0);
                 
                 // Scale all row heights proportionally
                 let newRowHeights: number[] | undefined;
