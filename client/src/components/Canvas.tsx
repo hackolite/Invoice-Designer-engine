@@ -807,11 +807,12 @@ const handleAddFooter = (elementId: string) => {
   const detectAdjacentTables = (element: TemplateElement): { top: boolean; right: boolean; bottom: boolean; left: boolean } => {
     const adjacent = { top: false, right: false, bottom: false, left: false };
     
-    // Only check for gridtables and price tables
+    // Only check for gridtables, price tables, and grid tables
     const isGridTable = element.type === 'gridtable' && element.gridTableConfig;
     const isPriceTable = element.type === 'table' && element.tableConfig?.tableType === 'price';
+    const isGridDataTable = element.type === 'table' && element.tableConfig?.tableType === 'grid';
     
-    if (!isGridTable && !isPriceTable) return adjacent;
+    if (!isGridTable && !isPriceTable && !isGridDataTable) return adjacent;
 
     const elementRight = element.x + element.width;
     const elementBottom = element.y + element.height;
@@ -820,11 +821,12 @@ const handleAddFooter = (elementId: string) => {
     for (const otherEl of layout.elements) {
       if (otherEl.id === element.id) continue;
       
-      // Check if the other element is a gridtable or a price table
+      // Check if the other element is a gridtable, price table, or grid table
       const isOtherGridTable = otherEl.type === 'gridtable' && otherEl.gridTableConfig;
       const isOtherPriceTable = otherEl.type === 'table' && otherEl.tableConfig?.tableType === 'price';
+      const isOtherGridDataTable = otherEl.type === 'table' && otherEl.tableConfig?.tableType === 'grid';
       
-      if (!isOtherGridTable && !isOtherPriceTable) continue;
+      if (!isOtherGridTable && !isOtherPriceTable && !isOtherGridDataTable) continue;
 
       const otherRight = otherEl.x + otherEl.width;
       const otherBottom = otherEl.y + otherEl.height;
@@ -1329,6 +1331,9 @@ const handleAddFooter = (elementId: string) => {
         ? getValue(sampleData, config.dataSource, []) 
         : [1, 2, 3]; // Dummy rows for editor
       
+      // Detect adjacent tables for border merging
+      const adjacentTables = detectAdjacentTables(el);
+      
       return (
         <div className={clsx(
           "w-full h-full overflow-hidden",
@@ -1343,49 +1348,67 @@ const handleAddFooter = (elementId: string) => {
               tableStyle === 'modern' && "bg-primary text-primary-foreground font-semibold"
             )}>
               <tr>
-                {config.columns.map((col, idx) => (
-                  <th key={idx} className="p-2" style={{ 
-                    width: col.width,
-                    borderWidth: `${gridBorderWidth}px`,
-                    borderStyle: 'solid',
-                    borderColor: gridBorderColor
-                  }}>
-                    {col.header}
-                  </th>
-                ))}
+                {config.columns.map((col, idx) => {
+                  const isFirstCol = idx === 0;
+                  const isLastCol = idx === config.columns.length - 1;
+                  
+                  return (
+                    <th key={idx} className="p-2" style={{ 
+                      width: col.width,
+                      borderWidth: `${gridBorderWidth}px`,
+                      borderStyle: 'solid',
+                      borderColor: gridBorderColor,
+                      borderTopWidth: adjacentTables.top ? 0 : `${gridBorderWidth}px`,
+                      borderLeftWidth: (adjacentTables.left && isFirstCol) ? 0 : `${gridBorderWidth}px`,
+                      borderRightWidth: (adjacentTables.right && isLastCol) ? 0 : `${gridBorderWidth}px`,
+                    }}>
+                      {col.header}
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
-              {Array.isArray(data) && data.map((row, rIdx) => (
-                <tr key={rIdx} className={clsx(
-                  tableStyle === 'default' && "hover:bg-gray-50",
-                  tableStyle === 'modern' && rIdx % 2 === 0 ? "bg-primary/5" : "bg-white"
-                )}>
-                  {config.columns.map((col, cIdx) => {
-                    let cellValue;
-                    if (isPreviewMode) {
-                      const rawVal = getValue(row, col.binding);
-                      if (col.format === 'currency') {
-                        cellValue = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(rawVal) || 0);
+              {Array.isArray(data) && data.map((row, rIdx) => {
+                const isLastRow = rIdx === data.length - 1;
+                
+                return (
+                  <tr key={rIdx} className={clsx(
+                    tableStyle === 'default' && "hover:bg-gray-50",
+                    tableStyle === 'modern' && rIdx % 2 === 0 ? "bg-primary/5" : "bg-white"
+                  )}>
+                    {config.columns.map((col, cIdx) => {
+                      let cellValue;
+                      if (isPreviewMode) {
+                        const rawVal = getValue(row, col.binding);
+                        if (col.format === 'currency') {
+                          cellValue = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(rawVal) || 0);
+                        } else {
+                          cellValue = rawVal;
+                        }
                       } else {
-                        cellValue = rawVal;
+                        cellValue = `{${col.binding}}`;
                       }
-                    } else {
-                      cellValue = `{${col.binding}}`;
-                    }
-                    
-                    return (
-                      <td key={cIdx} className="p-2" style={{ 
-                        borderWidth: `${gridBorderWidth}px`,
-                        borderStyle: 'solid',
-                        borderColor: gridBorderColor
-                      }}>
-                        {cellValue}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
+                      
+                      const isFirstCol = cIdx === 0;
+                      const isLastCol = cIdx === config.columns.length - 1;
+                      
+                      return (
+                        <td key={cIdx} className="p-2" style={{ 
+                          borderWidth: `${gridBorderWidth}px`,
+                          borderStyle: 'solid',
+                          borderColor: gridBorderColor,
+                          borderLeftWidth: (adjacentTables.left && isFirstCol) ? 0 : `${gridBorderWidth}px`,
+                          borderRightWidth: (adjacentTables.right && isLastCol) ? 0 : `${gridBorderWidth}px`,
+                          borderBottomWidth: (adjacentTables.bottom && isLastRow) ? 0 : `${gridBorderWidth}px`,
+                        }}>
+                          {cellValue}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
