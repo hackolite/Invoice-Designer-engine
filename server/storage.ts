@@ -27,20 +27,30 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTemplate(insertTemplate: InsertTemplate): Promise<Template> {
-    const [template] = await db
+    const result = await db
       .insert(templates)
       .values(insertTemplate)
       .returning();
-    return template;
+    
+    if (!result[0]) {
+      throw new Error('Failed to create template');
+    }
+    
+    return result[0];
   }
 
   async updateTemplate(id: number, updates: Partial<InsertTemplate>): Promise<Template> {
-    const [template] = await db
+    const result = await db
       .update(templates)
       .set({ ...updates, updatedAt: new Date() })
       .where(eq(templates.id, id))
       .returning();
-    return template;
+    
+    if (!result[0]) {
+      throw new Error('Template not found');
+    }
+    
+    return result[0];
   }
 
   async deleteTemplate(id: number): Promise<void> {

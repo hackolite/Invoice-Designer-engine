@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Plus, FileText, Trash2, Edit, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
+import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -54,6 +55,7 @@ export default function TemplateList() {
   const createTemplate = useCreateTemplate();
   const deleteTemplate = useDeleteTemplate();
   const [isCreating, setIsCreating] = useState(false);
+  const { toast } = useToast();
 
   const handleCreate = async () => {
     setIsCreating(true);
@@ -66,7 +68,11 @@ export default function TemplateList() {
       });
       setLocation(`/editor/${newTemplate.id}`);
     } catch (error) {
-      console.error("Failed to create", error);
+      toast({
+        title: "Creation Failed",
+        description: error instanceof Error ? error.message : "Failed to create template. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsCreating(false);
     }
@@ -74,7 +80,16 @@ export default function TemplateList() {
 
   const handleDelete = async (id: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    await deleteTemplate.mutateAsync(id);
+    try {
+      await deleteTemplate.mutateAsync(id);
+      // Success feedback is provided by React Query cache invalidation
+    } catch (error) {
+      toast({
+        title: "Deletion Failed",
+        description: error instanceof Error ? error.message : "Failed to delete template. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (isLoading) {

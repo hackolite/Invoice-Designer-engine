@@ -4,6 +4,20 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 
+// Middleware to handle Zod validation errors
+function handleZodError(err: unknown) {
+  if (err instanceof z.ZodError) {
+    return {
+      status: 400,
+      body: {
+        message: err.errors[0].message,
+        field: err.errors[0].path.join('.'),
+      }
+    };
+  }
+  return null;
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -30,11 +44,9 @@ export async function registerRoutes(
       const template = await storage.createTemplate(input);
       res.status(201).json(template);
     } catch (err) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({
-          message: err.errors[0].message,
-          field: err.errors[0].path.join('.'),
-        });
+      const zodError = handleZodError(err);
+      if (zodError) {
+        return res.status(zodError.status).json(zodError.body);
       }
       throw err;
     }
@@ -43,19 +55,20 @@ export async function registerRoutes(
   app.put(api.templates.update.path, async (req, res) => {
     try {
       const input = api.templates.update.input.parse(req.body);
-      const updated = await storage.updateTemplate(Number(req.params.id), input);
-      res.json(updated);
+      const template = await storage.updateTemplate(Number(req.params.id), input);
+      res.json(template);
     } catch (err) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({
-          message: err.errors[0].message,
-          field: err.errors[0].path.join('.'),
-        });
+      const zodError = handleZodError(err);
+      if (zodError) {
+        return res.status(zodError.status).json(zodError.body);
       }
-      // Handle not found via storage check if preferred, or generic 500
-      // For simplicity in this Lite build, assuming ID exists or next generic catch hits.
-      // Ideally check existence first.
-      res.status(500).json({ message: 'Internal Server Error' });
+      
+      // Handle "Template not found" error from storage
+      if (err instanceof Error && err.message === 'Template not found') {
+        return res.status(404).json({ message: 'Template not found' });
+      }
+      
+      throw err;
     }
   });
 
