@@ -83,7 +83,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
     });
   };
 
-  const handleTableFooterAdd = () => {
+  const handleTableAdditionalRowAdd = () => {
     if (!element.tableConfig) return;
     const newAdditionalRow = { label: "Total", value: "{total}", format: 'currency' as const };
     onChange(element.id, {
@@ -94,7 +94,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
     });
   };
 
-  const handleTableFooterRemove = (index: number) => {
+  const handleTableAdditionalRowRemove = (index: number) => {
     if (!element.tableConfig || !element.tableConfig.additionalRows) return;
     const newAdditionalRows = [...element.tableConfig.additionalRows];
     newAdditionalRows.splice(index, 1);
@@ -106,7 +106,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
     });
   };
 
-  const handleTableFooterUpdate = (index: number, field: string, value: any) => {
+  const handleTableAdditionalRowUpdate = (index: number, field: string, value: any) => {
     if (!element.tableConfig || !element.tableConfig.additionalRows) return;
     const newAdditionalRows = [...element.tableConfig.additionalRows];
     newAdditionalRows[index] = { ...newAdditionalRows[index], [field]: value };
@@ -118,7 +118,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
     });
   };
 
-  const handleTableFooterDuplicate = (index: number) => {
+  const handleTableAdditionalRowDuplicate = (index: number) => {
     if (!element.tableConfig || !element.tableConfig.additionalRows) return;
     const additionalRowToDuplicate = element.tableConfig.additionalRows[index];
     const newAdditionalRows = [...element.tableConfig.additionalRows];
@@ -131,7 +131,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
     });
   };
 
-  const handleTableFooterMoveUp = (index: number) => {
+  const handleTableAdditionalRowMoveUp = (index: number) => {
     if (!element.tableConfig || !element.tableConfig.additionalRows || index === 0) return;
     const newAdditionalRows = [...element.tableConfig.additionalRows];
     [newAdditionalRows[index - 1], newAdditionalRows[index]] = [newAdditionalRows[index], newAdditionalRows[index - 1]];
@@ -143,7 +143,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
     });
   };
 
-  const handleTableFooterMoveDown = (index: number) => {
+  const handleTableAdditionalRowMoveDown = (index: number) => {
     if (!element.tableConfig || !element.tableConfig.additionalRows || index === element.tableConfig.additionalRows.length - 1) return;
     const newAdditionalRows = [...element.tableConfig.additionalRows];
     [newAdditionalRows[index], newAdditionalRows[index + 1]] = [newAdditionalRows[index + 1], newAdditionalRows[index]];
@@ -155,7 +155,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
     });
   };
 
-  const handleTableFooterAddMultiple = (count: number) => {
+  const handleTableAdditionalRowAddMultiple = (count: number) => {
     if (!element.tableConfig || count < 1) return;
     const currentCount = element.tableConfig.additionalRows?.length || 0;
     const newAdditionalRows = Array.from({ length: count }, (_, i) => ({
@@ -171,7 +171,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
     });
   };
 
-  const handleTableFooterStyleChange = (index: number, styleKey: string, styleValue: string | number) => {
+  const handleTableAdditionalRowStyleChange = (index: number, styleKey: string, styleValue: string | number) => {
     if (!element.tableConfig || !element.tableConfig.additionalRows) return;
     const newAdditionalRows = [...element.tableConfig.additionalRows];
     newAdditionalRows[index] = { 
@@ -498,7 +498,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                               variant="ghost" 
                               size="icon" 
                               className="h-6 w-6 rounded-full bg-background border shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={() => handleTableFooterDuplicate(idx)}
+                              onClick={() => handleTableAdditionalRowDuplicate(idx)}
                               title="Duplicate row"
                             >
                               <CopyPlus className="w-3 h-3" />
@@ -507,7 +507,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                               variant="ghost" 
                               size="icon" 
                               className="h-6 w-6 rounded-full bg-background border shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={() => handleTableFooterRemove(idx)}
+                              onClick={() => handleTableAdditionalRowRemove(idx)}
                               title="Remove row"
                             >
                               <Trash2 className="w-3 h-3 text-destructive" />
@@ -522,7 +522,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                                   variant="ghost" 
                                   size="icon" 
                                   className="h-6 w-6 rounded-full bg-background border shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                                  onClick={() => handleTableFooterMoveUp(idx)}
+                                  onClick={() => handleTableAdditionalRowMoveUp(idx)}
                                   title="Move up"
                                 >
                                   <ArrowUp className="w-3 h-3" />
@@ -533,7 +533,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                                   variant="ghost" 
                                   size="icon" 
                                   className="h-6 w-6 rounded-full bg-background border shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                                  onClick={() => handleTableFooterMoveDown(idx)}
+                                  onClick={() => handleTableAdditionalRowMoveDown(idx)}
                                   title="Move down"
                                 >
                                   <ArrowDown className="w-3 h-3" />
@@ -547,7 +547,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                               <Label className="text-xs">Label</Label>
                               <Input 
                                 value={additionalRow.label} 
-                                onChange={(e) => handleTableFooterUpdate(idx, 'label', e.target.value)}
+                                onChange={(e) => handleTableAdditionalRowUpdate(idx, 'label', e.target.value)}
                                 className="h-8"
                                 placeholder="e.g. Total"
                               />
@@ -556,7 +556,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                               <Label className="text-xs">Value</Label>
                               <Input 
                                 value={additionalRow.value} 
-                                onChange={(e) => handleTableFooterUpdate(idx, 'value', e.target.value)}
+                                onChange={(e) => handleTableAdditionalRowUpdate(idx, 'value', e.target.value)}
                                 className="h-8 font-mono"
                                 placeholder="e.g. {total}"
                               />
@@ -568,7 +568,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                               <select 
                                 className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                                 value={additionalRow.format || 'text'}
-                                onChange={(e) => handleTableFooterUpdate(idx, 'format', e.target.value)}
+                                onChange={(e) => handleTableAdditionalRowUpdate(idx, 'format', e.target.value)}
                               >
                                 <option value="text">Text</option>
                                 <option value="currency">Currency</option>
@@ -582,28 +582,28 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                             <div className="flex border rounded-md overflow-hidden divide-x">
                               <button 
                                 className={`flex-1 p-1 hover:bg-muted ${additionalRow.style?.textAlign === 'left' ? 'bg-muted' : ''}`}
-                                onClick={() => handleTableFooterStyleChange(idx, 'textAlign', 'left')}
+                                onClick={() => handleTableAdditionalRowStyleChange(idx, 'textAlign', 'left')}
                                 title="Align Left"
                               >
                                 <AlignLeft className="w-3 h-3 mx-auto" />
                               </button>
                               <button 
                                 className={`flex-1 p-1 hover:bg-muted ${additionalRow.style?.textAlign === 'center' ? 'bg-muted' : ''}`}
-                                onClick={() => handleTableFooterStyleChange(idx, 'textAlign', 'center')}
+                                onClick={() => handleTableAdditionalRowStyleChange(idx, 'textAlign', 'center')}
                                 title="Align Center"
                               >
                                 <AlignCenter className="w-3 h-3 mx-auto" />
                               </button>
                               <button 
                                 className={`flex-1 p-1 hover:bg-muted ${additionalRow.style?.textAlign === 'right' ? 'bg-muted' : ''}`}
-                                onClick={() => handleTableFooterStyleChange(idx, 'textAlign', 'right')}
+                                onClick={() => handleTableAdditionalRowStyleChange(idx, 'textAlign', 'right')}
                                 title="Align Right"
                               >
                                 <AlignRight className="w-3 h-3 mx-auto" />
                               </button>
                               <button 
                                 className={`flex-1 p-1 hover:bg-muted ${additionalRow.style?.textAlign === 'justify' ? 'bg-muted' : ''}`}
-                                onClick={() => handleTableFooterStyleChange(idx, 'textAlign', 'justify')}
+                                onClick={() => handleTableAdditionalRowStyleChange(idx, 'textAlign', 'justify')}
                                 title="Justify"
                               >
                                 <AlignJustify className="w-3 h-3 mx-auto" />
@@ -618,7 +618,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                                 className={`flex-1 p-1 hover:bg-muted ${additionalRow.style?.fontWeight === 'bold' ? 'bg-muted' : ''}`}
                                 onClick={() => {
                                   const currentWeight = additionalRow.style?.fontWeight;
-                                  handleTableFooterStyleChange(idx, 'fontWeight', currentWeight === 'bold' ? 'normal' : 'bold');
+                                  handleTableAdditionalRowStyleChange(idx, 'fontWeight', currentWeight === 'bold' ? 'normal' : 'bold');
                                 }}
                                 title="Bold"
                               >
@@ -628,7 +628,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                                 className={`flex-1 p-1 hover:bg-muted ${additionalRow.style?.fontStyle === 'italic' ? 'bg-muted' : ''}`}
                                 onClick={() => {
                                   const currentStyle = additionalRow.style?.fontStyle;
-                                  handleTableFooterStyleChange(idx, 'fontStyle', currentStyle === 'italic' ? 'normal' : 'italic');
+                                  handleTableAdditionalRowStyleChange(idx, 'fontStyle', currentStyle === 'italic' ? 'normal' : 'italic');
                                 }}
                                 title="Italic"
                               >
@@ -638,7 +638,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                                 className={`flex-1 p-1 hover:bg-muted ${additionalRow.style?.textDecoration === 'underline' ? 'bg-muted' : ''}`}
                                 onClick={() => {
                                   const currentDecoration = additionalRow.style?.textDecoration;
-                                  handleTableFooterStyleChange(idx, 'textDecoration', currentDecoration === 'underline' ? 'none' : 'underline');
+                                  handleTableAdditionalRowStyleChange(idx, 'textDecoration', currentDecoration === 'underline' ? 'none' : 'underline');
                                 }}
                                 title="Underline"
                               >
@@ -1111,7 +1111,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                       )}
                     </div>
                     <div className="flex gap-1">
-                      <Button variant="outline" size="sm" onClick={handleTableFooterAdd}>
+                      <Button variant="outline" size="sm" onClick={handleTableAdditionalRowAdd}>
                         <Plus className="w-3 h-3 mr-1" /> Add
                       </Button>
                     </div>
@@ -1128,7 +1128,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                             variant="ghost" 
                             size="icon" 
                             className="h-6 w-6 rounded-full bg-background border shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => handleTableFooterRemove(idx)}
+                            onClick={() => handleTableAdditionalRowRemove(idx)}
                             title="Remove row"
                           >
                             <Trash2 className="w-3 h-3 text-destructive" />

@@ -133,7 +133,7 @@ export function Canvas({
   const [resizingBorder, setResizingBorder] = useState<{ elementId: string; type: 'row' | 'col'; index: number; startPos: number; startSize: number } | null>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [editingTextElement, setEditingTextElement] = useState<string | null>(null);
-  const [editingFooterCell, setEditingFooterCell] = useState<{ elementId: string; footerIdx: number; field: 'label' | 'value' } | null>(null);
+  const [editingAdditionalRowCell, setEditingAdditionalRowCell] = useState<{ elementId: string; additionalRowIdx: number; field: 'label' | 'value' } | null>(null);
 
   // Handle resize border dragging
   useEffect(() => {
@@ -1156,8 +1156,8 @@ export function Canvas({
                     additionalValue = additionalRow.value;
                   }
                   
-                  const isEditingLabel = editingFooterCell?.elementId === el.id && editingFooterCell?.footerIdx === idx && editingFooterCell?.field === 'label';
-                  const isEditingValue = editingFooterCell?.elementId === el.id && editingFooterCell?.footerIdx === idx && editingFooterCell?.field === 'value';
+                  const isEditingLabel = editingAdditionalRowCell?.elementId === el.id && editingAdditionalRowCell?.additionalRowIdx === idx && editingAdditionalRowCell?.field === 'label';
+                  const isEditingValue = editingAdditionalRowCell?.elementId === el.id && editingAdditionalRowCell?.additionalRowIdx === idx && editingAdditionalRowCell?.field === 'value';
                   
                   // Calculate the row index in the rowHeights array
                   // Additional rows come after all column rows
@@ -1192,7 +1192,7 @@ export function Canvas({
                         onDoubleClick={(e) => {
                           if (!isPreviewMode) {
                             e.stopPropagation();
-                            setEditingFooterCell({ elementId: el.id, footerIdx: idx, field: 'label' });
+                            setEditingAdditionalRowCell({ elementId: el.id, additionalRowIdx: idx, field: 'label' });
                           }
                         }}
                       >
@@ -1217,7 +1217,7 @@ export function Canvas({
                         onDoubleClick={(e) => {
                           if (!isPreviewMode) {
                             e.stopPropagation();
-                            setEditingFooterCell({ elementId: el.id, footerIdx: idx, field: 'value' });
+                            setEditingAdditionalRowCell({ elementId: el.id, additionalRowIdx: idx, field: 'value' });
                           }
                         }}
                       >
