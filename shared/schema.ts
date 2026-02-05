@@ -53,11 +53,11 @@ export interface TemplateElement {
       width?: string;
       format?: 'currency' | 'number' | 'text';
     }[];
-    footer?: {
+    additionalRows?: {
       label: string;
       value: string; // Can be static text or binding
       format?: 'currency' | 'number' | 'text';
-      style?: Record<string, string | number>; // Support for footer-level styling (textAlign, fontWeight, fontStyle, etc.)
+      style?: Record<string, string | number>; // Support for row-level styling (textAlign, fontWeight, fontStyle, etc.)
     }[];
     rowHeights?: number[]; // Individual height for each row (optional, for custom sizing)
   };

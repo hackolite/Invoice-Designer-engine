@@ -85,80 +85,80 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
 
   const handleTableFooterAdd = () => {
     if (!element.tableConfig) return;
-    const newFooter = { label: "Total", value: "{total}", format: 'currency' as const };
+    const newAdditionalRow = { label: "Total", value: "{total}", format: 'currency' as const };
     onChange(element.id, {
       tableConfig: {
         ...element.tableConfig,
-        footer: [...(element.tableConfig.footer || []), newFooter]
+        additionalRows: [...(element.tableConfig.additionalRows || []), newAdditionalRow]
       }
     });
   };
 
   const handleTableFooterRemove = (index: number) => {
-    if (!element.tableConfig || !element.tableConfig.footer) return;
-    const newFooter = [...element.tableConfig.footer];
-    newFooter.splice(index, 1);
+    if (!element.tableConfig || !element.tableConfig.additionalRows) return;
+    const newAdditionalRows = [...element.tableConfig.additionalRows];
+    newAdditionalRows.splice(index, 1);
     onChange(element.id, {
       tableConfig: {
         ...element.tableConfig,
-        footer: newFooter
+        additionalRows: newAdditionalRows
       }
     });
   };
 
   const handleTableFooterUpdate = (index: number, field: string, value: any) => {
-    if (!element.tableConfig || !element.tableConfig.footer) return;
-    const newFooter = [...element.tableConfig.footer];
-    newFooter[index] = { ...newFooter[index], [field]: value };
+    if (!element.tableConfig || !element.tableConfig.additionalRows) return;
+    const newAdditionalRows = [...element.tableConfig.additionalRows];
+    newAdditionalRows[index] = { ...newAdditionalRows[index], [field]: value };
     onChange(element.id, {
       tableConfig: {
         ...element.tableConfig,
-        footer: newFooter
+        additionalRows: newAdditionalRows
       }
     });
   };
 
   const handleTableFooterDuplicate = (index: number) => {
-    if (!element.tableConfig || !element.tableConfig.footer) return;
-    const footerToDuplicate = element.tableConfig.footer[index];
-    const newFooter = [...element.tableConfig.footer];
-    newFooter.splice(index + 1, 0, { ...footerToDuplicate });
+    if (!element.tableConfig || !element.tableConfig.additionalRows) return;
+    const additionalRowToDuplicate = element.tableConfig.additionalRows[index];
+    const newAdditionalRows = [...element.tableConfig.additionalRows];
+    newAdditionalRows.splice(index + 1, 0, { ...additionalRowToDuplicate });
     onChange(element.id, {
       tableConfig: {
         ...element.tableConfig,
-        footer: newFooter
+        additionalRows: newAdditionalRows
       }
     });
   };
 
   const handleTableFooterMoveUp = (index: number) => {
-    if (!element.tableConfig || !element.tableConfig.footer || index === 0) return;
-    const newFooter = [...element.tableConfig.footer];
-    [newFooter[index - 1], newFooter[index]] = [newFooter[index], newFooter[index - 1]];
+    if (!element.tableConfig || !element.tableConfig.additionalRows || index === 0) return;
+    const newAdditionalRows = [...element.tableConfig.additionalRows];
+    [newAdditionalRows[index - 1], newAdditionalRows[index]] = [newAdditionalRows[index], newAdditionalRows[index - 1]];
     onChange(element.id, {
       tableConfig: {
         ...element.tableConfig,
-        footer: newFooter
+        additionalRows: newAdditionalRows
       }
     });
   };
 
   const handleTableFooterMoveDown = (index: number) => {
-    if (!element.tableConfig || !element.tableConfig.footer || index === element.tableConfig.footer.length - 1) return;
-    const newFooter = [...element.tableConfig.footer];
-    [newFooter[index], newFooter[index + 1]] = [newFooter[index + 1], newFooter[index]];
+    if (!element.tableConfig || !element.tableConfig.additionalRows || index === element.tableConfig.additionalRows.length - 1) return;
+    const newAdditionalRows = [...element.tableConfig.additionalRows];
+    [newAdditionalRows[index], newAdditionalRows[index + 1]] = [newAdditionalRows[index + 1], newAdditionalRows[index]];
     onChange(element.id, {
       tableConfig: {
         ...element.tableConfig,
-        footer: newFooter
+        additionalRows: newAdditionalRows
       }
     });
   };
 
   const handleTableFooterAddMultiple = (count: number) => {
     if (!element.tableConfig || count < 1) return;
-    const currentCount = element.tableConfig.footer?.length || 0;
-    const newFooters = Array.from({ length: count }, (_, i) => ({
+    const currentCount = element.tableConfig.additionalRows?.length || 0;
+    const newAdditionalRows = Array.from({ length: count }, (_, i) => ({
       label: `Row ${currentCount + i + 1}`,
       value: "",
       format: 'text' as const
@@ -166,22 +166,22 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
     onChange(element.id, {
       tableConfig: {
         ...element.tableConfig,
-        footer: [...(element.tableConfig.footer || []), ...newFooters]
+        additionalRows: [...(element.tableConfig.additionalRows || []), ...newAdditionalRows]
       }
     });
   };
 
   const handleTableFooterStyleChange = (index: number, styleKey: string, styleValue: string | number) => {
-    if (!element.tableConfig || !element.tableConfig.footer) return;
-    const newFooter = [...element.tableConfig.footer];
-    newFooter[index] = { 
-      ...newFooter[index], 
-      style: { ...(newFooter[index].style || {}), [styleKey]: styleValue } 
+    if (!element.tableConfig || !element.tableConfig.additionalRows) return;
+    const newAdditionalRows = [...element.tableConfig.additionalRows];
+    newAdditionalRows[index] = { 
+      ...newAdditionalRows[index], 
+      style: { ...(newAdditionalRows[index].style || {}), [styleKey]: styleValue } 
     };
     onChange(element.id, {
       tableConfig: {
         ...element.tableConfig,
-        footer: newFooter
+        additionalRows: newAdditionalRows
       }
     });
   };
@@ -477,21 +477,21 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                     
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
-                        <Label>Footer Rows Configuration</Label>
-                        {element.tableConfig.footer && element.tableConfig.footer.length > 0 && (
+                        <Label>Additional Rows Configuration</Label>
+                        {element.tableConfig.additionalRows && element.tableConfig.additionalRows.length > 0 && (
                           <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                            {element.tableConfig.footer.length}
+                            {element.tableConfig.additionalRows.length}
                           </span>
                         )}
                       </div>
                       
-                      {(!element.tableConfig.footer || element.tableConfig.footer.length === 0) && (
+                      {(!element.tableConfig.additionalRows || element.tableConfig.additionalRows.length === 0) && (
                         <p className="text-xs text-muted-foreground">
-                          No footer rows. Use the Style tab to add footer rows.
+                          No additional rows. Use the Style tab to add additional rows.
                         </p>
                       )}
                     
-                    {element.tableConfig.footer && element.tableConfig.footer.map((footerRow, idx) => (
+                    {element.tableConfig.additionalRows && element.tableConfig.additionalRows.map((additionalRow, idx) => (
                         <div key={idx} className="bg-muted/30 p-3 rounded-lg border space-y-2 text-sm relative group">
                           <div className="absolute -top-2 -right-2 flex gap-1">
                             <Button 
@@ -515,7 +515,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                           </div>
                           
                           {/* Move up/down buttons */}
-                          {element.tableConfig?.footer && element.tableConfig.footer.length > 1 && (
+                          {element.tableConfig?.additionalRows && element.tableConfig.additionalRows.length > 1 && (
                             <div className="absolute -left-2 top-1/2 -translate-y-1/2 flex flex-col gap-1">
                               {idx > 0 && (
                                 <Button 
@@ -528,7 +528,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                                   <ArrowUp className="w-3 h-3" />
                                 </Button>
                               )}
-                              {element.tableConfig?.footer && idx < element.tableConfig.footer.length - 1 && (
+                              {element.tableConfig?.additionalRows && idx < element.tableConfig.additionalRows.length - 1 && (
                                 <Button 
                                   variant="ghost" 
                                   size="icon" 
@@ -546,7 +546,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                             <div>
                               <Label className="text-xs">Label</Label>
                               <Input 
-                                value={footerRow.label} 
+                                value={additionalRow.label} 
                                 onChange={(e) => handleTableFooterUpdate(idx, 'label', e.target.value)}
                                 className="h-8"
                                 placeholder="e.g. Total"
@@ -555,7 +555,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                             <div>
                               <Label className="text-xs">Value</Label>
                               <Input 
-                                value={footerRow.value} 
+                                value={additionalRow.value} 
                                 onChange={(e) => handleTableFooterUpdate(idx, 'value', e.target.value)}
                                 className="h-8 font-mono"
                                 placeholder="e.g. {total}"
@@ -567,7 +567,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                               <Label className="text-xs">Format</Label>
                               <select 
                                 className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                                value={footerRow.format || 'text'}
+                                value={additionalRow.format || 'text'}
                                 onChange={(e) => handleTableFooterUpdate(idx, 'format', e.target.value)}
                               >
                                 <option value="text">Text</option>
@@ -581,28 +581,28 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                             <Label className="text-xs">Text Align</Label>
                             <div className="flex border rounded-md overflow-hidden divide-x">
                               <button 
-                                className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.textAlign === 'left' ? 'bg-muted' : ''}`}
+                                className={`flex-1 p-1 hover:bg-muted ${additionalRow.style?.textAlign === 'left' ? 'bg-muted' : ''}`}
                                 onClick={() => handleTableFooterStyleChange(idx, 'textAlign', 'left')}
                                 title="Align Left"
                               >
                                 <AlignLeft className="w-3 h-3 mx-auto" />
                               </button>
                               <button 
-                                className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.textAlign === 'center' ? 'bg-muted' : ''}`}
+                                className={`flex-1 p-1 hover:bg-muted ${additionalRow.style?.textAlign === 'center' ? 'bg-muted' : ''}`}
                                 onClick={() => handleTableFooterStyleChange(idx, 'textAlign', 'center')}
                                 title="Align Center"
                               >
                                 <AlignCenter className="w-3 h-3 mx-auto" />
                               </button>
                               <button 
-                                className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.textAlign === 'right' ? 'bg-muted' : ''}`}
+                                className={`flex-1 p-1 hover:bg-muted ${additionalRow.style?.textAlign === 'right' ? 'bg-muted' : ''}`}
                                 onClick={() => handleTableFooterStyleChange(idx, 'textAlign', 'right')}
                                 title="Align Right"
                               >
                                 <AlignRight className="w-3 h-3 mx-auto" />
                               </button>
                               <button 
-                                className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.textAlign === 'justify' ? 'bg-muted' : ''}`}
+                                className={`flex-1 p-1 hover:bg-muted ${additionalRow.style?.textAlign === 'justify' ? 'bg-muted' : ''}`}
                                 onClick={() => handleTableFooterStyleChange(idx, 'textAlign', 'justify')}
                                 title="Justify"
                               >
@@ -615,9 +615,9 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                             <Label className="text-xs">Text Style</Label>
                             <div className="flex border rounded-md overflow-hidden divide-x">
                               <button 
-                                className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.fontWeight === 'bold' ? 'bg-muted' : ''}`}
+                                className={`flex-1 p-1 hover:bg-muted ${additionalRow.style?.fontWeight === 'bold' ? 'bg-muted' : ''}`}
                                 onClick={() => {
-                                  const currentWeight = footerRow.style?.fontWeight;
+                                  const currentWeight = additionalRow.style?.fontWeight;
                                   handleTableFooterStyleChange(idx, 'fontWeight', currentWeight === 'bold' ? 'normal' : 'bold');
                                 }}
                                 title="Bold"
@@ -625,9 +625,9 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                                 <Bold className="w-3 h-3 mx-auto" />
                               </button>
                               <button 
-                                className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.fontStyle === 'italic' ? 'bg-muted' : ''}`}
+                                className={`flex-1 p-1 hover:bg-muted ${additionalRow.style?.fontStyle === 'italic' ? 'bg-muted' : ''}`}
                                 onClick={() => {
-                                  const currentStyle = footerRow.style?.fontStyle;
+                                  const currentStyle = additionalRow.style?.fontStyle;
                                   handleTableFooterStyleChange(idx, 'fontStyle', currentStyle === 'italic' ? 'normal' : 'italic');
                                 }}
                                 title="Italic"
@@ -635,9 +635,9 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                                 <Italic className="w-3 h-3 mx-auto" />
                               </button>
                               <button 
-                                className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.textDecoration === 'underline' ? 'bg-muted' : ''}`}
+                                className={`flex-1 p-1 hover:bg-muted ${additionalRow.style?.textDecoration === 'underline' ? 'bg-muted' : ''}`}
                                 onClick={() => {
-                                  const currentDecoration = footerRow.style?.textDecoration;
+                                  const currentDecoration = additionalRow.style?.textDecoration;
                                   handleTableFooterStyleChange(idx, 'textDecoration', currentDecoration === 'underline' ? 'none' : 'underline');
                                 }}
                                 title="Underline"
@@ -1103,10 +1103,10 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Label>Footer Rows</Label>
-                      {element.tableConfig.footer && element.tableConfig.footer.length > 0 && (
+                      <Label>Additional Rows</Label>
+                      {element.tableConfig.additionalRows && element.tableConfig.additionalRows.length > 0 && (
                         <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                          {element.tableConfig.footer.length}
+                          {element.tableConfig.additionalRows.length}
                         </span>
                       )}
                     </div>
@@ -1118,10 +1118,10 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                   </div>
                   
                   <p className="text-xs text-muted-foreground">
-                    Manage footer rows for displaying totals and summaries
+                    Manage additional rows for displaying totals and summaries
                   </p>
                   
-                  {element.tableConfig.footer && element.tableConfig.footer.map((footerRow, idx) => (
+                  {element.tableConfig.additionalRows && element.tableConfig.additionalRows.map((additionalRow, idx) => (
                       <div key={idx} className="bg-muted/30 p-3 rounded-lg border space-y-2 text-sm relative group">
                         <div className="absolute -top-2 -right-2 flex gap-1">
                           <Button 
@@ -1136,7 +1136,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                         </div>
                         
                         <div className="text-xs font-medium text-muted-foreground">
-                          Row {idx + 1}: {footerRow.label}
+                          Row {idx + 1}: {additionalRow.label}
                         </div>
                       </div>
                     ))}
