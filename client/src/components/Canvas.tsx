@@ -208,12 +208,12 @@ export function Canvas({
           handlePriceTableRowHeightResize(resizingBorder.elementId, resizingBorder.index, newHeight);
         }
       }
-      // Handle InvoiceTable resizing (same as price table)
+      // Handle InvoiceTable resizing
       else if (element.tableConfig && element.tableConfig.tableType === 'invoice') {
         if (resizingBorder.type === 'row') {
           const delta = e.clientY - resizingBorder.startPos;
           const newHeight = Math.max(20, resizingBorder.startSize + delta / scale);
-          handlePriceTableRowHeightResize(resizingBorder.elementId, resizingBorder.index, newHeight);
+          handleInvoiceTableRowHeightResize(resizingBorder.elementId, resizingBorder.index, newHeight);
         }
       }
     };
@@ -690,7 +690,52 @@ export function Canvas({
     );
   };
 
+  const handleInvoiceTableRowHeightResize = (elementId: string, rowIndex: number, newHeight: number) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element || !element.tableConfig) return;
+    
+    const config = element.tableConfig;
+    // For invoice tables: 1 header + 3 data rows + footer rows
+    const headerRows = 1;
+    const dataRows = INVOICE_TABLE_EDITOR_DATA_ROWS;
+    const footerRowsCount = config.footerRows?.length || 0;
+    const totalRows = headerRows + dataRows + footerRowsCount;
+    
+    // Guard against invalid row index (resize handles exist between rows, so max index is totalRows - 2)
+    if (totalRows <= 0 || rowIndex >= totalRows - 1) return;
+    
+    const rowHeights = config.rowHeights || (totalRows > 0 ? Array(totalRows).fill(element.height / totalRows) : []);
+    const newRowHeights = [...rowHeights];
+    newRowHeights[rowIndex] = Math.max(MIN_ROW_HEIGHT, newHeight);
+    
+    // Update total element height
+    const oldHeight = element.height;
+    const newTotalHeight = newRowHeights.reduce((sum, h) => sum + h, 0);
+    
+    onElementUpdate(elementId, {
+      tableConfig: { ...config, rowHeights: newRowHeights },
+      height: newTotalHeight
+    });
+    
+    // Adjust any tables that are vertically fused below this invoice table
+    adjustVerticallyFusedTables(
+      { ...element, height: newTotalHeight },
+      oldHeight,
+      newTotalHeight
+    );
+  };
+
   const getPriceTableRowHeights = (element: TemplateElement, config: NonNullable<TemplateElement['tableConfig']>, totalRows: number) => {
+    if (config.rowHeights && config.rowHeights.length === totalRows) {
+      return config.rowHeights;
+    }
+    if (totalRows > 0) {
+      return Array(totalRows).fill(element.height / totalRows);
+    }
+    return [];
+  };
+
+  const getInvoiceTableRowHeights = (element: TemplateElement, config: NonNullable<TemplateElement['tableConfig']>, totalRows: number) => {
     if (config.rowHeights && config.rowHeights.length === totalRows) {
       return config.rowHeights;
     }
@@ -774,7 +819,7 @@ export function Canvas({
     const headerRows = 1; // Invoice table has 1 header row
     const dataRows = INVOICE_TABLE_EDITOR_DATA_ROWS;
     const totalRowsBefore = headerRows + dataRows + currentFooterRows.length;
-    const existingRowHeights = getPriceTableRowHeights(element, config, totalRowsBefore);
+    const existingRowHeights = getInvoiceTableRowHeights(element, config, totalRowsBefore);
     const newRowHeight = Math.max(
       MIN_ROW_HEIGHT,
       existingRowHeights[existingRowHeights.length - 1] ?? (element.height / Math.max(1, totalRowsBefore + 1))
@@ -811,7 +856,7 @@ export function Canvas({
     const headerRows = 1;
     const dataRows = INVOICE_TABLE_EDITOR_DATA_ROWS;
     const totalRowsBefore = headerRows + dataRows + footerRows.length;
-    const existingRowHeights = getPriceTableRowHeights(element, tableConfig, totalRowsBefore);
+    const existingRowHeights = getInvoiceTableRowHeights(element, tableConfig, totalRowsBefore);
     const newTotalRows = headerRows + dataRows + newFooterRows.length;
     const newRowHeights = existingRowHeights.slice(0, newTotalRows);
     const newHeight = newRowHeights.reduce((sum, h) => sum + h, 0);
