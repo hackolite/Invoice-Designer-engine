@@ -725,17 +725,7 @@ export function Canvas({
     );
   };
 
-  const getPriceTableRowHeights = (element: TemplateElement, config: NonNullable<TemplateElement['tableConfig']>, totalRows: number) => {
-    if (config.rowHeights && config.rowHeights.length === totalRows) {
-      return config.rowHeights;
-    }
-    if (totalRows > 0) {
-      return Array(totalRows).fill(element.height / totalRows);
-    }
-    return [];
-  };
-
-  const getInvoiceTableRowHeights = (element: TemplateElement, config: NonNullable<TemplateElement['tableConfig']>, totalRows: number) => {
+  const getTableRowHeights = (element: TemplateElement, config: NonNullable<TemplateElement['tableConfig']>, totalRows: number) => {
     if (config.rowHeights && config.rowHeights.length === totalRows) {
       return config.rowHeights;
     }
@@ -753,7 +743,7 @@ export function Canvas({
     const config = element.tableConfig;
     const currentAdditionalRows = config.additionalRows || [];
     const totalRowsBefore = config.columns.length + currentAdditionalRows.length;
-    const existingRowHeights = getPriceTableRowHeights(element, config, totalRowsBefore);
+    const existingRowHeights = getTableRowHeights(element, config, totalRowsBefore);
     const newRowHeight = Math.max(
       MIN_ROW_HEIGHT,
       existingRowHeights[existingRowHeights.length - 1] ?? (element.height / Math.max(1, totalRowsBefore + 1))
@@ -788,7 +778,7 @@ export function Canvas({
     newAdditionalRows.pop();
     
     const totalRowsBefore = tableConfig.columns.length + additionalRows.length;
-    const existingRowHeights = getPriceTableRowHeights(element, tableConfig, totalRowsBefore);
+    const existingRowHeights = getTableRowHeights(element, tableConfig, totalRowsBefore);
     const newTotalRows = tableConfig.columns.length + newAdditionalRows.length;
     const newRowHeights = existingRowHeights.slice(0, newTotalRows);
     const newHeight = newRowHeights.reduce((sum, h) => sum + h, 0);
@@ -819,7 +809,7 @@ export function Canvas({
     const headerRows = 1; // Invoice table has 1 header row
     const dataRows = INVOICE_TABLE_EDITOR_DATA_ROWS;
     const totalRowsBefore = headerRows + dataRows + currentFooterRows.length;
-    const existingRowHeights = getInvoiceTableRowHeights(element, config, totalRowsBefore);
+    const existingRowHeights = getTableRowHeights(element, config, totalRowsBefore);
     const newRowHeight = Math.max(
       MIN_ROW_HEIGHT,
       existingRowHeights[existingRowHeights.length - 1] ?? (element.height / Math.max(1, totalRowsBefore + 1))
@@ -856,7 +846,7 @@ export function Canvas({
     const headerRows = 1;
     const dataRows = INVOICE_TABLE_EDITOR_DATA_ROWS;
     const totalRowsBefore = headerRows + dataRows + footerRows.length;
-    const existingRowHeights = getInvoiceTableRowHeights(element, tableConfig, totalRowsBefore);
+    const existingRowHeights = getTableRowHeights(element, tableConfig, totalRowsBefore);
     const newTotalRows = headerRows + dataRows + newFooterRows.length;
     const newRowHeights = existingRowHeights.slice(0, newTotalRows);
     const newHeight = newRowHeights.reduce((sum, h) => sum + h, 0);
