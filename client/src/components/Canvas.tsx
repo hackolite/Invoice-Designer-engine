@@ -167,6 +167,14 @@ export function Canvas({
           handlePriceTableRowHeightResize(resizingBorder.elementId, resizingBorder.index, newHeight);
         }
       }
+      // Handle InvoiceTable resizing (same as price table)
+      else if (element.tableConfig && element.tableConfig.tableType === 'invoice') {
+        if (resizingBorder.type === 'row') {
+          const delta = e.clientY - resizingBorder.startPos;
+          const newHeight = Math.max(20, resizingBorder.startSize + delta / scale);
+          handlePriceTableRowHeightResize(resizingBorder.elementId, resizingBorder.index, newHeight);
+        }
+      }
     };
 
     const handleMouseUp = () => {
@@ -715,6 +723,74 @@ export function Canvas({
     );
   };
 
+  // Handle adding footer rows to Invoice Tables
+  const handleInvoiceTableAddFooterRow = (elementId: string) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element || !element.tableConfig) return;
+    
+    const config = element.tableConfig;
+    const currentFooterRows = config.footerRows || [];
+    const headerRows = 1; // Invoice table has 1 header row
+    const dataRows = 3; // Fixed number of sample data rows for invoice tables
+    const totalRowsBefore = headerRows + dataRows + currentFooterRows.length;
+    const existingRowHeights = getPriceTableRowHeights(element, config, totalRowsBefore);
+    const newRowHeight = Math.max(
+      MIN_ROW_HEIGHT,
+      existingRowHeights[existingRowHeights.length - 1] ?? (element.height / Math.max(1, totalRowsBefore + 1))
+    );
+    const newRowHeights = [...existingRowHeights, newRowHeight];
+    const newHeight = newRowHeights.reduce((sum, h) => sum + h, 0);
+    
+    onElementUpdate(elementId, {
+      tableConfig: {
+        ...config,
+        footerRows: [...currentFooterRows, { label: "Total", value: "{total}", format: 'currency' as const }],
+        rowHeights: newRowHeights
+      },
+      height: newHeight
+    });
+    
+    adjustVerticallyFusedTables(
+      { ...element, height: newHeight },
+      element.height,
+      newHeight
+    );
+  };
+
+  // Handle removing footer rows from Invoice Tables
+  const handleInvoiceTableRemoveFooterRow = (elementId: string) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    const tableConfig = element?.tableConfig;
+    if (!element || !tableConfig?.footerRows || tableConfig.footerRows.length === 0) return;
+    
+    const footerRows = tableConfig.footerRows;
+    const newFooterRows = [...footerRows];
+    newFooterRows.pop();
+    
+    const headerRows = 1;
+    const dataRows = 3; // Fixed number of sample data rows for invoice tables
+    const totalRowsBefore = headerRows + dataRows + footerRows.length;
+    const existingRowHeights = getPriceTableRowHeights(element, tableConfig, totalRowsBefore);
+    const newTotalRows = headerRows + dataRows + newFooterRows.length;
+    const newRowHeights = existingRowHeights.slice(0, newTotalRows);
+    const newHeight = newRowHeights.reduce((sum, h) => sum + h, 0);
+    
+    onElementUpdate(elementId, {
+      tableConfig: {
+        ...tableConfig,
+        footerRows: newFooterRows,
+        rowHeights: newRowHeights
+      },
+      height: newHeight
+    });
+    
+    adjustVerticallyFusedTables(
+      { ...element, height: newHeight },
+      element.height,
+      newHeight
+    );
+  };
+
   // Detect and apply fusion between nearby gridtables and price tables
   const applyTableFusion = (movedElementId: string, newX: number, newY: number) => {
     const movedElement = layout.elements.find(e => e.id === movedElementId);
@@ -731,8 +807,9 @@ export function Canvas({
       // Check if the other element is a gridtable or a price table
       const isOtherGridTable = otherEl.type === 'gridtable' && otherEl.gridTableConfig;
       const isOtherPriceTable = otherEl.type === 'table' && otherEl.tableConfig?.tableType === 'price';
+      const isOtherInvoiceTable = otherEl.type === 'table' && otherEl.tableConfig?.tableType === 'invoice';
       
-      if (!isOtherGridTable && !isOtherPriceTable) continue;
+      if (!isOtherGridTable && !isOtherPriceTable && !isOtherInvoiceTable) continue;
 
       const movedRight = finalX + movedElement.width;
       const movedBottom = finalY + movedElement.height;
@@ -801,12 +878,13 @@ export function Canvas({
   const detectAdjacentTables = (element: TemplateElement): { top: boolean; right: boolean; bottom: boolean; left: boolean } => {
     const adjacent = { top: false, right: false, bottom: false, left: false };
     
-    // Only check for gridtables, price tables, and grid tables
+    // Only check for gridtables, price tables, invoice tables, and grid tables
     const isGridTable = element.type === 'gridtable' && element.gridTableConfig;
     const isPriceTable = element.type === 'table' && element.tableConfig?.tableType === 'price';
+    const isInvoiceTable = element.type === 'table' && element.tableConfig?.tableType === 'invoice';
     const isGridDataTable = element.type === 'table' && element.tableConfig?.tableType === 'grid';
     
-    if (!isGridTable && !isPriceTable && !isGridDataTable) return adjacent;
+    if (!isGridTable && !isPriceTable && !isInvoiceTable && !isGridDataTable) return adjacent;
 
     const elementRight = element.x + element.width;
     const elementBottom = element.y + element.height;
@@ -815,12 +893,13 @@ export function Canvas({
     for (const otherEl of layout.elements) {
       if (otherEl.id === element.id) continue;
       
-      // Check if the other element is a gridtable, price table, or grid table
+      // Check if the other element is a gridtable, price table, invoice table, or grid table
       const isOtherGridTable = otherEl.type === 'gridtable' && otherEl.gridTableConfig;
       const isOtherPriceTable = otherEl.type === 'table' && otherEl.tableConfig?.tableType === 'price';
+      const isOtherInvoiceTable = otherEl.type === 'table' && otherEl.tableConfig?.tableType === 'invoice';
       const isOtherGridDataTable = otherEl.type === 'table' && otherEl.tableConfig?.tableType === 'grid';
       
-      if (!isOtherGridTable && !isOtherPriceTable && !isOtherGridDataTable) continue;
+      if (!isOtherGridTable && !isOtherPriceTable && !isOtherInvoiceTable && !isOtherGridDataTable) continue;
 
       const otherRight = otherEl.x + otherEl.width;
       const otherBottom = otherEl.y + otherEl.height;
@@ -1304,6 +1383,238 @@ export function Canvas({
             </table>
           </div>
           {/* Row resize handles for PriceTable */}
+          {!isPreviewMode && rowHeights.length > 1 && rowHeights.slice(0, -1).map((_, rowIdx) => {
+            const topPos = rowHeights.slice(0, rowIdx + 1).reduce((sum, h) => sum + h, 0);
+            return (
+              <div
+                key={`row-resize-${rowIdx}`}
+                className="absolute left-0 right-0 pointer-events-auto cursor-row-resize hover:bg-blue-500/20"
+                style={{
+                  top: `${topPos - RESIZE_HANDLE_OFFSET}px`,
+                  height: `${RESIZE_HANDLE_SIZE}px`,
+                  zIndex: 5
+                }}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  setResizingBorder({
+                    elementId: el.id,
+                    type: 'row',
+                    index: rowIdx,
+                    startPos: e.clientY,
+                    startSize: rowHeights[rowIdx]
+                  });
+                }}
+              />
+            );
+          })}
+        </div>
+        );
+      }
+
+      // Handle invoice table (header + loopable row + footer)
+      if (tableType === 'invoice') {
+        const sourceData = isPreviewMode 
+          ? getValue(sampleData, config.dataSource, []) 
+          : [1, 2, 3]; // Dummy rows for editor
+        
+        // Calculate row heights for invoice table
+        // Structure: 1 header + fixed 3 data rows for editor mode + footer rows
+        const headerRows = 1;
+        const dataRows = 3; // Fixed number of sample data rows
+        const footerRowsCount = config.footerRows?.length || 0;
+        const totalRows = headerRows + dataRows + footerRowsCount;
+        let rowHeights = config.rowHeights || (totalRows > 0 ? Array(totalRows).fill(el.height / totalRows) : []);
+        
+        // Normalize row heights to prevent floating-point gaps
+        rowHeights = normalizeRowHeights(rowHeights, el.height);
+        
+        // Detect adjacent tables for border merging
+        const adjacentTables = detectAdjacentTables(el);
+        
+        return (
+          <div className="w-full h-full pointer-events-auto relative">
+            <div className={clsx(
+              "w-full h-full overflow-hidden",
+              tableStyle === 'default' && "",
+              tableStyle === 'minimal' && "",
+              tableStyle === 'modern' && "rounded-lg shadow-sm"
+            )}>
+              <table className="w-full text-sm text-left border-collapse" style={{ tableLayout: 'fixed' }}>
+                <colgroup>
+                  {/* Invoice tables have columns based on config */}
+                  {config.columns.map((col, idx) => (
+                    <col key={idx} style={{ width: col.width || `${100 / config.columns.length}%` }} />
+                  ))}
+                </colgroup>
+                <tbody>
+                {/* Header row */}
+                <tr className={clsx(
+                  tableStyle === 'default' && "bg-gray-100 font-semibold",
+                  tableStyle === 'modern' && "bg-primary/10 font-semibold"
+                )}
+                style={{
+                  height: rowHeights[0] ? `${rowHeights[0]}px` : 'auto'
+                }}>
+                  {config.columns.map((col, colIdx) => (
+                    <th key={colIdx} className="p-2 text-left font-semibold" style={{ 
+                      width: col.width || `${100 / config.columns.length}%`,
+                      borderWidth: `${gridBorderWidth}px`,
+                      borderStyle: 'solid',
+                      borderColor: gridBorderColor,
+                      borderTopWidth: adjacentTables.top ? 0 : `${gridBorderWidth}px`,
+                      borderLeftWidth: (colIdx === 0 && adjacentTables.left) ? 0 : `${gridBorderWidth}px`,
+                      borderRightWidth: (colIdx === config.columns.length - 1) ? `${gridBorderWidth}px` : 0,
+                      borderBottomWidth: `${gridBorderWidth}px`,
+                    }}>
+                      {col.header}
+                    </th>
+                  ))}
+                </tr>
+                {/* Data rows (loopable) */}
+                {(isPreviewMode ? sourceData : [1, 2, 3]).map((dataItem: any, rowIdx: number) => {
+                  const rowHeightIndex = headerRows + rowIdx;
+                  return (
+                    <tr key={rowIdx} className={clsx(
+                      tableStyle === 'default' && "hover:bg-gray-50",
+                      tableStyle === 'modern' && rowIdx % 2 === 0 ? "bg-white" : "bg-primary/5"
+                    )}
+                    style={{
+                      height: rowHeights[rowHeightIndex] ? `${rowHeights[rowHeightIndex]}px` : 'auto'
+                    }}>
+                      {config.columns.map((col, colIdx) => {
+                        let cellValue;
+                        if (isPreviewMode && col.binding) {
+                          const rawVal = getValue(dataItem, col.binding);
+                          if (col.format === 'currency') {
+                            const currency = config.currency || 'USD';
+                            if (currency === 'none') {
+                              cellValue = Number(rawVal) || 0;
+                            } else {
+                              cellValue = new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(rawVal) || 0);
+                            }
+                          } else if (col.format === 'number') {
+                            cellValue = new Intl.NumberFormat('en-US').format(Number(rawVal) || 0);
+                          } else {
+                            cellValue = rawVal;
+                          }
+                        } else {
+                          cellValue = `{${col.binding}}`;
+                        }
+                        
+                        return (
+                          <td key={colIdx} className="p-2" style={{ 
+                            borderWidth: `${gridBorderWidth}px`,
+                            borderStyle: 'solid',
+                            borderColor: gridBorderColor,
+                            borderLeftWidth: (colIdx === 0 && adjacentTables.left) ? 0 : `${gridBorderWidth}px`,
+                            borderRightWidth: (colIdx === config.columns.length - 1) ? `${gridBorderWidth}px` : 0,
+                            borderBottomWidth: `${gridBorderWidth}px`,
+                          }}>
+                            {cellValue}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
+                {/* Footer rows that stay at bottom */}
+                {config.footerRows && config.footerRows.map((footerRow, idx) => {
+                  let footerLabelValue = footerRow.label;
+                  let footerDataValue;
+                  
+                  if (isPreviewMode) {
+                    // Try to parse as binding first - check for pattern {bindingName}
+                    if (footerRow.value.startsWith('{') && footerRow.value.endsWith('}') && footerRow.value.length > 2) {
+                      const binding = footerRow.value.slice(1, -1).trim();
+                      if (binding.length > 0) {
+                        const rawVal = getValue(sampleData, binding);
+                        if (footerRow.format === 'currency') {
+                          const currency = config.currency || 'USD';
+                          if (currency === 'none') {
+                            footerDataValue = Number(rawVal) || 0;
+                          } else {
+                            footerDataValue = new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(rawVal) || 0);
+                          }
+                        } else if (footerRow.format === 'number') {
+                          footerDataValue = new Intl.NumberFormat('en-US').format(Number(rawVal) || 0);
+                        } else {
+                          footerDataValue = rawVal;
+                        }
+                      } else {
+                        footerDataValue = footerRow.value;
+                      }
+                    } else {
+                      // Static text
+                      footerDataValue = footerRow.value;
+                    }
+                  } else {
+                    footerDataValue = footerRow.value;
+                  }
+                  
+                  // Calculate the row index in the rowHeights array
+                  const rowHeightIndex = headerRows + dataRows + idx;
+                  
+                  return (
+                    <tr key={`footer-${idx}`} className={clsx(
+                      tableStyle === 'default' && "bg-gray-100 font-semibold",
+                      tableStyle === 'modern' && "bg-primary/10 font-semibold"
+                    )}
+                      style={{
+                        height: rowHeights[rowHeightIndex] ? `${rowHeights[rowHeightIndex]}px` : 'auto'
+                      }}>
+                      {/* First cell shows the label */}
+                      <td 
+                        className="p-2 font-semibold"
+                        style={{
+                          borderWidth: `${gridBorderWidth}px`,
+                          borderStyle: 'solid',
+                          borderColor: gridBorderColor,
+                          borderLeftWidth: adjacentTables.left ? 0 : `${gridBorderWidth}px`,
+                          borderBottomWidth: `${gridBorderWidth}px`,
+                          textAlign: (footerRow.style?.textAlign as React.CSSProperties['textAlign']) || 'left',
+                          fontWeight: footerRow.style?.fontWeight || 'bold',
+                          fontStyle: (footerRow.style?.fontStyle as React.CSSProperties['fontStyle']) || 'normal',
+                          textDecoration: footerRow.style?.textDecoration || 'none'
+                        }}
+                      >
+                        {footerLabelValue}
+                      </td>
+                      {/* Remaining cells span or show the value in the last column */}
+                      {config.columns.slice(1, -1).map((_, colIdx) => (
+                        <td 
+                          key={colIdx + 1}
+                          className="p-2"
+                          style={{
+                            borderWidth: `${gridBorderWidth}px`,
+                            borderStyle: 'solid',
+                            borderColor: gridBorderColor,
+                            borderBottomWidth: `${gridBorderWidth}px`,
+                          }}
+                        />
+                      ))}
+                      <td 
+                        className="p-2 font-semibold"
+                        style={{
+                          borderWidth: `${gridBorderWidth}px`,
+                          borderStyle: 'solid',
+                          borderColor: gridBorderColor,
+                          borderRightWidth: `${gridBorderWidth}px`,
+                          borderBottomWidth: `${gridBorderWidth}px`,
+                          textAlign: (footerRow.style?.textAlign as React.CSSProperties['textAlign']) || 'right',
+                          fontWeight: footerRow.style?.fontWeight || 'bold',
+                          fontStyle: (footerRow.style?.fontStyle as React.CSSProperties['fontStyle']) || 'normal',
+                          textDecoration: footerRow.style?.textDecoration || 'none'
+                        }}
+                      >
+                        {footerDataValue}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {/* Row resize handles for InvoiceTable */}
           {!isPreviewMode && rowHeights.length > 1 && rowHeights.slice(0, -1).map((_, rowIdx) => {
             const topPos = rowHeights.slice(0, rowIdx + 1).reduce((sum, h) => sum + h, 0);
             return (
@@ -2082,6 +2393,39 @@ export function Canvas({
                           title="Remove last row"
                           aria-label="Remove last row"
                           disabled={!el.tableConfig?.additionalRows || el.tableConfig.additionalRows.length === 0}
+                        >
+                          <Minus className="w-3 h-3 mr-1" />
+                          <Rows className="w-4 h-4" />
+                        </Button>
+                      </>
+                    )}
+                    {el.tableConfig?.tableType === 'invoice' && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleInvoiceTableAddFooterRow(el.id);
+                          }}
+                          title="Add footer row"
+                          aria-label="Add footer row"
+                        >
+                          <Plus className="w-3 h-3 mr-1" />
+                          <Rows className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleInvoiceTableRemoveFooterRow(el.id);
+                          }}
+                          title="Remove last footer row"
+                          aria-label="Remove last footer row"
+                          disabled={!el.tableConfig?.footerRows || el.tableConfig.footerRows.length === 0}
                         >
                           <Minus className="w-3 h-3 mr-1" />
                           <Rows className="w-4 h-4" />

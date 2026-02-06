@@ -45,7 +45,7 @@ export interface TemplateElement {
   orientation?: 'horizontal' | 'vertical'; // For lines
   tableConfig?: {
     dataSource: string; 
-    tableType?: 'grid' | 'price'; // grid = items/data array, price = summary/totals
+    tableType?: 'grid' | 'price' | 'invoice'; // grid = items/data array, price = summary/totals, invoice = header + loopable row + footer
     currency?: 'USD' | 'EUR' | 'none'; // Currency selection for price tables
     columns: {
       header: string;
@@ -58,6 +58,12 @@ export interface TemplateElement {
       value: string; // Can be static text or binding
       format?: 'currency' | 'number' | 'text';
       style?: Record<string, string | number>; // Support for row-level styling (textAlign, fontWeight, fontStyle, etc.)
+    }[];
+    footerRows?: { // For invoice table footer rows that stay at bottom
+      label: string;
+      value: string; // Can be static text or binding
+      format?: 'currency' | 'number' | 'text';
+      style?: Record<string, string | number>; // Support for footer-level styling (textAlign, fontWeight, fontStyle, etc.)
     }[];
     rowHeights?: number[]; // Individual height for each row (optional, for custom sizing)
   };

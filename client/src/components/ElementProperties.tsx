@@ -117,6 +117,44 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
     return (element.tableConfig?.additionalRows?.length ?? 0) > 0;
   };
 
+  // Invoice table footer row handlers
+  const handleInvoiceTableFooterRowAdd = () => {
+    if (!element.tableConfig) return;
+    const newFooterRow = { label: "Total", value: "{total}", format: 'currency' as const };
+    onChange(element.id, {
+      tableConfig: {
+        ...element.tableConfig,
+        footerRows: [...(element.tableConfig.footerRows || []), newFooterRow]
+      }
+    });
+  };
+
+  const removeInvoiceTableFooterRow = () => {
+    const footerRows = element.tableConfig?.footerRows;
+    if (footerRows && footerRows.length > 0) {
+      const newFooterRows = [...footerRows];
+      newFooterRows.pop();
+      onChange(element.id, {
+        tableConfig: {
+          ...element.tableConfig!,
+          footerRows: newFooterRows
+        }
+      });
+    }
+  };
+
+  const handleInvoiceTableFooterRowUpdate = (index: number, field: string, value: any) => {
+    if (!element.tableConfig || !element.tableConfig.footerRows) return;
+    const newFooterRows = [...element.tableConfig.footerRows];
+    newFooterRows[index] = { ...newFooterRows[index], [field]: value };
+    onChange(element.id, {
+      tableConfig: {
+        ...element.tableConfig,
+        footerRows: newFooterRows
+      }
+    });
+  };
+
   const handleTableAdditionalRowUpdate = (index: number, field: string, value: any) => {
     if (!element.tableConfig || !element.tableConfig.additionalRows) return;
     const newAdditionalRows = [...element.tableConfig.additionalRows];
@@ -376,6 +414,32 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                     </div>
                   </>
                 )}
+
+                {element.tableConfig.tableType === 'invoice' && (
+                  <>
+                    <Separator />
+                    <div className="space-y-2">
+                      <Label>Manage Footer Rows</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={handleInvoiceTableFooterRowAdd}
+                        >
+                          <Plus className="w-3 h-3 mr-1" /> Add Footer
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={removeInvoiceTableFooterRow}
+                          disabled={!element.tableConfig.footerRows || element.tableConfig.footerRows.length === 0}
+                        >
+                          <Trash2 className="w-3 h-3 mr-1" /> Remove Footer
+                        </Button>
+                      </div>
+                    </div>
+                  </>
+                )}
                 
                 <Separator />
                 
@@ -400,7 +464,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                   </p>
                 </div>
                 
-                {element.tableConfig.tableType === 'price' && (
+                {(element.tableConfig.tableType === 'price' || element.tableConfig.tableType === 'invoice') && (
                   <div className="space-y-2">
                     <Label>Currency Format</Label>
                     <select 

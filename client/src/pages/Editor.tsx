@@ -569,6 +569,44 @@ export default function Editor() {
     setSelectedElementIds([newElement.id]);
   };
 
+  const handleAddInvoiceTable = () => {
+    if (!layout) return;
+
+    const newElement: TemplateElement = {
+      id: crypto.randomUUID(),
+      type: 'table',
+      x: 50,
+      y: 50,
+      width: 400,
+      height: 200,
+      style: { color: '#000000', fontSize: 14, gridBorderColor: '#000000', gridBorderWidth: 1 },
+      tableConfig: {
+        dataSource: 'items',
+        tableType: 'invoice',
+        currency: 'USD',
+        columns: [
+          { header: 'Description', binding: 'description', width: '40%' },
+          { header: 'Qty', binding: 'quantity', width: '15%' },
+          { header: 'Price', binding: 'price', width: '20%', format: 'currency' },
+          { header: 'Amount', binding: 'amount', width: '25%', format: 'currency' }
+        ],
+        footerRows: [
+          { label: 'Subtotal', value: '{subtotal}', format: 'currency' as const },
+          { label: 'Total', value: '{total}', format: 'currency' as const }
+        ]
+      }
+    };
+
+    const newLayout = {
+      ...layout,
+      elements: [...layout.elements, newElement]
+    };
+    setLayout(newLayout);
+    saveToHistory(newLayout);
+    
+    setSelectedElementIds([newElement.id]);
+  };
+
   const handleElementUpdate = (id: string, updates: Partial<TemplateElement>) => {
     if (!layout) return;
     
@@ -917,6 +955,10 @@ export default function Editor() {
                 <Button variant="outline" className="h-20 flex flex-col gap-2 hover:border-primary hover:text-primary transition-colors" onClick={() => handleAddElement('table')}>
                   <TableIcon className="w-6 h-6" />
                   <span className="text-xs">Price Table</span>
+                </Button>
+                <Button variant="outline" className="h-20 flex flex-col gap-2 hover:border-primary hover:text-primary transition-colors" onClick={() => handleAddInvoiceTable()}>
+                  <Layout className="w-6 h-6" />
+                  <span className="text-xs">Invoice Table</span>
                 </Button>
                 <Button variant="outline" className="h-20 flex flex-col gap-2 hover:border-primary hover:text-primary transition-colors" onClick={() => handleAddElement('gridtable')}>
                   <Grid3x3 className="w-6 h-6" />
