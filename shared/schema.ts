@@ -66,6 +66,7 @@ export interface TemplateElement {
       style?: Record<string, string | number>; // Support for footer-level styling (textAlign, fontWeight, fontStyle, etc.)
     }[];
     rowHeights?: number[]; // Individual height for each row (optional, for custom sizing)
+    colWidths?: number[]; // Individual width percentages for each column (optional, for proportional sizing)
   };
   gridTableConfig?: {
     rows: number;
