@@ -155,6 +155,62 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
     });
   };
 
+  const handleInvoiceTableFooterRowDuplicate = (index: number) => {
+    if (!element.tableConfig || !element.tableConfig.footerRows) return;
+    const footerRowToDuplicate = element.tableConfig.footerRows[index];
+    const newFooterRows = [...element.tableConfig.footerRows];
+    // Deep copy to avoid shared references
+    newFooterRows.splice(index + 1, 0, { 
+      ...footerRowToDuplicate, 
+      style: { ...(footerRowToDuplicate.style || {}) } 
+    });
+    onChange(element.id, {
+      tableConfig: {
+        ...element.tableConfig,
+        footerRows: newFooterRows
+      }
+    });
+  };
+
+  const handleInvoiceTableFooterRowMoveUp = (index: number) => {
+    if (!element.tableConfig || !element.tableConfig.footerRows || index === 0) return;
+    const newFooterRows = [...element.tableConfig.footerRows];
+    [newFooterRows[index - 1], newFooterRows[index]] = [newFooterRows[index], newFooterRows[index - 1]];
+    onChange(element.id, {
+      tableConfig: {
+        ...element.tableConfig,
+        footerRows: newFooterRows
+      }
+    });
+  };
+
+  const handleInvoiceTableFooterRowMoveDown = (index: number) => {
+    if (!element.tableConfig || !element.tableConfig.footerRows || index === element.tableConfig.footerRows.length - 1) return;
+    const newFooterRows = [...element.tableConfig.footerRows];
+    [newFooterRows[index], newFooterRows[index + 1]] = [newFooterRows[index + 1], newFooterRows[index]];
+    onChange(element.id, {
+      tableConfig: {
+        ...element.tableConfig,
+        footerRows: newFooterRows
+      }
+    });
+  };
+
+  const handleInvoiceTableFooterRowStyleChange = (index: number, styleKey: string, styleValue: string | number) => {
+    if (!element.tableConfig || !element.tableConfig.footerRows) return;
+    const newFooterRows = [...element.tableConfig.footerRows];
+    newFooterRows[index] = { 
+      ...newFooterRows[index], 
+      style: { ...(newFooterRows[index].style || {}), [styleKey]: styleValue } 
+    };
+    onChange(element.id, {
+      tableConfig: {
+        ...element.tableConfig,
+        footerRows: newFooterRows
+      }
+    });
+  };
+
   const handleTableAdditionalRowUpdate = (index: number, field: string, value: any) => {
     if (!element.tableConfig || !element.tableConfig.additionalRows) return;
     const newAdditionalRows = [...element.tableConfig.additionalRows];
@@ -418,25 +474,177 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                 {element.tableConfig.tableType === 'invoice' && (
                   <>
                     <Separator />
-                    <div className="space-y-2">
-                      <Label>Manage Footer Rows</Label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={handleInvoiceTableFooterRowAdd}
-                        >
-                          <Plus className="w-3 h-3 mr-1" /> Add Footer
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={removeInvoiceTableFooterRow}
-                          disabled={!element.tableConfig.footerRows || element.tableConfig.footerRows.length === 0}
-                        >
-                          <Trash2 className="w-3 h-3 mr-1" /> Remove Footer
-                        </Button>
+                    
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Label>Footer Rows Configuration</Label>
+                          {element.tableConfig.footerRows && element.tableConfig.footerRows.length > 0 && (
+                            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                              {element.tableConfig.footerRows.length}
+                            </span>
+                          )}
+                        </div>
                       </div>
+                      
+                      <p className="text-xs text-muted-foreground">
+                        Configure footer rows for displaying totals and summaries at the bottom of the invoice table. Use the toolbar buttons to add or remove rows.
+                      </p>
+                      
+                      {(!element.tableConfig.footerRows || element.tableConfig.footerRows.length === 0) && (
+                        <p className="text-xs text-muted-foreground italic">
+                          No footer rows yet. Click "Add Row" in the toolbar to create one.
+                        </p>
+                      )}
+                    
+                    {element.tableConfig.footerRows && element.tableConfig.footerRows.map((footerRow, idx) => (
+                        <div key={idx} className="bg-muted/30 p-3 rounded-lg border space-y-2 text-sm relative group">
+                          <div className="absolute -top-2 -right-2 flex gap-1">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-6 w-6 rounded-full bg-background border shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => handleInvoiceTableFooterRowDuplicate(idx)}
+                              title="Duplicate row"
+                            >
+                              <CopyPlus className="w-3 h-3" />
+                            </Button>
+                          </div>
+                          
+                          {/* Move up/down buttons */}
+                          {element.tableConfig.footerRows.length > 1 && (
+                            <div className="absolute -left-2 top-1/2 -translate-y-1/2 flex flex-col gap-1">
+                              {idx > 0 && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-6 w-6 rounded-full bg-background border shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={() => handleInvoiceTableFooterRowMoveUp(idx)}
+                                  title="Move up"
+                                >
+                                  <ArrowUp className="w-3 h-3" />
+                                </Button>
+                              )}
+                              {idx < element.tableConfig.footerRows.length - 1 && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-6 w-6 rounded-full bg-background border shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={() => handleInvoiceTableFooterRowMoveDown(idx)}
+                                  title="Move down"
+                                >
+                                  <ArrowDown className="w-3 h-3" />
+                                </Button>
+                              )}
+                            </div>
+                          )}
+                          
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs">Label</Label>
+                              <Input 
+                                value={footerRow.label} 
+                                onChange={(e) => handleInvoiceTableFooterRowUpdate(idx, 'label', e.target.value)}
+                                className="h-8"
+                                placeholder="e.g. Total"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Value</Label>
+                              <Input 
+                                value={footerRow.value} 
+                                onChange={(e) => handleInvoiceTableFooterRowUpdate(idx, 'value', e.target.value)}
+                                className="h-8 font-mono"
+                                placeholder="e.g. {total}"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs">Format</Label>
+                              <select 
+                                className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                value={footerRow.format || 'text'}
+                                onChange={(e) => handleInvoiceTableFooterRowUpdate(idx, 'format', e.target.value)}
+                              >
+                                <option value="text">Text</option>
+                                <option value="currency">Currency</option>
+                                <option value="number">Number</option>
+                              </select>
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <Label className="text-xs">Text Align</Label>
+                            <div className="flex border rounded-md overflow-hidden divide-x">
+                              <button 
+                                className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.textAlign === 'left' ? 'bg-muted' : ''}`}
+                                onClick={() => handleInvoiceTableFooterRowStyleChange(idx, 'textAlign', 'left')}
+                                title="Align Left"
+                              >
+                                <AlignLeft className="w-3 h-3 mx-auto" />
+                              </button>
+                              <button 
+                                className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.textAlign === 'center' ? 'bg-muted' : ''}`}
+                                onClick={() => handleInvoiceTableFooterRowStyleChange(idx, 'textAlign', 'center')}
+                                title="Align Center"
+                              >
+                                <AlignCenter className="w-3 h-3 mx-auto" />
+                              </button>
+                              <button 
+                                className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.textAlign === 'right' ? 'bg-muted' : ''}`}
+                                onClick={() => handleInvoiceTableFooterRowStyleChange(idx, 'textAlign', 'right')}
+                                title="Align Right"
+                              >
+                                <AlignRight className="w-3 h-3 mx-auto" />
+                              </button>
+                              <button 
+                                className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.textAlign === 'justify' ? 'bg-muted' : ''}`}
+                                onClick={() => handleInvoiceTableFooterRowStyleChange(idx, 'textAlign', 'justify')}
+                                title="Justify"
+                              >
+                                <AlignJustify className="w-3 h-3 mx-auto" />
+                              </button>
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <Label className="text-xs">Text Style</Label>
+                            <div className="flex border rounded-md overflow-hidden divide-x">
+                              <button 
+                                className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.fontWeight === 'bold' ? 'bg-muted' : ''}`}
+                                onClick={() => {
+                                  const currentWeight = footerRow.style?.fontWeight;
+                                  handleInvoiceTableFooterRowStyleChange(idx, 'fontWeight', currentWeight === 'bold' ? 'normal' : 'bold');
+                                }}
+                                title="Bold"
+                              >
+                                <Bold className="w-3 h-3 mx-auto" />
+                              </button>
+                              <button 
+                                className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.fontStyle === 'italic' ? 'bg-muted' : ''}`}
+                                onClick={() => {
+                                  const currentStyle = footerRow.style?.fontStyle;
+                                  handleInvoiceTableFooterRowStyleChange(idx, 'fontStyle', currentStyle === 'italic' ? 'normal' : 'italic');
+                                }}
+                                title="Italic"
+                              >
+                                <Italic className="w-3 h-3 mx-auto" />
+                              </button>
+                              <button 
+                                className={`flex-1 p-1 hover:bg-muted ${footerRow.style?.textDecoration === 'underline' ? 'bg-muted' : ''}`}
+                                onClick={() => {
+                                  const currentDecoration = footerRow.style?.textDecoration;
+                                  handleInvoiceTableFooterRowStyleChange(idx, 'textDecoration', currentDecoration === 'underline' ? 'none' : 'underline');
+                                }}
+                                title="Underline"
+                              >
+                                <Underline className="w-3 h-3 mx-auto" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </>
                 )}
