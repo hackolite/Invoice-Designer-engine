@@ -731,7 +731,7 @@ export function Canvas({
     const config = element.tableConfig;
     const currentFooterRows = config.footerRows || [];
     const headerRows = 1; // Invoice table has 1 header row
-    const dataRows = config.columns.length; // Each column represents one loopable row
+    const dataRows = 3; // Fixed number of sample data rows for invoice tables
     const totalRowsBefore = headerRows + dataRows + currentFooterRows.length;
     const existingRowHeights = getPriceTableRowHeights(element, config, totalRowsBefore);
     const newRowHeight = Math.max(
@@ -768,7 +768,7 @@ export function Canvas({
     newFooterRows.pop();
     
     const headerRows = 1;
-    const dataRows = tableConfig.columns.length;
+    const dataRows = 3; // Fixed number of sample data rows for invoice tables
     const totalRowsBefore = headerRows + dataRows + footerRows.length;
     const existingRowHeights = getPriceTableRowHeights(element, tableConfig, totalRowsBefore);
     const newTotalRows = headerRows + dataRows + newFooterRows.length;
@@ -1418,9 +1418,9 @@ export function Canvas({
           : [1, 2, 3]; // Dummy rows for editor
         
         // Calculate row heights for invoice table
-        // Structure: 1 header + data rows + footer rows
+        // Structure: 1 header + fixed 3 data rows for editor mode + footer rows
         const headerRows = 1;
-        const dataRows = config.columns.length;
+        const dataRows = 3; // Fixed number of sample data rows
         const footerRowsCount = config.footerRows?.length || 0;
         const totalRows = headerRows + dataRows + footerRowsCount;
         let rowHeights = config.rowHeights || (totalRows > 0 ? Array(totalRows).fill(el.height / totalRows) : []);
@@ -1471,7 +1471,7 @@ export function Canvas({
                   ))}
                 </tr>
                 {/* Data rows (loopable) */}
-                {(isPreviewMode ? sourceData : [1, 2, 3]).slice(0, dataRows).map((dataItem: any, rowIdx: number) => {
+                {(isPreviewMode ? sourceData : [1, 2, 3]).map((dataItem: any, rowIdx: number) => {
                   const rowHeightIndex = headerRows + rowIdx;
                   return (
                     <tr key={rowIdx} className={clsx(

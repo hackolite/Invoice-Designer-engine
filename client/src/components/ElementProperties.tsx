@@ -447,7 +447,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                   <Label>
                     {element.tableConfig.tableType === 'price' 
                       ? 'Data Source (Object)' 
-                      : (element.tableConfig.tableType === 'invoice' ? 'Data Source (Array)' : 'Data Source (Array)')}
+                      : 'Data Source (Array)'}
                   </Label>
                   <Input 
                     value={element.tableConfig.dataSource} 
