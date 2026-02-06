@@ -159,7 +159,11 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
     if (!element.tableConfig || !element.tableConfig.footerRows) return;
     const footerRowToDuplicate = element.tableConfig.footerRows[index];
     const newFooterRows = [...element.tableConfig.footerRows];
-    newFooterRows.splice(index + 1, 0, { ...footerRowToDuplicate });
+    // Deep copy to avoid shared references
+    newFooterRows.splice(index + 1, 0, { 
+      ...footerRowToDuplicate, 
+      style: { ...(footerRowToDuplicate.style || {}) } 
+    });
     onChange(element.id, {
       tableConfig: {
         ...element.tableConfig,
@@ -508,7 +512,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                           </div>
                           
                           {/* Move up/down buttons */}
-                          {element.tableConfig?.footerRows && element.tableConfig.footerRows.length > 1 && (
+                          {element.tableConfig.footerRows.length > 1 && (
                             <div className="absolute -left-2 top-1/2 -translate-y-1/2 flex flex-col gap-1">
                               {idx > 0 && (
                                 <Button 
@@ -521,7 +525,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                                   <ArrowUp className="w-3 h-3" />
                                 </Button>
                               )}
-                              {element.tableConfig?.footerRows && idx < element.tableConfig.footerRows.length - 1 && (
+                              {idx < element.tableConfig.footerRows.length - 1 && (
                                 <Button 
                                   variant="ghost" 
                                   size="icon" 
