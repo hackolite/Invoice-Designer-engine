@@ -19,6 +19,7 @@ import {
 
 // Constants for table height normalization
 const HEIGHT_NORMALIZATION_THRESHOLD = 0.5; // Threshold in pixels for detecting height mismatches
+const INVOICE_TABLE_EDITOR_DATA_ROWS = 3; // Fixed number of sample data rows displayed in editor for invoice tables
 
 // Simple lodash.get alternative for binding resolution
 function getValue(obj: any, path: string, defaultValue?: any) {
@@ -731,7 +732,7 @@ export function Canvas({
     const config = element.tableConfig;
     const currentFooterRows = config.footerRows || [];
     const headerRows = 1; // Invoice table has 1 header row
-    const dataRows = 3; // Fixed number of sample data rows for invoice tables
+    const dataRows = INVOICE_TABLE_EDITOR_DATA_ROWS;
     const totalRowsBefore = headerRows + dataRows + currentFooterRows.length;
     const existingRowHeights = getPriceTableRowHeights(element, config, totalRowsBefore);
     const newRowHeight = Math.max(
@@ -768,7 +769,7 @@ export function Canvas({
     newFooterRows.pop();
     
     const headerRows = 1;
-    const dataRows = 3; // Fixed number of sample data rows for invoice tables
+    const dataRows = INVOICE_TABLE_EDITOR_DATA_ROWS;
     const totalRowsBefore = headerRows + dataRows + footerRows.length;
     const existingRowHeights = getPriceTableRowHeights(element, tableConfig, totalRowsBefore);
     const newTotalRows = headerRows + dataRows + newFooterRows.length;
@@ -1420,7 +1421,7 @@ export function Canvas({
         // Calculate row heights for invoice table
         // Structure: 1 header + fixed 3 data rows for editor mode + footer rows
         const headerRows = 1;
-        const dataRows = 3; // Fixed number of sample data rows
+        const dataRows = INVOICE_TABLE_EDITOR_DATA_ROWS;
         const footerRowsCount = config.footerRows?.length || 0;
         const totalRows = headerRows + dataRows + footerRowsCount;
         let rowHeights = config.rowHeights || (totalRows > 0 ? Array(totalRows).fill(el.height / totalRows) : []);
@@ -2283,7 +2284,7 @@ export function Canvas({
                 
                 // Calculate total rows for invoice table (header + data rows + footer rows)
                 const headerRows = 1;
-                const dataRows = 3; // Fixed number of sample data rows in editor
+                const dataRows = INVOICE_TABLE_EDITOR_DATA_ROWS;
                 const footerRowsCount = config.footerRows?.length || 0;
                 const totalRows = headerRows + dataRows + footerRowsCount;
                 
