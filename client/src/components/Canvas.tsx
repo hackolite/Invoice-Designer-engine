@@ -1212,7 +1212,7 @@ export function Canvas({
         return (
           <div className="w-full h-full pointer-events-auto relative">
             <div className={clsx(
-              "w-full h-full overflow-hidden",
+              "w-full h-full",
               tableStyle === 'default' && "",
               tableStyle === 'minimal' && "",
               tableStyle === 'modern' && "rounded-lg shadow-sm"
@@ -1434,7 +1434,7 @@ export function Canvas({
         return (
           <div className="w-full h-full pointer-events-auto relative">
             <div className={clsx(
-              "w-full h-full overflow-hidden",
+              "w-full h-full",
               tableStyle === 'default' && "",
               tableStyle === 'minimal' && "",
               tableStyle === 'modern' && "rounded-lg shadow-sm"
@@ -1653,7 +1653,7 @@ export function Canvas({
       
       return (
         <div className={clsx(
-          "w-full h-full overflow-hidden",
+          "w-full h-full",
           tableStyle === 'default' && "",
           tableStyle === 'minimal' && "",
           tableStyle === 'modern' && "rounded-lg shadow-sm"
@@ -2270,6 +2270,48 @@ export function Canvas({
                 });
                 
                 // Adjust any tables that are vertically fused below this price table
+                adjustVerticallyFusedTables(
+                  { ...el, width: newWidth, height: newHeight, x: newX, y: newY },
+                  oldHeight,
+                  newHeight
+                );
+              } else if (el.type === 'table' && el.tableConfig && el.tableConfig.tableType === 'invoice' && el.height !== newHeight) {
+                // For invoice tables, handle proportional resizing on height change
+                const config = el.tableConfig;
+                const oldHeight = el.height;
+                const heightRatio = newHeight / oldHeight;
+                
+                // Calculate total rows for invoice table (header + data rows + footer rows)
+                const headerRows = 1;
+                const dataRows = 3; // Fixed number of sample data rows in editor
+                const footerRowsCount = config.footerRows?.length || 0;
+                const totalRows = headerRows + dataRows + footerRowsCount;
+                
+                // Scale all row heights proportionally
+                let newRowHeights: number[] | undefined;
+                if (config.rowHeights && config.rowHeights.length > 0) {
+                  newRowHeights = config.rowHeights.map(h => h * heightRatio);
+                } else if (totalRows > 0) {
+                  // If no custom row heights, create proportional ones based on equal distribution
+                  const scaledRowHeight = newHeight / totalRows;
+                  newRowHeights = Array(totalRows).fill(scaledRowHeight);
+                } else {
+                  // Edge case: no rows defined, keep undefined to use default rendering
+                  newRowHeights = undefined;
+                }
+                
+                onElementUpdate(el.id, {
+                  width: newWidth,
+                  height: newHeight,
+                  x: newX,
+                  y: newY,
+                  tableConfig: {
+                    ...config,
+                    rowHeights: newRowHeights
+                  }
+                });
+                
+                // Adjust any tables that are vertically fused below this invoice table
                 adjustVerticallyFusedTables(
                   { ...el, width: newWidth, height: newHeight, x: newX, y: newY },
                   oldHeight,
