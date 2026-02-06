@@ -79,6 +79,42 @@ function buildDataPathTree(data: any, currentPath: string = ''): Record<string, 
   return tree;
 }
 
+// Initialize column widths from string widths (e.g., "50%", "25%") to percentages array
+// This allows proportional resizing when table width changes
+// NOTE: Assumes width values are percentages. Non-percentage widths (e.g., "100px") will be converted to equal distribution.
+function initializeColumnWidths(columns: Array<{ width?: string }>): number[] {
+  if (!columns || columns.length === 0) return [];
+  
+  const colWidths: number[] = [];
+  let totalAssigned = 0;
+  
+  for (const col of columns) {
+    if (col.width) {
+      // Parse percentage from string like "50%" or "25%"
+      const match = col.width.match(/(\d+(?:\.\d+)?)\s*%/);
+      if (match) {
+        const percent = parseFloat(match[1]);
+        colWidths.push(percent);
+        totalAssigned += percent;
+      } else {
+        // If not a percentage (e.g., fixed pixels), distribute equally
+        colWidths.push(100 / columns.length);
+      }
+    } else {
+      // No width specified, distribute equally
+      colWidths.push(100 / columns.length);
+    }
+  }
+  
+  // Normalize to ensure sum is exactly 100%
+  if (totalAssigned > 0 && Math.abs(totalAssigned - 100) > PERCENTAGE_TOLERANCE) {
+    const scale = 100 / totalAssigned;
+    return colWidths.map(w => w * scale);
+  }
+  
+  return colWidths;
+}
+
 interface CanvasProps {
   layout: TemplateLayout;
   sampleData: any;
@@ -105,6 +141,10 @@ const FUSION_THRESHOLD = 15; // Distance in pixels for table fusion snapping
 const RESIZE_HANDLE_SIZE = 4; // Size of resize handle in pixels
 const RESIZE_HANDLE_OFFSET = 2; // Offset for centering resize handle in pixels
 const ALIGNMENT_TOLERANCE = 1.5; // Tolerance in pixels for detecting table alignment during fusion
+
+// Table column width constants
+const PERCENTAGE_TOLERANCE = 0.01; // Tolerance for floating-point percentage comparison
+const DEFAULT_PRICE_TABLE_COL_WIDTHS = [50, 50]; // Price tables always have 2 columns: label (50%) and value (50%)
 
 // Default footer row for price tables (used when adding summary rows inline)
 const DEFAULT_FOOTER_ROW = { label: "Total", value: "{total}", format: 'currency' as const };
@@ -1207,6 +1247,13 @@ export function Canvas({
         // Normalize row heights to prevent floating-point gaps
         rowHeights = normalizeRowHeights(rowHeights, el.height);
         
+        // Calculate column widths for price table
+        // Price tables always have exactly 2 columns (label and value), regardless of number of rows
+        // If colWidths is not set, initialize it to equal distribution
+        const colWidths = config.colWidths && config.colWidths.length === 2 
+          ? config.colWidths 
+          : DEFAULT_PRICE_TABLE_COL_WIDTHS;
+        
         // Detect adjacent tables for border merging
         const adjacentTables = detectAdjacentTables(el);
         
@@ -1221,8 +1268,9 @@ export function Canvas({
               <table className="w-full text-sm text-left border-collapse" style={{ tableLayout: 'fixed' }}>
                 <colgroup>
                   {/* Price tables always have 2 columns: label and value */}
-                  <col style={{ width: config.columns[0]?.width || '50%' }} />
-                  <col />
+                  {colWidths.map((width, idx) => (
+                    <col key={idx} style={{ width: `${width}%` }} />
+                  ))}
                 </colgroup>
                 <tbody>
                 {config.columns.map((col, idx) => {
@@ -1255,7 +1303,6 @@ export function Canvas({
                       height: rowHeights[idx] ? `${rowHeights[idx]}px` : 'auto'
                     }}>
                       <th className="p-2 text-left font-medium" style={{ 
-                        width: col.width || '50%',
                         borderWidth: `${gridBorderWidth}px`,
                         borderStyle: 'solid',
                         borderColor: gridBorderColor,
@@ -1429,6 +1476,9 @@ export function Canvas({
         // Normalize row heights to prevent floating-point gaps
         rowHeights = normalizeRowHeights(rowHeights, el.height);
         
+        // Calculate column widths (use custom colWidths or initialize from columns)
+        const colWidths = config.colWidths || initializeColumnWidths(config.columns);
+        
         // Detect adjacent tables for border merging
         const adjacentTables = detectAdjacentTables(el);
         
@@ -1443,8 +1493,8 @@ export function Canvas({
               <table className="w-full text-sm text-left border-collapse" style={{ tableLayout: 'fixed' }}>
                 <colgroup>
                   {/* Invoice tables have columns based on config */}
-                  {config.columns.map((col, idx) => (
-                    <col key={idx} style={{ width: col.width || `${100 / config.columns.length}%` }} />
+                  {colWidths.map((width, idx) => (
+                    <col key={idx} style={{ width: `${width}%` }} />
                   ))}
                 </colgroup>
                 <tbody>
@@ -1458,7 +1508,6 @@ export function Canvas({
                 }}>
                   {config.columns.map((col, colIdx) => (
                     <th key={colIdx} className="p-2 text-left font-semibold" style={{ 
-                      width: col.width || `${100 / config.columns.length}%`,
                       borderWidth: `${gridBorderWidth}px`,
                       borderStyle: 'solid',
                       borderColor: gridBorderColor,
@@ -1649,6 +1698,9 @@ export function Canvas({
         ? getValue(sampleData, config.dataSource, []) 
         : [1, 2, 3]; // Dummy rows for editor
       
+      // Calculate column widths (use custom colWidths or initialize from columns)
+      const gridColWidths = config.colWidths || initializeColumnWidths(config.columns);
+      
       // Detect adjacent tables for border merging
       const adjacentTables = detectAdjacentTables(el);
       
@@ -1659,7 +1711,12 @@ export function Canvas({
           tableStyle === 'minimal' && "",
           tableStyle === 'modern' && "rounded-lg shadow-sm"
         )}>
-          <table className="w-full text-sm text-left border-collapse">
+          <table className="w-full text-sm text-left border-collapse" style={{ tableLayout: 'fixed' }}>
+            <colgroup>
+              {gridColWidths.map((width, idx) => (
+                <col key={idx} style={{ width: `${width}%` }} />
+              ))}
+            </colgroup>
             <thead className={clsx(
               tableStyle === 'default' && "bg-gray-100 text-gray-700 font-medium",
               tableStyle === 'minimal' && "text-gray-900 font-bold",
@@ -1672,7 +1729,6 @@ export function Canvas({
                   
                   return (
                     <th key={idx} className="p-2" style={{ 
-                      width: col.width,
                       borderWidth: `${gridBorderWidth}px`,
                       borderStyle: 'solid',
                       borderColor: gridBorderColor,
@@ -2237,26 +2293,46 @@ export function Canvas({
                     rowHeights: newRowHeights
                   }
                 });
-              } else if (el.type === 'table' && el.tableConfig && el.tableConfig.tableType === 'price' && el.height !== newHeight) {
-                // For price tables, handle proportional resizing on height change
+              } else if (el.type === 'table' && el.tableConfig && el.tableConfig.tableType === 'price') {
+                // For price tables, handle proportional resizing on height and/or width change
                 const config = el.tableConfig;
-                const oldHeight = el.height;
-                const heightRatio = newHeight / oldHeight;
+                const heightChanged = el.height !== newHeight;
+                const widthChanged = el.width !== newWidth;
                 
                 // Calculate total rows for price table (columns + additional rows)
                 const totalRows = config.columns.length + (config.additionalRows?.length || 0);
                 
-                // Scale all row heights proportionally
-                let newRowHeights: number[] | undefined;
-                if (config.rowHeights && config.rowHeights.length > 0) {
-                  newRowHeights = config.rowHeights.map(h => h * heightRatio);
-                } else if (totalRows > 0) {
-                  // If no custom row heights, create proportional ones based on equal distribution
-                  const scaledRowHeight = newHeight / totalRows;
-                  newRowHeights = Array(totalRows).fill(scaledRowHeight);
-                } else {
-                  // Edge case: no rows defined, keep undefined to use default rendering
-                  newRowHeights = undefined;
+                let newRowHeights: number[] | undefined = config.rowHeights;
+                let newColWidths: number[] | undefined = config.colWidths;
+                
+                // Handle height changes - scale row heights proportionally
+                if (heightChanged) {
+                  const oldHeight = el.height;
+                  const heightRatio = newHeight / oldHeight;
+                  
+                  if (config.rowHeights && config.rowHeights.length > 0) {
+                    newRowHeights = config.rowHeights.map(h => h * heightRatio);
+                  } else if (totalRows > 0) {
+                    // If no custom row heights, create proportional ones based on equal distribution
+                    const scaledRowHeight = newHeight / totalRows;
+                    newRowHeights = Array(totalRows).fill(scaledRowHeight);
+                  } else {
+                    // Edge case: no rows defined, keep undefined to use default rendering
+                    newRowHeights = undefined;
+                  }
+                }
+                
+                // Handle width changes - ensure colWidths are initialized for proportional scaling
+                // Price tables always have 2 columns (label and value)
+                // Column widths are already percentages, so they scale naturally with width changes
+                if (widthChanged || !config.colWidths) {
+                  if (!config.colWidths || config.colWidths.length !== 2) {
+                    // Initialize to equal distribution for 2 columns
+                    newColWidths = DEFAULT_PRICE_TABLE_COL_WIDTHS;
+                  } else {
+                    // Keep existing colWidths (percentages scale naturally)
+                    newColWidths = config.colWidths;
+                  }
                 }
                 
                 onElementUpdate(el.id, {
@@ -2266,21 +2342,24 @@ export function Canvas({
                   y: newY,
                   tableConfig: {
                     ...config,
-                    rowHeights: newRowHeights
+                    rowHeights: newRowHeights,
+                    colWidths: newColWidths
                   }
                 });
                 
                 // Adjust any tables that are vertically fused below this price table
-                adjustVerticallyFusedTables(
-                  { ...el, width: newWidth, height: newHeight, x: newX, y: newY },
-                  oldHeight,
-                  newHeight
-                );
-              } else if (el.type === 'table' && el.tableConfig && el.tableConfig.tableType === 'invoice' && el.height !== newHeight) {
-                // For invoice tables, handle proportional resizing on height change
+                if (heightChanged) {
+                  adjustVerticallyFusedTables(
+                    { ...el, width: newWidth, height: newHeight, x: newX, y: newY },
+                    el.height,
+                    newHeight
+                  );
+                }
+              } else if (el.type === 'table' && el.tableConfig && el.tableConfig.tableType === 'invoice') {
+                // For invoice tables, handle proportional resizing on height and/or width change
                 const config = el.tableConfig;
-                const oldHeight = el.height;
-                const heightRatio = newHeight / oldHeight;
+                const heightChanged = el.height !== newHeight;
+                const widthChanged = el.width !== newWidth;
                 
                 // Calculate total rows for invoice table (header + data rows + footer rows)
                 const headerRows = 1;
@@ -2288,17 +2367,37 @@ export function Canvas({
                 const footerRowsCount = config.footerRows?.length || 0;
                 const totalRows = headerRows + dataRows + footerRowsCount;
                 
-                // Scale all row heights proportionally
-                let newRowHeights: number[] | undefined;
-                if (config.rowHeights && config.rowHeights.length > 0) {
-                  newRowHeights = config.rowHeights.map(h => h * heightRatio);
-                } else if (totalRows > 0) {
-                  // If no custom row heights, create proportional ones based on equal distribution
-                  const scaledRowHeight = newHeight / totalRows;
-                  newRowHeights = Array(totalRows).fill(scaledRowHeight);
-                } else {
-                  // Edge case: no rows defined, keep undefined to use default rendering
-                  newRowHeights = undefined;
+                let newRowHeights: number[] | undefined = config.rowHeights;
+                let newColWidths: number[] | undefined = config.colWidths;
+                
+                // Handle height changes - scale row heights proportionally
+                if (heightChanged) {
+                  const oldHeight = el.height;
+                  const heightRatio = newHeight / oldHeight;
+                  
+                  if (config.rowHeights && config.rowHeights.length > 0) {
+                    newRowHeights = config.rowHeights.map(h => h * heightRatio);
+                  } else if (totalRows > 0) {
+                    // If no custom row heights, create proportional ones based on equal distribution
+                    const scaledRowHeight = newHeight / totalRows;
+                    newRowHeights = Array(totalRows).fill(scaledRowHeight);
+                  } else {
+                    // Edge case: no rows defined, keep undefined to use default rendering
+                    newRowHeights = undefined;
+                  }
+                }
+                
+                // Handle width changes - ensure colWidths are initialized for proportional scaling
+                // Column widths are already percentages, so they scale naturally with width changes
+                // We just need to ensure they're initialized if they don't exist yet
+                if (widthChanged || !config.colWidths) {
+                  if (!config.colWidths) {
+                    // Initialize from existing column widths
+                    newColWidths = initializeColumnWidths(config.columns);
+                  } else {
+                    // Keep existing colWidths (percentages scale naturally)
+                    newColWidths = config.colWidths;
+                  }
                 }
                 
                 onElementUpdate(el.id, {
@@ -2308,16 +2407,49 @@ export function Canvas({
                   y: newY,
                   tableConfig: {
                     ...config,
-                    rowHeights: newRowHeights
+                    rowHeights: newRowHeights,
+                    colWidths: newColWidths
                   }
                 });
                 
                 // Adjust any tables that are vertically fused below this invoice table
-                adjustVerticallyFusedTables(
-                  { ...el, width: newWidth, height: newHeight, x: newX, y: newY },
-                  oldHeight,
-                  newHeight
-                );
+                if (heightChanged) {
+                  adjustVerticallyFusedTables(
+                    { ...el, width: newWidth, height: newHeight, x: newX, y: newY },
+                    el.height,
+                    newHeight
+                  );
+                }
+              } else if (el.type === 'table' && el.tableConfig && el.tableConfig.tableType === 'grid') {
+                // For grid tables (data array tables), handle proportional resizing on width change
+                const config = el.tableConfig;
+                const widthChanged = el.width !== newWidth;
+                
+                let newColWidths: number[] | undefined = config.colWidths;
+                
+                // Handle width changes - ensure colWidths are initialized for proportional scaling
+                // Column widths are already percentages, so they scale naturally with width changes
+                // We just need to ensure they're initialized if they don't exist yet
+                if (widthChanged || !config.colWidths) {
+                  if (!config.colWidths) {
+                    // Initialize from existing column widths
+                    newColWidths = initializeColumnWidths(config.columns);
+                  } else {
+                    // Keep existing colWidths (percentages scale naturally)
+                    newColWidths = config.colWidths;
+                  }
+                }
+                
+                onElementUpdate(el.id, {
+                  width: newWidth,
+                  height: newHeight,
+                  x: newX,
+                  y: newY,
+                  tableConfig: {
+                    ...config,
+                    colWidths: newColWidths
+                  }
+                });
               } else {
                 onElementUpdate(el.id, {
                   width: newWidth,
