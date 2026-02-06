@@ -1242,8 +1242,12 @@ export function Canvas({
         // Normalize row heights to prevent floating-point gaps
         rowHeights = normalizeRowHeights(rowHeights, el.height);
         
-        // Calculate column widths (use custom colWidths or initialize from columns)
-        const colWidths = config.colWidths || initializeColumnWidths(config.columns);
+        // Calculate column widths for price table
+        // Price tables always have exactly 2 columns (label and value), regardless of number of rows
+        // If colWidths is not set, initialize it to [50, 50] for equal distribution
+        const colWidths = config.colWidths && config.colWidths.length === 2 
+          ? config.colWidths 
+          : [50, 50];
         
         // Detect adjacent tables for border merging
         const adjacentTables = detectAdjacentTables(el);
@@ -2314,12 +2318,12 @@ export function Canvas({
                 }
                 
                 // Handle width changes - ensure colWidths are initialized for proportional scaling
+                // Price tables always have 2 columns (label and value)
                 // Column widths are already percentages, so they scale naturally with width changes
-                // We just need to ensure they're initialized if they don't exist yet
                 if (widthChanged || !config.colWidths) {
-                  if (!config.colWidths) {
-                    // Initialize from existing column widths
-                    newColWidths = initializeColumnWidths(config.columns);
+                  if (!config.colWidths || config.colWidths.length !== 2) {
+                    // Initialize to equal distribution for 2 columns
+                    newColWidths = [50, 50];
                   } else {
                     // Keep existing colWidths (percentages scale naturally)
                     newColWidths = config.colWidths;
