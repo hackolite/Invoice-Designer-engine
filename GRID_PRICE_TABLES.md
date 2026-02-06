@@ -1,11 +1,12 @@
-# Grid and Price Table Feature
+# Grid, Price, and Invoice Table Features
 
 ## Overview
 
-This feature introduces two distinct table types in the Invoice Designer Engine:
+This feature introduces three distinct table types in the Invoice Designer Engine:
 
 1. **Grid Table**: Displays array data with editable columns (e.g., invoice items, charges)
 2. **Price Table**: Displays object data as key-value pairs (e.g., summary, totals)
+3. **Invoice Table**: Displays array data with header, loopable rows, and customizable footer (combines features of Grid and Price tables)
 
 ## Table Types
 
@@ -68,6 +69,45 @@ This feature introduces two distinct table types in the Invoice Designer Engine:
 - Key-value data display
 - Summary information
 
+### Invoice Table
+
+**Purpose**: Display array data with a structured layout including header, loopable data rows, and footer section
+
+**Data Structure**:
+```json
+{
+  "items": [
+    { "description": "Service A", "quantity": 2, "price": 100, "amount": 200 },
+    { "description": "Service B", "quantity": 1, "price": 150, "amount": 150 }
+  ],
+  "subtotal": 350,
+  "tax": 35,
+  "total": 385
+}
+```
+
+**Features**:
+- ✅ Header row with column labels
+- ✅ Loopable data rows (displays all items from array in preview mode)
+- ✅ Customizable footer rows (always stay at bottom)
+- ✅ Add/remove footer rows via properties panel and inline controls
+- ✅ Row height resizing
+- ✅ Border color and thickness controls
+- ✅ Three style variants: Classic, Minimalist, Modern
+- ✅ Currency formatting support
+
+**Footer Rows**:
+- Each footer row has a label (left column) and value (right column)
+- Values can be static text or data bindings (e.g., `{total}`)
+- Supports formatting options (currency, number, text)
+- Footer rows always render at the bottom, below all data rows
+
+**Use Cases**:
+- Invoice layouts with itemized charges and totals
+- Order summaries with line items and footer calculations
+- Receipts with products and summary information
+- Any tabular data that needs both dynamic rows and static summary rows
+
 ## Configuration
 
 ### Schema Definition
@@ -75,12 +115,19 @@ This feature introduces two distinct table types in the Invoice Designer Engine:
 ```typescript
 tableConfig: {
   dataSource: string;           // JSON path to data (e.g., "items" or "summary")
-  tableType?: 'grid' | 'price'; // Table type (defaults to 'grid')
+  tableType?: 'grid' | 'price' | 'invoice'; // Table type (defaults to 'grid')
+  currency?: 'USD' | 'EUR' | 'none'; // Currency format for price and invoice tables
   columns: {
     header: string;             // Column header text
     binding: string;            // Data field binding
     width?: string;             // Column width (e.g., "50%", "100px")
     format?: 'currency' | 'number' | 'text'; // Value formatting
+  }[];
+  footerRows?: {                // For invoice tables only
+    label: string;              // Footer row label
+    value: string;              // Value or binding (e.g., "{total}")
+    format?: 'currency' | 'number' | 'text';
+    style?: Record<string, string | number>; // Optional styling
   }[];
 }
 ```
@@ -142,9 +189,43 @@ tableConfig: {
 }
 ```
 
+### Invoice Table Example
+
+```typescript
+{
+  id: "invoice_table",
+  type: "table",
+  x: 20,
+  y: 200,
+  width: 750,
+  height: 350,
+  tableConfig: {
+    dataSource: "items",
+    tableType: "invoice",
+    currency: "USD",
+    columns: [
+      { header: "Description", binding: "description", width: "40%" },
+      { header: "Qty", binding: "quantity", width: "15%" },
+      { header: "Price", binding: "price", width: "20%", format: "currency" },
+      { header: "Amount", binding: "amount", width: "25%", format: "currency" }
+    ],
+    footerRows: [
+      { label: "Subtotal", value: "{subtotal}", format: "currency" },
+      { label: "Tax (10%)", value: "{tax}", format: "currency" },
+      { label: "Total", value: "{total}", format: "currency" }
+    ]
+  },
+  style: { 
+    tableVariant: "modern",
+    gridBorderColor: "#6366f1",
+    gridBorderWidth: 2
+  }
+}
+```
+
 ## Styling Controls
 
-Both table types support the same styling options:
+All three table types support the same styling options:
 
 ### Border Color
 - **Property Panel**: Color picker and hex input
@@ -199,7 +280,16 @@ When a table is selected on the canvas, inline controls appear below the table:
 - **Border Color**: Quick color picker
 - **Border Width**: Number input (0-10px)
 
-These controls are available for both Grid and Price tables.
+These controls are available for all table types.
+
+**Invoice Table Additional Controls**:
+- **Add Footer Row**: Button to add a new footer row
+- **Remove Footer Row**: Button to remove the last footer row
+
+7. **Footer Rows Section** (Invoice Tables only)
+   - Each footer row card shows label and value inputs
+   - Format dropdown for currency/number/text
+   - Remove button for each footer row
 
 ## Implementation Details
 
