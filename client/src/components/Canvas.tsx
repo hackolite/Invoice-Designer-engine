@@ -81,7 +81,8 @@ function buildDataPathTree(data: any, currentPath: string = ''): Record<string, 
 
 // Initialize column widths from string widths (e.g., "50%", "25%") to percentages array
 // This allows proportional resizing when table width changes
-function initializeColumnWidths(columns: any[]): number[] {
+// NOTE: Assumes width values are percentages. Non-percentage widths (e.g., "100px") will be converted to equal distribution.
+function initializeColumnWidths(columns: Array<{ width?: string }>): number[] {
   if (!columns || columns.length === 0) return [];
   
   const colWidths: number[] = [];
@@ -96,7 +97,7 @@ function initializeColumnWidths(columns: any[]): number[] {
         colWidths.push(percent);
         totalAssigned += percent;
       } else {
-        // If not a percentage, distribute equally
+        // If not a percentage (e.g., fixed pixels), distribute equally
         colWidths.push(100 / columns.length);
       }
     } else {
@@ -106,7 +107,7 @@ function initializeColumnWidths(columns: any[]): number[] {
   }
   
   // Normalize to ensure sum is exactly 100%
-  if (totalAssigned > 0 && Math.abs(totalAssigned - 100) > 0.01) {
+  if (totalAssigned > 0 && Math.abs(totalAssigned - 100) > PERCENTAGE_TOLERANCE) {
     const scale = 100 / totalAssigned;
     return colWidths.map(w => w * scale);
   }
@@ -140,6 +141,10 @@ const FUSION_THRESHOLD = 15; // Distance in pixels for table fusion snapping
 const RESIZE_HANDLE_SIZE = 4; // Size of resize handle in pixels
 const RESIZE_HANDLE_OFFSET = 2; // Offset for centering resize handle in pixels
 const ALIGNMENT_TOLERANCE = 1.5; // Tolerance in pixels for detecting table alignment during fusion
+
+// Table column width constants
+const PERCENTAGE_TOLERANCE = 0.01; // Tolerance for floating-point percentage comparison
+const DEFAULT_PRICE_TABLE_COL_WIDTHS = [50, 50]; // Price tables always have 2 columns: label (50%) and value (50%)
 
 // Default footer row for price tables (used when adding summary rows inline)
 const DEFAULT_FOOTER_ROW = { label: "Total", value: "{total}", format: 'currency' as const };
@@ -1244,10 +1249,10 @@ export function Canvas({
         
         // Calculate column widths for price table
         // Price tables always have exactly 2 columns (label and value), regardless of number of rows
-        // If colWidths is not set, initialize it to [50, 50] for equal distribution
+        // If colWidths is not set, initialize it to equal distribution
         const colWidths = config.colWidths && config.colWidths.length === 2 
           ? config.colWidths 
-          : [50, 50];
+          : DEFAULT_PRICE_TABLE_COL_WIDTHS;
         
         // Detect adjacent tables for border merging
         const adjacentTables = detectAdjacentTables(el);
@@ -2323,7 +2328,7 @@ export function Canvas({
                 if (widthChanged || !config.colWidths) {
                   if (!config.colWidths || config.colWidths.length !== 2) {
                     // Initialize to equal distribution for 2 columns
-                    newColWidths = [50, 50];
+                    newColWidths = DEFAULT_PRICE_TABLE_COL_WIDTHS;
                   } else {
                     // Keep existing colWidths (percentages scale naturally)
                     newColWidths = config.colWidths;
