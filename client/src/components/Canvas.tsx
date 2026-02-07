@@ -1656,12 +1656,12 @@ export function Canvas({
                         let cellValue;
                         let displayValue;
                         
-                        // Check if we have inline edited data for this cell
+                        // Check if we have inline edited data for this cell (only in edit mode)
                         const inlineData: CellData[] = config.inlineData || [];
-                        const cellData = inlineData.find((cell) => cell.row === rowIdx && cell.col === colIdx);
+                        const cellData = !isPreviewMode ? inlineData.find((cell) => cell.row === rowIdx && cell.col === colIdx) : null;
                         
                         if (cellData) {
-                          // Use inline edited data
+                          // Use inline edited data (edit mode only)
                           cellValue = cellData.content;
                           displayValue = cellData.content;
                         } else if (isPreviewMode && col.binding) {
@@ -1690,13 +1690,20 @@ export function Canvas({
                             className={clsx("p-2", !isPreviewMode && "cursor-text")}
                             contentEditable={!isPreviewMode}
                             suppressContentEditableWarning
+                            spellCheck={!isPreviewMode}
                             role={!isPreviewMode ? "textbox" : undefined}
                             aria-label={!isPreviewMode ? `Edit ${col.header}` : undefined}
                             onBlur={createCellBlurHandler(el.id, rowIdx, colIdx, config, onElementUpdate, isPreviewMode)}
                             onKeyDown={(e) => {
-                              if (e.key === 'Enter' && !e.shiftKey) {
-                                e.preventDefault();
-                                e.currentTarget.blur();
+                              if (!isPreviewMode) {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                  e.preventDefault();
+                                  e.currentTarget.blur();
+                                } else if (e.key === 'Escape') {
+                                  // Revert to original content
+                                  e.currentTarget.textContent = cellValue;
+                                  e.currentTarget.blur();
+                                }
                               }
                             }}
                             style={{ 
@@ -1707,7 +1714,7 @@ export function Canvas({
                               borderRightWidth: (colIdx === config.columns.length - 1) ? `${gridBorderWidth}px` : 0,
                               borderBottomWidth: `${gridBorderWidth}px`,
                               outline: !isPreviewMode ? '1px solid transparent' : 'none',
-                              transition: 'outline-color 0.15s',
+                              transition: !isPreviewMode ? 'outline-color 0.15s' : undefined,
                             }}
                             onFocus={(e) => {
                               if (!isPreviewMode) {
@@ -1924,12 +1931,12 @@ export function Canvas({
                       let cellValue;
                       let displayValue;
                       
-                      // Check if we have inline edited data for this cell
+                      // Check if we have inline edited data for this cell (only in edit mode)
                       const inlineData: CellData[] = config.inlineData || [];
-                      const cellData = inlineData.find((cell) => cell.row === rIdx && cell.col === cIdx);
+                      const cellData = !isPreviewMode ? inlineData.find((cell) => cell.row === rIdx && cell.col === cIdx) : null;
                       
                       if (cellData) {
-                        // Use inline edited data
+                        // Use inline edited data (edit mode only)
                         cellValue = cellData.content;
                         displayValue = cellData.content;
                       } else if (isPreviewMode) {
@@ -1954,13 +1961,20 @@ export function Canvas({
                           className={clsx("p-2", !isPreviewMode && "cursor-text")}
                           contentEditable={!isPreviewMode}
                           suppressContentEditableWarning
+                          spellCheck={!isPreviewMode}
                           role={!isPreviewMode ? "textbox" : undefined}
                           aria-label={!isPreviewMode ? `Edit ${col.header}` : undefined}
                           onBlur={createCellBlurHandler(el.id, rIdx, cIdx, config, onElementUpdate, isPreviewMode)}
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                              e.preventDefault();
-                              e.currentTarget.blur();
+                            if (!isPreviewMode) {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                e.currentTarget.blur();
+                              } else if (e.key === 'Escape') {
+                                // Revert to original content
+                                e.currentTarget.textContent = cellValue;
+                                e.currentTarget.blur();
+                              }
                             }
                           }}
                           style={{ 
@@ -1971,7 +1985,7 @@ export function Canvas({
                             borderRightWidth: `${gridBorderWidth}px`,
                             borderBottomWidth: `${gridBorderWidth}px`,
                             outline: !isPreviewMode ? '1px solid transparent' : 'none',
-                            transition: 'outline-color 0.15s',
+                            transition: !isPreviewMode ? 'outline-color 0.15s' : undefined,
                           }}
                           onFocus={(e) => {
                             if (!isPreviewMode) {
