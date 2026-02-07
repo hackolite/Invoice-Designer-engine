@@ -2932,8 +2932,9 @@ export function Canvas({
                           const binding = extractBinding(displayContent);
                           if (binding) {
                             const rawVal = getValue(sampleData, binding);
-                            // Middle cells don't have format property, so just display the raw value
-                            displayContent = String(rawVal !== undefined ? rawVal : displayContent);
+                            // If binding resolves to a value, display it; otherwise keep original binding syntax
+                            // This is more user-friendly than displaying "undefined"
+                            displayContent = rawVal !== undefined ? String(rawVal) : displayContent;
                           }
                         }
                         
