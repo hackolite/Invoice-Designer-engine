@@ -40,7 +40,7 @@ if (el.type === 'gridtable' && el.gridTableConfig) {
 
 // Apply to Rnd component
 <Rnd
-  minConstraints={[undefined, minHeight]} // no min width, enforced min height
+  minHeight={minHeight} // enforced minimum height
   lockAspectRatio={false} // allow independent height/width resizing
 />
 ```

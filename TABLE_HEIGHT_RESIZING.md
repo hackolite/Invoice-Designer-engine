@@ -55,7 +55,7 @@ function getMinimumHeightForInvoiceTable(config: any): number {
 - Example: An invoice table with 1 header, 3 data rows, and 2 footer rows has a minimum height of 120px (6 × 20px)
 
 ### 2. Rnd Component Configuration
-The `minConstraints` prop is applied to the react-rnd `Rnd` component:
+The `minHeight` prop is applied to the react-rnd `Rnd` component:
 
 ```typescript
 {layout.elements.map((el) => {
@@ -80,8 +80,8 @@ The `minConstraints` prop is applied to the react-rnd `Rnd` component:
       position={{ x: el.x, y: el.y }}
       dragGrid={[GRID_SIZE, GRID_SIZE]}
       resizeGrid={[GRID_SIZE, GRID_SIZE]}
-      minConstraints={[undefined, minHeight]}  // NEW: Enforces minimum height
-      lockAspectRatio={false}  // FIXED: Allows independent height resizing
+      minHeight={minHeight}  // Enforces minimum height
+      lockAspectRatio={false}  // Allows independent height resizing
       // ... other props
     />
   );
@@ -91,9 +91,9 @@ The `minConstraints` prop is applied to the react-rnd `Rnd` component:
 ### 3. Key Changes
 
 #### Added: Minimum Height Constraints
-- `minConstraints={[undefined, minHeight]}` 
-- The first parameter (`undefined`) means no minimum width constraint (preserves existing behavior)
-- The second parameter (`minHeight`) enforces the calculated minimum height
+- `minHeight={minHeight}` 
+- Enforces the calculated minimum height for each table type
+- Prevents tables from being resized below their minimum viable height
 
 #### Fixed: Aspect Ratio Locking
 - Changed `lockAspectRatio={isSelected}` to `lockAspectRatio={false}`
