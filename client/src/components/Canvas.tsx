@@ -332,6 +332,29 @@ export function Canvas({
     color: (cell?.style?.color as string) || 'inherit',
   });
 
+  // Helper to get cell styles for invoice table cells
+  const getInvoiceTableCellStyle = (config: TemplateElement['tableConfig'], row: number, col: number) => {
+    if (!config) return {
+      textAlign: 'left' as const,
+      fontWeight: 'normal' as const,
+      fontStyle: 'normal' as const,
+      textDecoration: 'none',
+      fontSize: '12px',
+      color: 'inherit',
+    };
+    
+    const cellStyles = config.cellStyles || [];
+    const cellStyle = cellStyles.find((c: any) => c.row === row && c.col === col);
+    return {
+      textAlign: (cellStyle?.style?.textAlign as any) || 'left',
+      fontWeight: (cellStyle?.style?.fontWeight as any) || 'normal',
+      fontStyle: (cellStyle?.style?.fontStyle as any) || 'normal',
+      textDecoration: (cellStyle?.style?.textDecoration as string) || 'none',
+      fontSize: cellStyle?.style?.fontSize ? `${cellStyle.style.fontSize}px` : '12px',
+      color: (cellStyle?.style?.color as string) || 'inherit',
+    };
+  };
+
   // Helper functions for gridtable manipulation
   const handleAddRow = (elementId: string) => {
     const element = layout.elements.find(e => e.id === elementId);
@@ -565,6 +588,25 @@ export function Canvas({
     });
   };
 
+  // Handle cell binding updates for invoice tables
+  const handleInvoiceTableCellBindingUpdate = (elementId: string, col: number, binding: string) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element || !element.tableConfig) return;
+    
+    const config = element.tableConfig;
+    const newColumns = [...config.columns];
+    if (col >= 0 && col < newColumns.length) {
+      newColumns[col] = {
+        ...newColumns[col],
+        binding
+      };
+      
+      onElementUpdate(elementId, {
+        tableConfig: { ...config, columns: newColumns }
+      });
+    }
+  };
+
   // Handlers for text element updates
   const handleTextContentUpdate = (elementId: string, content: string) => {
     onElementUpdate(elementId, { content });
@@ -650,6 +692,37 @@ export function Canvas({
     });
   };
 
+  // Recursive function to render JSON data tree in context menu for invoice table cells
+  const renderDataTreeForInvoiceTable = (tree: Record<string, any>, elementId: string, col: number): JSX.Element[] => {
+    return Object.keys(tree).map((key) => {
+      const value = tree[key];
+      
+      if (typeof value === 'string') {
+        // Leaf node - this is a full path
+        return (
+          <ContextMenuItem 
+            key={value}
+            onClick={() => handleInvoiceTableCellBindingUpdate(elementId, col, value)}
+          >
+            {key} → {value}
+          </ContextMenuItem>
+        );
+      } else {
+        // Nested object - create submenu
+        return (
+          <ContextMenuSub key={key}>
+            <ContextMenuSubTrigger>
+              {key}
+            </ContextMenuSubTrigger>
+            <ContextMenuSubContent>
+              {renderDataTreeForInvoiceTable(value, elementId, col)}
+            </ContextMenuSubContent>
+          </ContextMenuSub>
+        );
+      }
+    });
+  };
+
   const handleCellStyleUpdate = (elementId: string, row: number, col: number, styleKey: string, styleValue: any) => {
     const element = layout.elements.find(e => e.id === elementId);
     if (!element || !element.gridTableConfig) return;
@@ -667,6 +740,37 @@ export function Canvas({
     
     onElementUpdate(elementId, {
       gridTableConfig: { ...config, cells: newCells }
+    });
+  };
+
+  // Handle cell style updates for invoice tables
+  const handleInvoiceTableCellStyleUpdate = (elementId: string, row: number, col: number, styleKey: string, styleValue: string | number) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element || !element.tableConfig) return;
+    
+    const config = element.tableConfig;
+    const cellStyles = config.cellStyles || [];
+    const cellStyleIndex = cellStyles.findIndex(c => c.row === row && c.col === col);
+    
+    let newCellStyles = [...cellStyles];
+    if (cellStyleIndex === -1) {
+      // Create new cell style entry
+      newCellStyles.push({
+        row,
+        col,
+        style: { [styleKey]: styleValue }
+      });
+    } else {
+      // Update existing cell style
+      const currentStyle = newCellStyles[cellStyleIndex].style || {};
+      newCellStyles[cellStyleIndex] = {
+        ...newCellStyles[cellStyleIndex],
+        style: { ...currentStyle, [styleKey]: styleValue }
+      };
+    }
+    
+    onElementUpdate(elementId, {
+      tableConfig: { ...config, cellStyles: newCellStyles }
     });
   };
 
@@ -1684,47 +1788,128 @@ export function Canvas({
                           displayValue = cellValue;
                         }
                         
+                        // Get cell styles
+                        const cellStyle = getInvoiceTableCellStyle(config, rowIdx, colIdx);
+                        
                         return (
-                          <td 
-                            key={colIdx} 
-                            className={clsx("p-2", !isPreviewMode && "cursor-text")}
-                            contentEditable={!isPreviewMode}
-                            suppressContentEditableWarning
-                            spellCheck={!isPreviewMode}
-                            role={!isPreviewMode ? "textbox" : undefined}
-                            aria-label={!isPreviewMode ? `Edit ${col.header}` : undefined}
-                            onBlur={createCellBlurHandler(el.id, rowIdx, colIdx, config, onElementUpdate, isPreviewMode)}
-                            onKeyDown={(e) => {
-                              if (!isPreviewMode) {
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                  e.preventDefault();
-                                  e.currentTarget.blur();
-                                } else if (e.key === 'Escape') {
-                                  // Revert to original content
-                                  e.currentTarget.textContent = cellValue;
-                                  e.currentTarget.blur();
-                                }
-                              }
-                            }}
-                            style={{ 
-                              borderWidth: `${gridBorderWidth}px`,
-                              borderStyle: 'solid',
-                              borderColor: gridBorderColor,
-                              borderLeftWidth: (colIdx === 0 && adjacentTables.left) ? 0 : `${gridBorderWidth}px`,
-                              borderRightWidth: (colIdx === config.columns.length - 1) ? `${gridBorderWidth}px` : 0,
-                              borderBottomWidth: `${gridBorderWidth}px`,
-                              outline: !isPreviewMode ? '1px solid transparent' : 'none',
-                              transition: !isPreviewMode ? 'outline-color 0.15s' : undefined,
-                            }}
-                            onFocus={(e) => {
-                              if (!isPreviewMode) {
-                                e.currentTarget.style.outlineColor = CELL_EDIT_OUTLINE_COLOR;
-                                e.currentTarget.style.backgroundColor = CELL_EDIT_BACKGROUND_COLOR;
-                              }
-                            }}
-                          >
-                            {displayValue}
-                          </td>
+                          <ContextMenu key={colIdx}>
+                            <ContextMenuTrigger asChild>
+                              <td 
+                                className={clsx("p-2", !isPreviewMode && "cursor-text")}
+                                contentEditable={!isPreviewMode}
+                                suppressContentEditableWarning
+                                spellCheck={!isPreviewMode}
+                                role={!isPreviewMode ? "textbox" : undefined}
+                                aria-label={!isPreviewMode ? `Edit ${col.header}` : undefined}
+                                onBlur={createCellBlurHandler(el.id, rowIdx, colIdx, config, onElementUpdate, isPreviewMode)}
+                                onKeyDown={(e) => {
+                                  if (!isPreviewMode) {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                      e.preventDefault();
+                                      e.currentTarget.blur();
+                                    } else if (e.key === 'Escape') {
+                                      // Revert to original content
+                                      e.currentTarget.textContent = cellValue;
+                                      e.currentTarget.blur();
+                                    }
+                                  }
+                                }}
+                                onContextMenu={(e) => {
+                                  if (!isPreviewMode) {
+                                    e.stopPropagation();
+                                  }
+                                }}
+                                style={{ 
+                                  borderWidth: `${gridBorderWidth}px`,
+                                  borderStyle: 'solid',
+                                  borderColor: gridBorderColor,
+                                  borderLeftWidth: (colIdx === 0 && adjacentTables.left) ? 0 : `${gridBorderWidth}px`,
+                                  borderRightWidth: (colIdx === config.columns.length - 1) ? `${gridBorderWidth}px` : 0,
+                                  borderBottomWidth: `${gridBorderWidth}px`,
+                                  outline: !isPreviewMode ? '1px solid transparent' : 'none',
+                                  transition: !isPreviewMode ? 'outline-color 0.15s' : undefined,
+                                  ...cellStyle,
+                                }}
+                                onFocus={(e) => {
+                                  if (!isPreviewMode) {
+                                    e.currentTarget.style.outlineColor = CELL_EDIT_OUTLINE_COLOR;
+                                    e.currentTarget.style.backgroundColor = CELL_EDIT_BACKGROUND_COLOR;
+                                  }
+                                }}
+                              >
+                                {displayValue}
+                              </td>
+                            </ContextMenuTrigger>
+                            {!isPreviewMode && (
+                              <ContextMenuContent className="pointer-events-auto">
+                                <ContextMenuSub>
+                                  <ContextMenuSubTrigger>
+                                    <AlignLeft className="w-4 h-4 mr-2" />
+                                    Text Align
+                                  </ContextMenuSubTrigger>
+                                  <ContextMenuSubContent>
+                                    <ContextMenuItem onClick={() => handleInvoiceTableCellStyleUpdate(el.id, rowIdx, colIdx, 'textAlign', 'left')}>
+                                      <AlignLeft className="w-4 h-4 mr-2" />
+                                      Left
+                                    </ContextMenuItem>
+                                    <ContextMenuItem onClick={() => handleInvoiceTableCellStyleUpdate(el.id, rowIdx, colIdx, 'textAlign', 'center')}>
+                                      <AlignCenter className="w-4 h-4 mr-2" />
+                                      Center
+                                    </ContextMenuItem>
+                                    <ContextMenuItem onClick={() => handleInvoiceTableCellStyleUpdate(el.id, rowIdx, colIdx, 'textAlign', 'right')}>
+                                      <AlignRight className="w-4 h-4 mr-2" />
+                                      Right
+                                    </ContextMenuItem>
+                                    <ContextMenuItem onClick={() => handleInvoiceTableCellStyleUpdate(el.id, rowIdx, colIdx, 'textAlign', 'justify')}>
+                                      <AlignJustify className="w-4 h-4 mr-2" />
+                                      Justify
+                                    </ContextMenuItem>
+                                  </ContextMenuSubContent>
+                                </ContextMenuSub>
+                                <ContextMenuSub>
+                                  <ContextMenuSubTrigger>
+                                    <Bold className="w-4 h-4 mr-2" />
+                                    Text Style
+                                  </ContextMenuSubTrigger>
+                                  <ContextMenuSubContent>
+                                    <ContextMenuItem onClick={() => {
+                                      const currentWeight = cellStyle.fontWeight;
+                                      handleInvoiceTableCellStyleUpdate(el.id, rowIdx, colIdx, 'fontWeight', currentWeight === 'bold' ? 'normal' : 'bold');
+                                    }}>
+                                      <Bold className="w-4 h-4 mr-2" />
+                                      {cellStyle.fontWeight === 'bold' ? 'Remove Bold' : 'Bold'}
+                                    </ContextMenuItem>
+                                    <ContextMenuItem onClick={() => {
+                                      const currentStyle = cellStyle.fontStyle;
+                                      handleInvoiceTableCellStyleUpdate(el.id, rowIdx, colIdx, 'fontStyle', currentStyle === 'italic' ? 'normal' : 'italic');
+                                    }}>
+                                      <Italic className="w-4 h-4 mr-2" />
+                                      {cellStyle.fontStyle === 'italic' ? 'Remove Italic' : 'Italic'}
+                                    </ContextMenuItem>
+                                    <ContextMenuItem onClick={() => {
+                                      const currentDecoration = cellStyle.textDecoration;
+                                      handleInvoiceTableCellStyleUpdate(el.id, rowIdx, colIdx, 'textDecoration', currentDecoration === 'underline' ? 'none' : 'underline');
+                                    }}>
+                                      <Underline className="w-4 h-4 mr-2" />
+                                      {cellStyle.textDecoration === 'underline' ? 'Remove Underline' : 'Underline'}
+                                    </ContextMenuItem>
+                                  </ContextMenuSubContent>
+                                </ContextMenuSub>
+                                <ContextMenuSeparator />
+                                {sampleData && (
+                                  <ContextMenuSub>
+                                    <ContextMenuSubTrigger>
+                                      <Database className="w-4 h-4 mr-2" />
+                                      Bind Data
+                                    </ContextMenuSubTrigger>
+                                    <ContextMenuSubContent>
+                                      {renderDataTreeForInvoiceTable(buildDataPathTree(sampleData), el.id, colIdx)}
+                                    </ContextMenuSubContent>
+                                  </ContextMenuSub>
+                                )}
+                              </ContextMenuContent>
+                            )}
+                          </ContextMenu>
                         );
                       })}
                     </tr>
