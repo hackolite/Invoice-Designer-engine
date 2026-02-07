@@ -70,6 +70,15 @@ export interface TemplateElement {
       col: number;
       content: string;
     }[];
+    headerInlineData?: { // For storing inline edited header cell data in edit mode
+      col: number;
+      content: string;
+    }[];
+    footerInlineData?: { // For storing inline edited footer cell data in edit mode
+      row: number;
+      field: 'label' | 'value';
+      content: string;
+    }[];
     cellStyles?: { // For storing cell-level styles in invoice tables
       row: number;
       col: number;
