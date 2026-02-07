@@ -241,12 +241,20 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
         // Create lookup maps for O(1) access
         const inlineDataMap = new Map<string, string>();
         footerInlineData.forEach(cell => {
-          inlineDataMap.set(`${cell.row}-${cell.field}`, cell.content);
+          if (cell.field === 'middle') {
+            inlineDataMap.set(`${cell.row}-${cell.field}-${cell.col}`, cell.content);
+          } else {
+            inlineDataMap.set(`${cell.row}-${cell.field}`, cell.content);
+          }
         });
         
         const stylesMap = new Map<string, FooterCellStyle['style']>();
         footerStyles.forEach(cellStyle => {
-          stylesMap.set(`${cellStyle.row}-${cellStyle.field}`, cellStyle.style);
+          if (cellStyle.field === 'middle') {
+            stylesMap.set(`${cellStyle.row}-${cellStyle.field}-${cellStyle.col}`, cellStyle.style);
+          } else {
+            stylesMap.set(`${cellStyle.row}-${cellStyle.field}`, cellStyle.style);
+          }
         });
         
         footerHtml = `<tfoot>${config.footerRows.map((footerRow, idx) => {
@@ -325,9 +333,37 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
           const escapedLabel = escapeHtml(footerLabelValue);
           const escapedValue = escapeHtml(footerDataValue);
           
+          // Build middle cells (columns 2 to n-1)
+          const middleCellsHtml = config.columns.slice(1, -1).map((_, colIdx) => {
+            const middleCellKey = `${idx}-middle-${colIdx + 1}`;
+            const middleCellData = inlineDataMap.get(middleCellKey) || '';
+            const middleCellStyle = stylesMap.get(middleCellKey) || {};
+            
+            // Resolve binding if present in preview mode
+            let middleCellValue = middleCellData;
+            if (isPreviewMode && middleCellData) {
+              const binding = extractBinding(middleCellData);
+              if (binding) {
+                const rawVal = getNestedValue(sampleData, binding);
+                middleCellValue = String(rawVal);
+              }
+            }
+            
+            // Build style for middle cell
+            const middleTextAlign = middleCellStyle.textAlign || 'left';
+            const middleFontWeight = middleCellStyle.fontWeight || 'normal';
+            const middleFontStyle = middleCellStyle.fontStyle || 'normal';
+            const middleTextDecoration = middleCellStyle.textDecoration || 'none';
+            
+            const escapedMiddleValue = escapeHtml(middleCellValue);
+            
+            return `<td style="padding: 8px; border: ${gridBorderWidth}px solid ${gridBorderColor}; text-align: ${middleTextAlign}; font-weight: ${middleFontWeight}; font-style: ${middleFontStyle}; text-decoration: ${middleTextDecoration};">${escapedMiddleValue}</td>`;
+          }).join('');
+          
           return `<tr style="background: ${FOOTER_BACKGROUND_COLOR};">
             <td style="padding: 8px; border: ${gridBorderWidth}px solid ${gridBorderColor}; text-align: ${labelTextAlign}; font-weight: ${labelFontWeight}; font-style: ${labelFontStyle}; text-decoration: ${labelTextDecoration};">${escapedLabel}</td>
-            <td colspan="${config.columns.length - 1}" style="padding: 8px; border: ${gridBorderWidth}px solid ${gridBorderColor}; text-align: ${valueTextAlign}; font-weight: ${valueFontWeight}; font-style: ${valueFontStyle}; text-decoration: ${valueTextDecoration};">${escapedValue}</td>
+            ${middleCellsHtml}
+            <td style="padding: 8px; border: ${gridBorderWidth}px solid ${gridBorderColor}; text-align: ${valueTextAlign}; font-weight: ${valueFontWeight}; font-style: ${valueFontStyle}; text-decoration: ${valueTextDecoration};">${escapedValue}</td>
           </tr>`;
         }).join('')}</tfoot>`;
       }

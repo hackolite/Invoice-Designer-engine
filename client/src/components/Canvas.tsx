@@ -909,6 +909,45 @@ export function Canvas({
     });
   };
 
+  // Handle footer middle cell binding updates for invoice tables
+  const handleInvoiceTableFooterMiddleCellBindingUpdate = (elementId: string, footerRowIndex: number, col: number, binding: string) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element || !element.tableConfig) return;
+    
+    const config = element.tableConfig;
+    const footerInlineData: FooterCellData[] = config.footerInlineData || [];
+    const existingCellIndex = footerInlineData.findIndex(
+      (cell) => cell.row === footerRowIndex && cell.field === 'middle' && cell.col === col
+    );
+    
+    let updatedFooterInlineData: FooterCellData[];
+    if (existingCellIndex >= 0) {
+      // Update existing cell data
+      updatedFooterInlineData = [...footerInlineData];
+      updatedFooterInlineData[existingCellIndex] = { 
+        row: footerRowIndex, 
+        field: 'middle', 
+        col: col, 
+        content: `{${binding}}` 
+      };
+    } else {
+      // Add new cell data
+      updatedFooterInlineData = [...footerInlineData, { 
+        row: footerRowIndex, 
+        field: 'middle', 
+        col: col, 
+        content: `{${binding}}` 
+      }];
+    }
+    
+    onElementUpdate(elementId, {
+      tableConfig: {
+        ...config,
+        footerInlineData: updatedFooterInlineData
+      }
+    });
+  };
+
   // Handle header cell binding updates for invoice tables
   const handleInvoiceTableHeaderBindingUpdate = (elementId: string, col: number, binding: string) => {
     const element = layout.elements.find(e => e.id === elementId);
@@ -1109,6 +1148,37 @@ export function Canvas({
     });
   };
 
+  // Recursive function to render JSON data tree in context menu for invoice table footer middle cells
+  const renderDataTreeForInvoiceTableFooterMiddleCell = (tree: Record<string, any>, elementId: string, footerRowIndex: number, col: number): JSX.Element[] => {
+    return Object.keys(tree).map((key) => {
+      const value = tree[key];
+      
+      if (typeof value === 'string') {
+        // Leaf node - this is a full path
+        return (
+          <ContextMenuItem 
+            key={value}
+            onClick={() => handleInvoiceTableFooterMiddleCellBindingUpdate(elementId, footerRowIndex, col, value)}
+          >
+            {key} → {value}
+          </ContextMenuItem>
+        );
+      } else {
+        // Nested object - create submenu
+        return (
+          <ContextMenuSub key={key}>
+            <ContextMenuSubTrigger>
+              {key}
+            </ContextMenuSubTrigger>
+            <ContextMenuSubContent>
+              {renderDataTreeForInvoiceTableFooterMiddleCell(value, elementId, footerRowIndex, col)}
+            </ContextMenuSubContent>
+          </ContextMenuSub>
+        );
+      }
+    });
+  };
+
   // Recursive function to render JSON data tree in context menu for invoice table header cells
   const renderDataTreeForInvoiceTableHeader = (tree: Record<string, any>, elementId: string, col: number): JSX.Element[] => {
     return Object.keys(tree).map((key) => {
@@ -1222,22 +1292,28 @@ export function Canvas({
   };
 
   // Handle footer cell style updates for invoice tables
-  const handleInvoiceTableFooterStyleUpdate = (elementId: string, row: number, field: 'label' | 'value', styleKey: string, styleValue: string | number) => {
+  const handleInvoiceTableFooterStyleUpdate = (elementId: string, row: number, field: 'label' | 'value' | 'middle', styleKey: string, styleValue: string | number, col?: number) => {
     const element = layout.elements.find(e => e.id === elementId);
     if (!element || !element.tableConfig) return;
     
     const config = element.tableConfig;
     const footerStyles = config.footerStyles || [];
-    const footerStyleIndex = footerStyles.findIndex(f => f.row === row && f.field === field);
+    const footerStyleIndex = footerStyles.findIndex(f => 
+      f.row === row && f.field === field && (field !== 'middle' || f.col === col)
+    );
     
     let newFooterStyles = [...footerStyles];
     if (footerStyleIndex === -1) {
       // Create new footer style entry
-      newFooterStyles.push({
+      const newStyle: any = {
         row,
         field,
         style: { [styleKey]: styleValue }
-      });
+      };
+      if (field === 'middle' && col !== undefined) {
+        newStyle.col = col;
+      }
+      newFooterStyles.push(newStyle);
     } else {
       // Update existing footer style
       const currentStyle = newFooterStyles[footerStyleIndex].style || {};
@@ -2836,49 +2912,129 @@ export function Canvas({
                         const middleCellData = footerInlineData.find((cell) => cell.row === idx && cell.field === 'middle' && cell.col === colIdx + 1);
                         const displayContent = middleCellData ? middleCellData.content : '';
                         
+                        // Get style for middle cell
+                        const footerStyles: FooterCellStyle[] = config.footerStyles || [];
+                        const middleCellStyle = footerStyles.find(s => s.row === idx && s.field === 'middle' && s.col === colIdx + 1);
+                        const middleStyle = middleCellStyle?.style || {};
+                        
                         return (
-                        <td 
-                          key={colIdx + 1}
-                          className={clsx("p-2", !isPreviewMode && "cursor-text")}
-                          contentEditable={!isPreviewMode}
-                          suppressContentEditableWarning
-                          spellCheck={!isPreviewMode}
-                          role={!isPreviewMode ? "textbox" : undefined}
-                          aria-label={!isPreviewMode ? `Edit footer row ${idx + 1}, column ${colIdx + 2}` : undefined}
-                          onBlur={createFooterMiddleCellBlurHandler(el.id, idx, colIdx + 1, config, onElementUpdate, isPreviewMode)}
-                          onKeyDown={(e) => {
-                            if (!isPreviewMode) {
-                              if (e.key === 'Enter' && !e.shiftKey) {
-                                e.preventDefault();
-                                e.currentTarget.blur();
-                              } else if (e.key === 'Escape') {
-                                // Revert to original content (before any edits)
-                                e.currentTarget.textContent = displayContent;
-                                e.currentTarget.blur();
-                              } else if (e.key === 'Delete' || e.key === 'Backspace') {
-                                // Allow Delete/Backspace to clear middle cell content
-                                // Stop propagation to prevent table deletion
-                                e.stopPropagation();
-                              }
-                            }
-                          }}
-                          style={{
-                            borderWidth: `${gridBorderWidth}px`,
-                            borderStyle: 'solid',
-                            borderColor: gridBorderColor,
-                            borderBottomWidth: `${gridBorderWidth}px`,
-                            outline: !isPreviewMode ? '1px solid transparent' : 'none',
-                            transition: !isPreviewMode ? 'outline-color 0.15s' : undefined,
-                          }}
-                          onFocus={(e) => {
-                            if (!isPreviewMode) {
-                              e.currentTarget.style.outlineColor = CELL_EDIT_OUTLINE_COLOR;
-                              e.currentTarget.style.backgroundColor = CELL_EDIT_BACKGROUND_COLOR;
-                            }
-                          }}
-                        >
-                          {displayContent}
-                        </td>
+                        <ContextMenu key={colIdx + 1}>
+                          <ContextMenuTrigger asChild>
+                            <td 
+                              className={clsx("p-2", !isPreviewMode && "cursor-text")}
+                              contentEditable={!isPreviewMode}
+                              suppressContentEditableWarning
+                              spellCheck={!isPreviewMode}
+                              role={!isPreviewMode ? "textbox" : undefined}
+                              aria-label={!isPreviewMode ? `Edit footer row ${idx + 1}, column ${colIdx + 2}` : undefined}
+                              onBlur={createFooterMiddleCellBlurHandler(el.id, idx, colIdx + 1, config, onElementUpdate, isPreviewMode)}
+                              onKeyDown={(e) => {
+                                if (!isPreviewMode) {
+                                  if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    e.currentTarget.blur();
+                                  } else if (e.key === 'Escape') {
+                                    // Revert to original content (before any edits)
+                                    e.currentTarget.textContent = displayContent;
+                                    e.currentTarget.blur();
+                                  } else if (e.key === 'Delete' || e.key === 'Backspace') {
+                                    // Allow Delete/Backspace to clear middle cell content
+                                    // Stop propagation to prevent table deletion
+                                    e.stopPropagation();
+                                  }
+                                }
+                              }}
+                              style={{
+                                textAlign: (middleStyle.textAlign as React.CSSProperties['textAlign']) || 'left',
+                                fontWeight: middleStyle.fontWeight || 'normal',
+                                fontStyle: (middleStyle.fontStyle as React.CSSProperties['fontStyle']) || 'normal',
+                                textDecoration: middleStyle.textDecoration || 'none',
+                                borderWidth: `${gridBorderWidth}px`,
+                                borderStyle: 'solid',
+                                borderColor: gridBorderColor,
+                                borderBottomWidth: `${gridBorderWidth}px`,
+                                outline: !isPreviewMode ? '1px solid transparent' : 'none',
+                                transition: !isPreviewMode ? 'outline-color 0.15s' : undefined,
+                              }}
+                              onFocus={(e) => {
+                                if (!isPreviewMode) {
+                                  e.currentTarget.style.outlineColor = CELL_EDIT_OUTLINE_COLOR;
+                                  e.currentTarget.style.backgroundColor = CELL_EDIT_BACKGROUND_COLOR;
+                                }
+                              }}
+                            >
+                              {displayContent}
+                            </td>
+                          </ContextMenuTrigger>
+                          {!isPreviewMode && (
+                            <ContextMenuContent className="pointer-events-auto">
+                              <ContextMenuSub>
+                                <ContextMenuSubTrigger>
+                                  <AlignLeft className="w-4 h-4 mr-2" />
+                                  Text Align
+                                </ContextMenuSubTrigger>
+                                <ContextMenuSubContent>
+                                  <ContextMenuItem onClick={() => handleInvoiceTableFooterStyleUpdate(el.id, idx, 'middle', 'textAlign', 'left', colIdx + 1)}>
+                                    <AlignLeft className="w-4 h-4 mr-2" />
+                                    Left
+                                  </ContextMenuItem>
+                                  <ContextMenuItem onClick={() => handleInvoiceTableFooterStyleUpdate(el.id, idx, 'middle', 'textAlign', 'center', colIdx + 1)}>
+                                    <AlignCenter className="w-4 h-4 mr-2" />
+                                    Center
+                                  </ContextMenuItem>
+                                  <ContextMenuItem onClick={() => handleInvoiceTableFooterStyleUpdate(el.id, idx, 'middle', 'textAlign', 'right', colIdx + 1)}>
+                                    <AlignRight className="w-4 h-4 mr-2" />
+                                    Right
+                                  </ContextMenuItem>
+                                  <ContextMenuItem onClick={() => handleInvoiceTableFooterStyleUpdate(el.id, idx, 'middle', 'textAlign', 'justify', colIdx + 1)}>
+                                    <AlignJustify className="w-4 h-4 mr-2" />
+                                    Justify
+                                  </ContextMenuItem>
+                                </ContextMenuSubContent>
+                              </ContextMenuSub>
+                              <ContextMenuSub>
+                                <ContextMenuSubTrigger>
+                                  <Bold className="w-4 h-4 mr-2" />
+                                  Text Style
+                                </ContextMenuSubTrigger>
+                                <ContextMenuSubContent>
+                                  <ContextMenuItem onClick={() => {
+                                    const currentWeight = middleStyle.fontWeight;
+                                    handleInvoiceTableFooterStyleUpdate(el.id, idx, 'middle', 'fontWeight', currentWeight === 'bold' ? 'normal' : 'bold', colIdx + 1);
+                                  }}>
+                                    <Bold className="w-4 h-4 mr-2" />
+                                    {middleStyle.fontWeight === 'bold' ? 'Remove Bold' : 'Bold'}
+                                  </ContextMenuItem>
+                                  <ContextMenuItem onClick={() => {
+                                    const currentStyle = middleStyle.fontStyle;
+                                    handleInvoiceTableFooterStyleUpdate(el.id, idx, 'middle', 'fontStyle', currentStyle === 'italic' ? 'normal' : 'italic', colIdx + 1);
+                                  }}>
+                                    <Italic className="w-4 h-4 mr-2" />
+                                    {middleStyle.fontStyle === 'italic' ? 'Remove Italic' : 'Italic'}
+                                  </ContextMenuItem>
+                                  <ContextMenuItem onClick={() => {
+                                    const currentDecoration = middleStyle.textDecoration;
+                                    handleInvoiceTableFooterStyleUpdate(el.id, idx, 'middle', 'textDecoration', currentDecoration === 'underline' ? 'none' : 'underline', colIdx + 1);
+                                  }}>
+                                    <Underline className="w-4 h-4 mr-2" />
+                                    {middleStyle.textDecoration === 'underline' ? 'Remove Underline' : 'Underline'}
+                                  </ContextMenuItem>
+                                </ContextMenuSubContent>
+                              </ContextMenuSub>
+                              {sampleData && (
+                                <ContextMenuSub>
+                                  <ContextMenuSubTrigger>
+                                    <Database className="w-4 h-4 mr-2" />
+                                    Bind Data
+                                  </ContextMenuSubTrigger>
+                                  <ContextMenuSubContent>
+                                    {renderDataTreeForInvoiceTableFooterMiddleCell(buildDataPathTreeExcludingItems(sampleData, config.dataSource), el.id, idx, colIdx + 1)}
+                                  </ContextMenuSubContent>
+                                </ContextMenuSub>
+                              )}
+                            </ContextMenuContent>
+                          )}
+                        </ContextMenu>
                         );
                       })}
                       <ContextMenu>

@@ -76,7 +76,8 @@ export interface TemplateElement {
     }[];
     footerInlineData?: { // For storing inline edited footer cell data in edit mode
       row: number;
-      field: 'label' | 'value';
+      field: 'label' | 'value' | 'middle';
+      col?: number; // Column index for middle cells
       content: string;
     }[];
     cellStyles?: { // For storing cell-level styles in invoice tables
@@ -90,7 +91,8 @@ export interface TemplateElement {
     }[];
     footerStyles?: { // For storing footer cell styles in invoice tables
       row: number;
-      field: 'label' | 'value';
+      field: 'label' | 'value' | 'middle';
+      col?: number; // Column index for middle cells
       style?: Record<string, string | number>; // Support for footer-level styling (textAlign, fontWeight, fontStyle, textDecoration, etc.)
     }[];
     rowHeights?: number[]; // Individual height for each row (optional, for custom sizing)
