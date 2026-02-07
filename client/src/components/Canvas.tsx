@@ -157,20 +157,20 @@ function getToolbarPositionClass(element: TemplateElement, pageHeight: number): 
 }
 
 // Helper function to calculate minimum height for a grid table
-function getMinimumHeightForGridTable(config: any): number {
+function getMinimumHeightForGridTable(config: TemplateElement['gridTableConfig']): number {
   if (!config || !config.rows) return MIN_ROW_HEIGHT;
   return config.rows * MIN_ROW_HEIGHT;
 }
 
 // Helper function to calculate minimum height for a price table
-function getMinimumHeightForPriceTable(config: any): number {
+function getMinimumHeightForPriceTable(config: TemplateElement['tableConfig']): number {
   if (!config) return MIN_ROW_HEIGHT;
   const totalRows = config.columns.length + (config.additionalRows?.length || 0);
   return totalRows * MIN_ROW_HEIGHT;
 }
 
 // Helper function to calculate minimum height for an invoice table
-function getMinimumHeightForInvoiceTable(config: any): number {
+function getMinimumHeightForInvoiceTable(config: TemplateElement['tableConfig']): number {
   if (!config) return MIN_ROW_HEIGHT;
   const headerRows = 1;
   const dataRows = INVOICE_TABLE_EDITOR_DATA_ROWS;
@@ -2298,7 +2298,7 @@ export function Canvas({
             position={{ x: el.x, y: el.y }}
             dragGrid={[GRID_SIZE, GRID_SIZE]}
             resizeGrid={[GRID_SIZE, GRID_SIZE]}
-            minConstraints={[undefined, minHeight]}
+            minConstraints={[undefined, minHeight]} // undefined = no min width constraint, minHeight = calculated min height
             lockAspectRatio={false}
             onDragStop={(e, d) => {
               // d.x and d.y are already snapped by dragGrid prop
