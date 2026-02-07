@@ -333,7 +333,16 @@ export function Canvas({
   });
 
   // Helper to get cell styles for invoice table cells
-  const getInvoiceTableCellStyle = (config: any, row: number, col: number) => {
+  const getInvoiceTableCellStyle = (config: TemplateElement['tableConfig'], row: number, col: number) => {
+    if (!config) return {
+      textAlign: 'left' as const,
+      fontWeight: 'normal' as const,
+      fontStyle: 'normal' as const,
+      textDecoration: 'none',
+      fontSize: '12px',
+      color: 'inherit',
+    };
+    
     const cellStyles = config.cellStyles || [];
     const cellStyle = cellStyles.find((c: any) => c.row === row && c.col === col);
     return {
@@ -735,7 +744,7 @@ export function Canvas({
   };
 
   // Handle cell style updates for invoice tables
-  const handleInvoiceTableCellStyleUpdate = (elementId: string, row: number, col: number, styleKey: string, styleValue: any) => {
+  const handleInvoiceTableCellStyleUpdate = (elementId: string, row: number, col: number, styleKey: string, styleValue: string | number) => {
     const element = layout.elements.find(e => e.id === elementId);
     if (!element || !element.tableConfig) return;
     
