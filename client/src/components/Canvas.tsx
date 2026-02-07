@@ -2299,7 +2299,7 @@ export function Canvas({
             dragGrid={[GRID_SIZE, GRID_SIZE]}
             resizeGrid={[GRID_SIZE, GRID_SIZE]}
             minConstraints={[undefined, minHeight]}
-            lockAspectRatio={isSelected}
+            lockAspectRatio={false}
             onDragStop={(e, d) => {
               // d.x and d.y are already snapped by dragGrid prop
               // Calculate the delta for this element
