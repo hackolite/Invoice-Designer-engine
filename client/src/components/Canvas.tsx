@@ -92,6 +92,60 @@ function buildDataPathTree(data: any, currentPath: string = ''): Record<string, 
   return tree;
 }
 
+// Build data path tree from items array for invoice table item fields
+// This extracts the structure from the first item in the array
+function buildDataPathTreeForItems(data: any, dataSource: string): Record<string, any> {
+  if (!data || !dataSource) return {};
+  
+  // Get the items array
+  const items = getValue(data, dataSource, []);
+  
+  // If items is not an array or is empty, return empty tree
+  if (!Array.isArray(items) || items.length === 0) return {};
+  
+  // Use the first item as the template for available fields
+  const firstItem = items[0];
+  
+  // Build tree from first item structure (without path prefix since bindings are relative to item)
+  return buildDataPathTree(firstItem, '');
+}
+
+// Build data path tree excluding items array for invoice table header/footer
+// This provides all top-level fields except the items array itself
+// NOTE: Currently assumes dataSource is a top-level key (e.g., "items").
+// For nested dataSources (e.g., "invoice.items"), this will exclude the entire parent object "invoice".
+// This is acceptable for most use cases where items are at the top level of the data structure.
+// If you need nested dataSources with footer access to parent fields, restructure your data
+// to have items at the top level, or manually enter binding paths in the properties panel.
+function buildDataPathTreeExcludingItems(data: any, dataSource: string): Record<string, any> {
+  if (!data || typeof data !== 'object') return {};
+  
+  const tree: Record<string, any> = {};
+  
+  // Get the root key to exclude from the dataSource
+  // For simple paths like "items", exclude that key
+  // For nested paths like "invoice.items", exclude the parent object "invoice"
+  const excludeKey = dataSource.split('.')[0];
+  
+  for (const key of Object.keys(data)) {
+    // Skip the items array key or its parent object
+    if (key === excludeKey) continue;
+    
+    const fullPath = key;
+    const value = data[key];
+    
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      // Nested object - create submenu
+      tree[key] = buildDataPathTree(value, fullPath);
+    } else {
+      // Leaf node or array - store the full path
+      tree[key] = fullPath;
+    }
+  }
+  
+  return tree;
+}
+
 // Initialize column widths from string widths (e.g., "50%", "25%") to percentages array
 // This allows proportional resizing when table width changes
 // NOTE: Assumes width values are percentages. Non-percentage widths (e.g., "100px") will be converted to equal distribution.
@@ -607,6 +661,26 @@ export function Canvas({
     }
   };
 
+  // Handle footer row value binding updates for invoice tables
+  const handleInvoiceTableFooterBindingUpdate = (elementId: string, footerRowIndex: number, binding: string) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element || !element.tableConfig) return;
+    
+    const config = element.tableConfig;
+    const footerRows = config.footerRows || [];
+    if (footerRowIndex < 0 || footerRowIndex >= footerRows.length) return;
+    
+    const newFooterRows = [...footerRows];
+    newFooterRows[footerRowIndex] = {
+      ...newFooterRows[footerRowIndex],
+      value: `{${binding}}`
+    };
+    
+    onElementUpdate(elementId, {
+      tableConfig: { ...config, footerRows: newFooterRows }
+    });
+  };
+
   // Handlers for text element updates
   const handleTextContentUpdate = (elementId: string, content: string) => {
     onElementUpdate(elementId, { content });
@@ -716,6 +790,37 @@ export function Canvas({
             </ContextMenuSubTrigger>
             <ContextMenuSubContent>
               {renderDataTreeForInvoiceTable(value, elementId, col)}
+            </ContextMenuSubContent>
+          </ContextMenuSub>
+        );
+      }
+    });
+  };
+
+  // Recursive function to render JSON data tree in context menu for invoice table footer rows
+  const renderDataTreeForInvoiceTableFooter = (tree: Record<string, any>, elementId: string, footerRowIndex: number): JSX.Element[] => {
+    return Object.keys(tree).map((key) => {
+      const value = tree[key];
+      
+      if (typeof value === 'string') {
+        // Leaf node - this is a full path
+        return (
+          <ContextMenuItem 
+            key={value}
+            onClick={() => handleInvoiceTableFooterBindingUpdate(elementId, footerRowIndex, value)}
+          >
+            {key} → {value}
+          </ContextMenuItem>
+        );
+      } else {
+        // Nested object - create submenu
+        return (
+          <ContextMenuSub key={key}>
+            <ContextMenuSubTrigger>
+              {key}
+            </ContextMenuSubTrigger>
+            <ContextMenuSubContent>
+              {renderDataTreeForInvoiceTableFooter(value, elementId, footerRowIndex)}
             </ContextMenuSubContent>
           </ContextMenuSub>
         );
@@ -1903,7 +2008,7 @@ export function Canvas({
                                       Bind Data
                                     </ContextMenuSubTrigger>
                                     <ContextMenuSubContent>
-                                      {renderDataTreeForInvoiceTable(buildDataPathTree(sampleData), el.id, colIdx)}
+                                      {renderDataTreeForInvoiceTable(buildDataPathTreeForItems(sampleData, config.dataSource), el.id, colIdx)}
                                     </ContextMenuSubContent>
                                   </ContextMenuSub>
                                 )}
@@ -1990,22 +2095,41 @@ export function Canvas({
                           }}
                         />
                       ))}
-                      <td 
-                        className="p-2 font-semibold"
-                        style={{
-                          borderWidth: `${gridBorderWidth}px`,
-                          borderStyle: 'solid',
-                          borderColor: gridBorderColor,
-                          borderRightWidth: `${gridBorderWidth}px`,
-                          borderBottomWidth: `${gridBorderWidth}px`,
-                          textAlign: (footerRow.style?.textAlign as React.CSSProperties['textAlign']) || 'right',
-                          fontWeight: footerRow.style?.fontWeight || 'bold',
-                          fontStyle: (footerRow.style?.fontStyle as React.CSSProperties['fontStyle']) || 'normal',
-                          textDecoration: footerRow.style?.textDecoration || 'none'
-                        }}
-                      >
-                        {footerDataValue}
-                      </td>
+                      <ContextMenu>
+                        <ContextMenuTrigger asChild>
+                          <td 
+                            className="p-2 font-semibold"
+                            style={{
+                              borderWidth: `${gridBorderWidth}px`,
+                              borderStyle: 'solid',
+                              borderColor: gridBorderColor,
+                              borderRightWidth: `${gridBorderWidth}px`,
+                              borderBottomWidth: `${gridBorderWidth}px`,
+                              textAlign: (footerRow.style?.textAlign as React.CSSProperties['textAlign']) || 'right',
+                              fontWeight: footerRow.style?.fontWeight || 'bold',
+                              fontStyle: (footerRow.style?.fontStyle as React.CSSProperties['fontStyle']) || 'normal',
+                              textDecoration: footerRow.style?.textDecoration || 'none'
+                            }}
+                          >
+                            {footerDataValue}
+                          </td>
+                        </ContextMenuTrigger>
+                        {!isPreviewMode && (
+                          <ContextMenuContent>
+                            {sampleData && (
+                              <ContextMenuSub>
+                                <ContextMenuSubTrigger>
+                                  <Database className="w-4 h-4 mr-2" />
+                                  Bind Data
+                                </ContextMenuSubTrigger>
+                                <ContextMenuSubContent>
+                                  {renderDataTreeForInvoiceTableFooter(buildDataPathTreeExcludingItems(sampleData, config.dataSource), el.id, idx)}
+                                </ContextMenuSubContent>
+                              </ContextMenuSub>
+                            )}
+                          </ContextMenuContent>
+                        )}
+                      </ContextMenu>
                     </tr>
                   );
                 })}
