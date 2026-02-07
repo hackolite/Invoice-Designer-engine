@@ -776,6 +776,8 @@ export function Canvas({
     // Clear only body cell related data structures when binding changes
     inlineData: [],
     cellStyles: [],
+    // Clear column width cache as binding changes might affect rendering widths
+    colWidths: undefined,
   });
 
   // Helper to clear cached data structures when invoice table header binding changes
