@@ -886,6 +886,29 @@ export function Canvas({
     });
   };
 
+  // Handle footer label binding updates for invoice tables
+  const handleInvoiceTableFooterLabelBindingUpdate = (elementId: string, footerRowIndex: number, binding: string) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element || !element.tableConfig) return;
+    
+    const config = element.tableConfig;
+    const footerRows = config.footerRows || [];
+    if (footerRowIndex < 0 || footerRowIndex >= footerRows.length) return;
+    
+    const newFooterRows = [...footerRows];
+    newFooterRows[footerRowIndex] = {
+      ...newFooterRows[footerRowIndex],
+      label: `{${binding}}`
+    };
+    
+    onElementUpdate(elementId, {
+      tableConfig: getClearedTableConfigForFooterBinding({
+        ...config, 
+        footerRows: newFooterRows,
+      })
+    });
+  };
+
   // Handle header cell binding updates for invoice tables
   const handleInvoiceTableHeaderBindingUpdate = (elementId: string, col: number, binding: string) => {
     const element = layout.elements.find(e => e.id === elementId);
@@ -1024,7 +1047,7 @@ export function Canvas({
     });
   };
 
-  // Recursive function to render JSON data tree in context menu for invoice table footer rows
+  // Recursive function to render JSON data tree in context menu for invoice table footer rows (value cell)
   const renderDataTreeForInvoiceTableFooter = (tree: Record<string, any>, elementId: string, footerRowIndex: number): JSX.Element[] => {
     return Object.keys(tree).map((key) => {
       const value = tree[key];
@@ -1048,6 +1071,37 @@ export function Canvas({
             </ContextMenuSubTrigger>
             <ContextMenuSubContent>
               {renderDataTreeForInvoiceTableFooter(value, elementId, footerRowIndex)}
+            </ContextMenuSubContent>
+          </ContextMenuSub>
+        );
+      }
+    });
+  };
+
+  // Recursive function to render JSON data tree in context menu for invoice table footer labels (label cell)
+  const renderDataTreeForInvoiceTableFooterLabel = (tree: Record<string, any>, elementId: string, footerRowIndex: number): JSX.Element[] => {
+    return Object.keys(tree).map((key) => {
+      const value = tree[key];
+      
+      if (typeof value === 'string') {
+        // Leaf node - this is a full path
+        return (
+          <ContextMenuItem 
+            key={value}
+            onClick={() => handleInvoiceTableFooterLabelBindingUpdate(elementId, footerRowIndex, value)}
+          >
+            {key} → {value}
+          </ContextMenuItem>
+        );
+      } else {
+        // Nested object - create submenu
+        return (
+          <ContextMenuSub key={key}>
+            <ContextMenuSubTrigger>
+              {key}
+            </ContextMenuSubTrigger>
+            <ContextMenuSubContent>
+              {renderDataTreeForInvoiceTableFooterLabel(value, elementId, footerRowIndex)}
             </ContextMenuSubContent>
           </ContextMenuSub>
         );
@@ -2761,6 +2815,17 @@ export function Canvas({
                                 </ContextMenuItem>
                               </ContextMenuSubContent>
                             </ContextMenuSub>
+                            {sampleData && (
+                              <ContextMenuSub>
+                                <ContextMenuSubTrigger>
+                                  <Database className="w-4 h-4 mr-2" />
+                                  Bind Data
+                                </ContextMenuSubTrigger>
+                                <ContextMenuSubContent>
+                                  {renderDataTreeForInvoiceTableFooterLabel(buildDataPathTreeExcludingItems(sampleData, config.dataSource), el.id, idx)}
+                                </ContextMenuSubContent>
+                              </ContextMenuSub>
+                            )}
                           </ContextMenuContent>
                         )}
                       </ContextMenu>
