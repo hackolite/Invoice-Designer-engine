@@ -253,7 +253,27 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
           // Get inline edited data using map lookup
           const labelKey = `${idx}-label`;
           const valueKey = `${idx}-value`;
-          const footerLabelValue = inlineDataMap.get(labelKey) || footerRow.label;
+          
+          // Determine label content
+          let footerLabelValue: string;
+          const inlineLabel = inlineDataMap.get(labelKey);
+          
+          if (inlineLabel) {
+            // Use inline edited data for label (persists in both edit and preview modes)
+            footerLabelValue = inlineLabel;
+          } else if (isPreviewMode) {
+            // Try to parse as binding first
+            const binding = extractBinding(footerRow.label);
+            if (binding) {
+              const rawVal = getNestedValue(sampleData, binding);
+              footerLabelValue = String(rawVal);
+            } else {
+              // Static text
+              footerLabelValue = footerRow.label;
+            }
+          } else {
+            footerLabelValue = footerRow.label;
+          }
           
           // Get cell styles using map lookup
           const footerLabelStyle = stylesMap.get(labelKey) || {};
