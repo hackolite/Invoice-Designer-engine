@@ -17,11 +17,22 @@ import {
   ContextMenuSubTrigger,
 } from "@/components/ui/context-menu";
 
+// Type for inline cell data
+interface CellData {
+  row: number;
+  col: number;
+  content: string;
+}
+
 // Constants for table height normalization
 const HEIGHT_NORMALIZATION_THRESHOLD = 0.5; // Threshold in pixels for detecting height mismatches
 const INVOICE_TABLE_EDITOR_DATA_ROWS = 3; // Fixed number of sample data rows displayed in editor for invoice tables
 const GRID_TABLE_EDITOR_DATA_ROWS = 3; // Fixed number of sample data rows displayed in editor for grid tables
 const GRID_TABLE_HEADER_ROWS = 1; // Number of header rows in grid tables
+
+// Constants for cell editing visual feedback
+const CELL_EDIT_OUTLINE_COLOR = '#3b82f6'; // Blue-500
+const CELL_EDIT_BACKGROUND_COLOR = '#eff6ff'; // Blue-50
 
 // Simple lodash.get alternative for binding resolution
 function getValue(obj: any, path: string, defaultValue?: any) {
@@ -1604,8 +1615,8 @@ export function Canvas({
                         let displayValue;
                         
                         // Check if we have inline edited data for this cell
-                        const inlineData = config.inlineData || [];
-                        const cellData = inlineData.find((cell: any) => cell.row === rowIdx && cell.col === colIdx);
+                        const inlineData: CellData[] = config.inlineData || [];
+                        const cellData = inlineData.find((cell) => cell.row === rowIdx && cell.col === colIdx);
                         
                         if (cellData && cellData.content !== undefined) {
                           // Use inline edited data
@@ -1641,10 +1652,10 @@ export function Canvas({
                               if (!isPreviewMode) {
                                 // Save the edited content
                                 const newContent = e.currentTarget.textContent || '';
-                                const currentInlineData = config.inlineData || [];
-                                const existingCellIndex = currentInlineData.findIndex((cell: any) => cell.row === rowIdx && cell.col === colIdx);
+                                const currentInlineData: CellData[] = config.inlineData || [];
+                                const existingCellIndex = currentInlineData.findIndex((cell) => cell.row === rowIdx && cell.col === colIdx);
                                 
-                                let updatedInlineData;
+                                let updatedInlineData: CellData[];
                                 if (existingCellIndex >= 0) {
                                   // Update existing cell data
                                   updatedInlineData = [...currentInlineData];
@@ -1684,8 +1695,8 @@ export function Canvas({
                             }}
                             onFocus={(e) => {
                               if (!isPreviewMode) {
-                                e.currentTarget.style.outlineColor = '#3b82f6';
-                                e.currentTarget.style.backgroundColor = '#eff6ff';
+                                e.currentTarget.style.outlineColor = CELL_EDIT_OUTLINE_COLOR;
+                                e.currentTarget.style.backgroundColor = CELL_EDIT_BACKGROUND_COLOR;
                               }
                             }}
                           >
@@ -1898,8 +1909,8 @@ export function Canvas({
                       let displayValue;
                       
                       // Check if we have inline edited data for this cell
-                      const inlineData = config.inlineData || [];
-                      const cellData = inlineData.find((cell: any) => cell.row === rIdx && cell.col === cIdx);
+                      const inlineData: CellData[] = config.inlineData || [];
+                      const cellData = inlineData.find((cell) => cell.row === rIdx && cell.col === cIdx);
                       
                       if (cellData && cellData.content !== undefined) {
                         // Use inline edited data
@@ -1931,10 +1942,10 @@ export function Canvas({
                             if (!isPreviewMode) {
                               // Save the edited content
                               const newContent = e.currentTarget.textContent || '';
-                              const currentInlineData = config.inlineData || [];
-                              const existingCellIndex = currentInlineData.findIndex((cell: any) => cell.row === rIdx && cell.col === cIdx);
+                              const currentInlineData: CellData[] = config.inlineData || [];
+                              const existingCellIndex = currentInlineData.findIndex((cell) => cell.row === rIdx && cell.col === cIdx);
                               
-                              let updatedInlineData;
+                              let updatedInlineData: CellData[];
                               if (existingCellIndex >= 0) {
                                 // Update existing cell data
                                 updatedInlineData = [...currentInlineData];
@@ -1974,8 +1985,8 @@ export function Canvas({
                           }}
                           onFocus={(e) => {
                             if (!isPreviewMode) {
-                              e.currentTarget.style.outlineColor = '#3b82f6';
-                              e.currentTarget.style.backgroundColor = '#eff6ff';
+                              e.currentTarget.style.outlineColor = CELL_EDIT_OUTLINE_COLOR;
+                              e.currentTarget.style.backgroundColor = CELL_EDIT_BACKGROUND_COLOR;
                             }
                           }}
                         >
