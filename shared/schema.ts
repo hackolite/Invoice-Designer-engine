@@ -84,6 +84,15 @@ export interface TemplateElement {
       col: number;
       style?: Record<string, string | number>; // Support for cell-level styling (textAlign, fontWeight, fontStyle, textDecoration, etc.)
     }[];
+    headerStyles?: { // For storing header cell styles in invoice tables
+      col: number;
+      style?: Record<string, string | number>; // Support for header-level styling (textAlign, fontWeight, fontStyle, textDecoration, etc.)
+    }[];
+    footerStyles?: { // For storing footer cell styles in invoice tables
+      row: number;
+      field: 'label' | 'value';
+      style?: Record<string, string | number>; // Support for footer-level styling (textAlign, fontWeight, fontStyle, textDecoration, etc.)
+    }[];
     rowHeights?: number[]; // Individual height for each row (optional, for custom sizing)
     colWidths?: number[]; // Individual width percentages for each column (optional, for proportional sizing)
   };
