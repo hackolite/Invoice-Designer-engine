@@ -135,7 +135,7 @@ const GRID_SIZE = 10;
 const TOOLBAR_HEIGHT = 56; // Height of inline toolbar (14 * 4px for -bottom-14 or -top-14)
 
 // GridTable constraints and settings
-const MIN_ROW_HEIGHT = 20; // Minimum height for a row in pixels
+const MIN_ROW_HEIGHT = 10; // Minimum height for a row in pixels (reduced from 20px for maximum compression, aligns with GRID_SIZE)
 const MIN_COL_WIDTH_PERCENT = 5; // Minimum width for a column as percentage
 const FUSION_THRESHOLD = 15; // Distance in pixels for table fusion snapping
 const RESIZE_HANDLE_SIZE = 4; // Size of resize handle in pixels
@@ -213,7 +213,7 @@ export function Canvas({
       if (element.gridTableConfig) {
         if (resizingBorder.type === 'row') {
           const delta = e.clientY - resizingBorder.startPos;
-          const newHeight = Math.max(20, resizingBorder.startSize + delta / scale);
+          const newHeight = Math.max(MIN_ROW_HEIGHT, resizingBorder.startSize + delta / scale);
           handleRowHeightResize(resizingBorder.elementId, resizingBorder.index, newHeight);
         } else if (resizingBorder.type === 'col') {
           const delta = e.clientX - resizingBorder.startPos;
@@ -227,7 +227,7 @@ export function Canvas({
       else if (element.tableConfig && element.tableConfig.tableType === 'price') {
         if (resizingBorder.type === 'row') {
           const delta = e.clientY - resizingBorder.startPos;
-          const newHeight = Math.max(20, resizingBorder.startSize + delta / scale);
+          const newHeight = Math.max(MIN_ROW_HEIGHT, resizingBorder.startSize + delta / scale);
           handlePriceTableRowHeightResize(resizingBorder.elementId, resizingBorder.index, newHeight);
         }
       }
@@ -235,7 +235,7 @@ export function Canvas({
       else if (element.tableConfig && element.tableConfig.tableType === 'invoice') {
         if (resizingBorder.type === 'row') {
           const delta = e.clientY - resizingBorder.startPos;
-          const newHeight = Math.max(20, resizingBorder.startSize + delta / scale);
+          const newHeight = Math.max(MIN_ROW_HEIGHT, resizingBorder.startSize + delta / scale);
           handleInvoiceTableRowHeightResize(resizingBorder.elementId, resizingBorder.index, newHeight);
         }
       }
