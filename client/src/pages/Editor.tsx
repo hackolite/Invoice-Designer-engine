@@ -96,6 +96,18 @@ function extractBinding(value: string): string | null {
 // Constants for table styling
 const FOOTER_BACKGROUND_COLOR = '#f3f4f6';
 
+// Helper function to escape HTML special characters
+function escapeHtml(text: string): string {
+  const htmlEscapes: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  };
+  return String(text).replace(/[&<>"']/g, char => htmlEscapes[char]);
+}
+
 // Helper function to render element content for PDF/HTML export
 // Supports data binding when isPreviewMode is true
 const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sampleData: any): string => {
@@ -287,9 +299,13 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
           const valueFontStyle = footerValueStyle.fontStyle || footerRow.style?.fontStyle || 'normal';
           const valueTextDecoration = footerValueStyle.textDecoration || footerRow.style?.textDecoration || 'none';
           
+          // Escape HTML to prevent XSS
+          const escapedLabel = escapeHtml(footerLabelValue);
+          const escapedValue = escapeHtml(footerDataValue);
+          
           return `<tr style="background: ${FOOTER_BACKGROUND_COLOR};">
-            <td style="padding: 8px; border: ${gridBorderWidth}px solid ${gridBorderColor}; text-align: ${labelTextAlign}; font-weight: ${labelFontWeight}; font-style: ${labelFontStyle}; text-decoration: ${labelTextDecoration};">${footerLabelValue}</td>
-            <td colspan="${config.columns.length - 1}" style="padding: 8px; border: ${gridBorderWidth}px solid ${gridBorderColor}; text-align: ${valueTextAlign}; font-weight: ${valueFontWeight}; font-style: ${valueFontStyle}; text-decoration: ${valueTextDecoration};">${footerDataValue}</td>
+            <td style="padding: 8px; border: ${gridBorderWidth}px solid ${gridBorderColor}; text-align: ${labelTextAlign}; font-weight: ${labelFontWeight}; font-style: ${labelFontStyle}; text-decoration: ${labelTextDecoration};">${escapedLabel}</td>
+            <td colspan="${config.columns.length - 1}" style="padding: 8px; border: ${gridBorderWidth}px solid ${gridBorderColor}; text-align: ${valueTextAlign}; font-weight: ${valueFontWeight}; font-style: ${valueFontStyle}; text-decoration: ${valueTextDecoration};">${escapedValue}</td>
           </tr>`;
         }).join('')}</tfoot>`;
       }
