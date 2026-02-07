@@ -1937,7 +1937,8 @@ export function Canvas({
                     const headerInlineData: HeaderCellData[] = config.headerInlineData || [];
                     const headerCellData = !isPreviewMode ? headerInlineData.find((cell) => cell.col === colIdx) : null;
                     
-                    let displayValue = headerCellData ? headerCellData.content : col.header;
+                    const originalValue = col.header;
+                    const displayValue = headerCellData ? headerCellData.content : originalValue;
                     
                     return (
                       <th 
@@ -1955,8 +1956,8 @@ export function Canvas({
                               e.preventDefault();
                               e.currentTarget.blur();
                             } else if (e.key === 'Escape') {
-                              // Revert to original content
-                              e.currentTarget.textContent = displayValue;
+                              // Revert to original content (before any edits)
+                              e.currentTarget.textContent = originalValue;
                               e.currentTarget.blur();
                             }
                           }
@@ -2161,7 +2162,9 @@ export function Canvas({
                   const footerLabelCellData = !isPreviewMode ? footerInlineData.find((cell) => cell.row === idx && cell.field === 'label') : null;
                   const footerValueCellData = !isPreviewMode ? footerInlineData.find((cell) => cell.row === idx && cell.field === 'value') : null;
                   
-                  let footerLabelValue = footerLabelCellData ? footerLabelCellData.content : footerRow.label;
+                  const originalLabelValue = footerRow.label;
+                  const originalValueValue = footerRow.value;
+                  const footerLabelValue = footerLabelCellData ? footerLabelCellData.content : originalLabelValue;
                   let footerDataValue;
                   
                   if (footerValueCellData) {
@@ -2193,7 +2196,7 @@ export function Canvas({
                       footerDataValue = footerRow.value;
                     }
                   } else {
-                    footerDataValue = footerRow.value;
+                    footerDataValue = originalValueValue;
                   }
                   
                   // Calculate the row index in the rowHeights array
@@ -2222,8 +2225,8 @@ export function Canvas({
                               e.preventDefault();
                               e.currentTarget.blur();
                             } else if (e.key === 'Escape') {
-                              // Revert to original content
-                              e.currentTarget.textContent = footerLabelValue;
+                              // Revert to original content (before any edits)
+                              e.currentTarget.textContent = originalLabelValue;
                               e.currentTarget.blur();
                             }
                           }
@@ -2279,8 +2282,8 @@ export function Canvas({
                                   e.preventDefault();
                                   e.currentTarget.blur();
                                 } else if (e.key === 'Escape') {
-                                  // Revert to original content
-                                  e.currentTarget.textContent = footerDataValue;
+                                  // Revert to original content (before any edits)
+                                  e.currentTarget.textContent = originalValueValue;
                                   e.currentTarget.blur();
                                 }
                               }
