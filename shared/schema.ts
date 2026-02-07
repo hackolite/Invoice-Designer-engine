@@ -70,6 +70,11 @@ export interface TemplateElement {
       col: number;
       content: string;
     }[];
+    cellStyles?: { // For storing cell-level styles in invoice tables
+      row: number;
+      col: number;
+      style?: Record<string, string | number>; // Support for cell-level styling (textAlign, fontWeight, fontStyle, textDecoration, etc.)
+    }[];
     rowHeights?: number[]; // Individual height for each row (optional, for custom sizing)
     colWidths?: number[]; // Individual width percentages for each column (optional, for proportional sizing)
   };
