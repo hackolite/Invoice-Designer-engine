@@ -2298,7 +2298,7 @@ export function Canvas({
             position={{ x: el.x, y: el.y }}
             dragGrid={[GRID_SIZE, GRID_SIZE]}
             resizeGrid={[GRID_SIZE, GRID_SIZE]}
-            minConstraints={[undefined, minHeight]} // undefined = no min width constraint, minHeight = calculated min height
+            minHeight={minHeight} // Enforce minimum height for tables based on row count
             lockAspectRatio={false}
             onDragStop={(e, d) => {
               // d.x and d.y are already snapped by dragGrid prop
