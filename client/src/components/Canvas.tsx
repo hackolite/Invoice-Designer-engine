@@ -156,6 +156,29 @@ function getToolbarPositionClass(element: TemplateElement, pageHeight: number): 
   return spaceBelow < TOOLBAR_HEIGHT ? "-top-14" : "-bottom-14";
 }
 
+// Helper function to calculate minimum height for a grid table
+function getMinimumHeightForGridTable(config: TemplateElement['gridTableConfig']): number {
+  if (!config || !config.rows) return MIN_ROW_HEIGHT;
+  return config.rows * MIN_ROW_HEIGHT;
+}
+
+// Helper function to calculate minimum height for a price table
+function getMinimumHeightForPriceTable(config: TemplateElement['tableConfig']): number {
+  if (!config) return MIN_ROW_HEIGHT;
+  const totalRows = config.columns.length + (config.additionalRows?.length || 0);
+  return totalRows * MIN_ROW_HEIGHT;
+}
+
+// Helper function to calculate minimum height for an invoice table
+function getMinimumHeightForInvoiceTable(config: TemplateElement['tableConfig']): number {
+  if (!config) return MIN_ROW_HEIGHT;
+  const headerRows = 1;
+  const dataRows = INVOICE_TABLE_EDITOR_DATA_ROWS;
+  const footerRowsCount = config.footerRows?.length || 0;
+  const totalRows = headerRows + dataRows + footerRowsCount;
+  return totalRows * MIN_ROW_HEIGHT;
+}
+
 export function Canvas({
   layout,
   sampleData,
@@ -2255,6 +2278,18 @@ export function Canvas({
       )}
       {layout.elements.map((el) => {
         const isSelected = selectedElementIds.includes(el.id);
+        
+        // Calculate minimum height based on element type
+        let minHeight = MIN_ROW_HEIGHT; // Default minimum height
+        if (el.type === 'gridtable' && el.gridTableConfig) {
+          minHeight = getMinimumHeightForGridTable(el.gridTableConfig);
+        } else if (el.type === 'table' && el.tableConfig) {
+          if (el.tableConfig.tableType === 'price') {
+            minHeight = getMinimumHeightForPriceTable(el.tableConfig);
+          } else if (el.tableConfig.tableType === 'invoice') {
+            minHeight = getMinimumHeightForInvoiceTable(el.tableConfig);
+          }
+        }
 
         return (
           <Rnd
@@ -2263,7 +2298,8 @@ export function Canvas({
             position={{ x: el.x, y: el.y }}
             dragGrid={[GRID_SIZE, GRID_SIZE]}
             resizeGrid={[GRID_SIZE, GRID_SIZE]}
-            lockAspectRatio={isSelected}
+            minConstraints={[undefined, minHeight]} // undefined = no min width constraint, minHeight = calculated min height
+            lockAspectRatio={false}
             onDragStop={(e, d) => {
               // d.x and d.y are already snapped by dragGrid prop
               // Calculate the delta for this element
