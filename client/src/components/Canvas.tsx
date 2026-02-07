@@ -24,6 +24,19 @@ interface CellData {
   content: string;
 }
 
+// Type for header inline cell data
+interface HeaderCellData {
+  col: number;
+  content: string;
+}
+
+// Type for footer inline cell data
+interface FooterCellData {
+  row: number;
+  field: 'label' | 'value';
+  content: string;
+}
+
 // Constants for table height normalization
 const HEIGHT_NORMALIZATION_THRESHOLD = 0.5; // Threshold in pixels for detecting height mismatches
 const INVOICE_TABLE_EDITOR_DATA_ROWS = 3; // Fixed number of sample data rows displayed in editor for invoice tables
@@ -286,6 +299,89 @@ function createCellBlurHandler(
         tableConfig: {
           ...config,
           inlineData: updatedInlineData
+        }
+      });
+      
+      // Remove visual feedback
+      e.currentTarget.style.outlineColor = 'transparent';
+      e.currentTarget.style.backgroundColor = '';
+    }
+  };
+}
+
+// Handler for header cell blur events
+function createHeaderCellBlurHandler(
+  elementId: string,
+  colIdx: number,
+  config: any,
+  onElementUpdate: (id: string, updates: Partial<TemplateElement>) => void,
+  isPreviewMode: boolean
+) {
+  return (e: React.FocusEvent<HTMLTableCellElement>) => {
+    if (!isPreviewMode) {
+      // Save the edited content
+      const newContent = e.currentTarget.textContent || '';
+      const currentHeaderInlineData: HeaderCellData[] = config.headerInlineData || [];
+      const existingCellIndex = currentHeaderInlineData.findIndex(
+        (cell) => cell.col === colIdx
+      );
+      
+      let updatedHeaderInlineData: HeaderCellData[];
+      if (existingCellIndex >= 0) {
+        // Update existing cell data
+        updatedHeaderInlineData = [...currentHeaderInlineData];
+        updatedHeaderInlineData[existingCellIndex] = { col: colIdx, content: newContent };
+      } else {
+        // Add new cell data
+        updatedHeaderInlineData = [...currentHeaderInlineData, { col: colIdx, content: newContent }];
+      }
+      
+      onElementUpdate(elementId, {
+        tableConfig: {
+          ...config,
+          headerInlineData: updatedHeaderInlineData
+        }
+      });
+      
+      // Remove visual feedback
+      e.currentTarget.style.outlineColor = 'transparent';
+      e.currentTarget.style.backgroundColor = '';
+    }
+  };
+}
+
+// Handler for footer cell blur events
+function createFooterCellBlurHandler(
+  elementId: string,
+  rowIdx: number,
+  field: 'label' | 'value',
+  config: any,
+  onElementUpdate: (id: string, updates: Partial<TemplateElement>) => void,
+  isPreviewMode: boolean
+) {
+  return (e: React.FocusEvent<HTMLTableCellElement>) => {
+    if (!isPreviewMode) {
+      // Save the edited content
+      const newContent = e.currentTarget.textContent || '';
+      const currentFooterInlineData: FooterCellData[] = config.footerInlineData || [];
+      const existingCellIndex = currentFooterInlineData.findIndex(
+        (cell) => cell.row === rowIdx && cell.field === field
+      );
+      
+      let updatedFooterInlineData: FooterCellData[];
+      if (existingCellIndex >= 0) {
+        // Update existing cell data
+        updatedFooterInlineData = [...currentFooterInlineData];
+        updatedFooterInlineData[existingCellIndex] = { row: rowIdx, field, content: newContent };
+      } else {
+        // Add new cell data
+        updatedFooterInlineData = [...currentFooterInlineData, { row: rowIdx, field, content: newContent }];
+      }
+      
+      onElementUpdate(elementId, {
+        tableConfig: {
+          ...config,
+          footerInlineData: updatedFooterInlineData
         }
       });
       
@@ -1836,19 +1932,57 @@ export function Canvas({
                 style={{
                   height: rowHeights[0] ? `${rowHeights[0]}px` : 'auto'
                 }}>
-                  {config.columns.map((col, colIdx) => (
-                    <th key={colIdx} className="p-2 text-left font-semibold" style={{ 
-                      borderWidth: `${gridBorderWidth}px`,
-                      borderStyle: 'solid',
-                      borderColor: gridBorderColor,
-                      borderTopWidth: adjacentTables.top ? 0 : `${gridBorderWidth}px`,
-                      borderLeftWidth: (colIdx === 0 && adjacentTables.left) ? 0 : `${gridBorderWidth}px`,
-                      borderRightWidth: (colIdx === config.columns.length - 1) ? `${gridBorderWidth}px` : 0,
-                      borderBottomWidth: `${gridBorderWidth}px`,
-                    }}>
-                      {col.header}
-                    </th>
-                  ))}
+                  {config.columns.map((col, colIdx) => {
+                    // Check if we have inline edited data for this header cell (only in edit mode)
+                    const headerInlineData: HeaderCellData[] = config.headerInlineData || [];
+                    const headerCellData = !isPreviewMode ? headerInlineData.find((cell) => cell.col === colIdx) : null;
+                    
+                    let displayValue = headerCellData ? headerCellData.content : col.header;
+                    
+                    return (
+                      <th 
+                        key={colIdx} 
+                        className={clsx("p-2 text-left font-semibold", !isPreviewMode && "cursor-text")} 
+                        contentEditable={!isPreviewMode}
+                        suppressContentEditableWarning
+                        spellCheck={!isPreviewMode}
+                        role={!isPreviewMode ? "textbox" : undefined}
+                        aria-label={!isPreviewMode ? `Edit header ${col.header}` : undefined}
+                        onBlur={createHeaderCellBlurHandler(el.id, colIdx, config, onElementUpdate, isPreviewMode)}
+                        onKeyDown={(e) => {
+                          if (!isPreviewMode) {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              e.currentTarget.blur();
+                            } else if (e.key === 'Escape') {
+                              // Revert to original content
+                              e.currentTarget.textContent = displayValue;
+                              e.currentTarget.blur();
+                            }
+                          }
+                        }}
+                        style={{ 
+                          borderWidth: `${gridBorderWidth}px`,
+                          borderStyle: 'solid',
+                          borderColor: gridBorderColor,
+                          borderTopWidth: adjacentTables.top ? 0 : `${gridBorderWidth}px`,
+                          borderLeftWidth: (colIdx === 0 && adjacentTables.left) ? 0 : `${gridBorderWidth}px`,
+                          borderRightWidth: (colIdx === config.columns.length - 1) ? `${gridBorderWidth}px` : 0,
+                          borderBottomWidth: `${gridBorderWidth}px`,
+                          outline: !isPreviewMode ? '1px solid transparent' : 'none',
+                          transition: !isPreviewMode ? 'outline-color 0.15s' : undefined,
+                        }}
+                        onFocus={(e) => {
+                          if (!isPreviewMode) {
+                            e.currentTarget.style.outlineColor = CELL_EDIT_OUTLINE_COLOR;
+                            e.currentTarget.style.backgroundColor = CELL_EDIT_BACKGROUND_COLOR;
+                          }
+                        }}
+                      >
+                        {displayValue}
+                      </th>
+                    );
+                  })}
                 </tr>
                 {/* Data rows (loopable) */}
                 {(isPreviewMode ? sourceData : [1, 2, 3]).map((dataItem: any, rowIdx: number) => {
@@ -2022,10 +2156,18 @@ export function Canvas({
                 })}
                 {/* Footer rows that stay at bottom */}
                 {config.footerRows && config.footerRows.map((footerRow, idx) => {
-                  let footerLabelValue = footerRow.label;
+                  // Check if we have inline edited data for footer cells (only in edit mode)
+                  const footerInlineData: FooterCellData[] = config.footerInlineData || [];
+                  const footerLabelCellData = !isPreviewMode ? footerInlineData.find((cell) => cell.row === idx && cell.field === 'label') : null;
+                  const footerValueCellData = !isPreviewMode ? footerInlineData.find((cell) => cell.row === idx && cell.field === 'value') : null;
+                  
+                  let footerLabelValue = footerLabelCellData ? footerLabelCellData.content : footerRow.label;
                   let footerDataValue;
                   
-                  if (isPreviewMode) {
+                  if (footerValueCellData) {
+                    // Use inline edited data for value (edit mode only)
+                    footerDataValue = footerValueCellData.content;
+                  } else if (isPreviewMode) {
                     // Try to parse as binding first - check for pattern {bindingName}
                     if (footerRow.value.startsWith('{') && footerRow.value.endsWith('}') && footerRow.value.length > 2) {
                       const binding = footerRow.value.slice(1, -1).trim();
@@ -2065,9 +2207,27 @@ export function Canvas({
                       style={{
                         height: rowHeights[rowHeightIndex] ? `${rowHeights[rowHeightIndex]}px` : 'auto'
                       }}>
-                      {/* First cell shows the label */}
+                      {/* First cell shows the label - now editable */}
                       <td 
-                        className="p-2 font-semibold"
+                        className={clsx("p-2 font-semibold", !isPreviewMode && "cursor-text")}
+                        contentEditable={!isPreviewMode}
+                        suppressContentEditableWarning
+                        spellCheck={!isPreviewMode}
+                        role={!isPreviewMode ? "textbox" : undefined}
+                        aria-label={!isPreviewMode ? `Edit footer label` : undefined}
+                        onBlur={createFooterCellBlurHandler(el.id, idx, 'label', config, onElementUpdate, isPreviewMode)}
+                        onKeyDown={(e) => {
+                          if (!isPreviewMode) {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              e.currentTarget.blur();
+                            } else if (e.key === 'Escape') {
+                              // Revert to original content
+                              e.currentTarget.textContent = footerLabelValue;
+                              e.currentTarget.blur();
+                            }
+                          }
+                        }}
                         style={{
                           borderWidth: `${gridBorderWidth}px`,
                           borderStyle: 'solid',
@@ -2077,7 +2237,15 @@ export function Canvas({
                           textAlign: (footerRow.style?.textAlign as React.CSSProperties['textAlign']) || 'left',
                           fontWeight: footerRow.style?.fontWeight || 'bold',
                           fontStyle: (footerRow.style?.fontStyle as React.CSSProperties['fontStyle']) || 'normal',
-                          textDecoration: footerRow.style?.textDecoration || 'none'
+                          textDecoration: footerRow.style?.textDecoration || 'none',
+                          outline: !isPreviewMode ? '1px solid transparent' : 'none',
+                          transition: !isPreviewMode ? 'outline-color 0.15s' : undefined,
+                        }}
+                        onFocus={(e) => {
+                          if (!isPreviewMode) {
+                            e.currentTarget.style.outlineColor = CELL_EDIT_OUTLINE_COLOR;
+                            e.currentTarget.style.backgroundColor = CELL_EDIT_BACKGROUND_COLOR;
+                          }
                         }}
                       >
                         {footerLabelValue}
@@ -2098,7 +2266,30 @@ export function Canvas({
                       <ContextMenu>
                         <ContextMenuTrigger asChild>
                           <td 
-                            className="p-2 font-semibold"
+                            className={clsx("p-2 font-semibold", !isPreviewMode && "cursor-text")}
+                            contentEditable={!isPreviewMode}
+                            suppressContentEditableWarning
+                            spellCheck={!isPreviewMode}
+                            role={!isPreviewMode ? "textbox" : undefined}
+                            aria-label={!isPreviewMode ? `Edit footer value` : undefined}
+                            onBlur={createFooterCellBlurHandler(el.id, idx, 'value', config, onElementUpdate, isPreviewMode)}
+                            onKeyDown={(e) => {
+                              if (!isPreviewMode) {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                  e.preventDefault();
+                                  e.currentTarget.blur();
+                                } else if (e.key === 'Escape') {
+                                  // Revert to original content
+                                  e.currentTarget.textContent = footerDataValue;
+                                  e.currentTarget.blur();
+                                }
+                              }
+                            }}
+                            onContextMenu={(e) => {
+                              if (!isPreviewMode) {
+                                e.stopPropagation();
+                              }
+                            }}
                             style={{
                               borderWidth: `${gridBorderWidth}px`,
                               borderStyle: 'solid',
@@ -2108,14 +2299,22 @@ export function Canvas({
                               textAlign: (footerRow.style?.textAlign as React.CSSProperties['textAlign']) || 'right',
                               fontWeight: footerRow.style?.fontWeight || 'bold',
                               fontStyle: (footerRow.style?.fontStyle as React.CSSProperties['fontStyle']) || 'normal',
-                              textDecoration: footerRow.style?.textDecoration || 'none'
+                              textDecoration: footerRow.style?.textDecoration || 'none',
+                              outline: !isPreviewMode ? '1px solid transparent' : 'none',
+                              transition: !isPreviewMode ? 'outline-color 0.15s' : undefined,
+                            }}
+                            onFocus={(e) => {
+                              if (!isPreviewMode) {
+                                e.currentTarget.style.outlineColor = CELL_EDIT_OUTLINE_COLOR;
+                                e.currentTarget.style.backgroundColor = CELL_EDIT_BACKGROUND_COLOR;
+                              }
                             }}
                           >
                             {footerDataValue}
                           </td>
                         </ContextMenuTrigger>
                         {!isPreviewMode && (
-                          <ContextMenuContent>
+                          <ContextMenuContent className="pointer-events-auto">
                             {sampleData && (
                               <ContextMenuSub>
                                 <ContextMenuSubTrigger>
