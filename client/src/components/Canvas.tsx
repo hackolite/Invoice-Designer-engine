@@ -200,6 +200,48 @@ function getMinimumHeightForGridDataTable(config: TemplateElement['tableConfig']
   return totalRows * MIN_ROW_HEIGHT;
 }
 
+// Helper function to create a cell blur handler for inline editing
+function createCellBlurHandler(
+  elementId: string,
+  rowIdx: number,
+  colIdx: number,
+  config: any,
+  onElementUpdate: (id: string, updates: Partial<TemplateElement>) => void,
+  isPreviewMode: boolean
+) {
+  return (e: React.FocusEvent<HTMLTableCellElement>) => {
+    if (!isPreviewMode) {
+      // Save the edited content
+      const newContent = e.currentTarget.textContent || '';
+      const currentInlineData: CellData[] = config.inlineData || [];
+      const existingCellIndex = currentInlineData.findIndex(
+        (cell) => cell.row === rowIdx && cell.col === colIdx
+      );
+      
+      let updatedInlineData: CellData[];
+      if (existingCellIndex >= 0) {
+        // Update existing cell data
+        updatedInlineData = [...currentInlineData];
+        updatedInlineData[existingCellIndex] = { row: rowIdx, col: colIdx, content: newContent };
+      } else {
+        // Add new cell data
+        updatedInlineData = [...currentInlineData, { row: rowIdx, col: colIdx, content: newContent }];
+      }
+      
+      onElementUpdate(elementId, {
+        tableConfig: {
+          ...config,
+          inlineData: updatedInlineData
+        }
+      });
+      
+      // Remove visual feedback
+      e.currentTarget.style.outlineColor = 'transparent';
+      e.currentTarget.style.backgroundColor = '';
+    }
+  };
+}
+
 export function Canvas({
   layout,
   sampleData,
@@ -1618,7 +1660,7 @@ export function Canvas({
                         const inlineData: CellData[] = config.inlineData || [];
                         const cellData = inlineData.find((cell) => cell.row === rowIdx && cell.col === colIdx);
                         
-                        if (cellData && cellData.content !== undefined) {
+                        if (cellData) {
                           // Use inline edited data
                           cellValue = cellData.content;
                           displayValue = cellData.content;
@@ -1648,35 +1690,9 @@ export function Canvas({
                             className={clsx("p-2", !isPreviewMode && "cursor-text")}
                             contentEditable={!isPreviewMode}
                             suppressContentEditableWarning
-                            onBlur={(e) => {
-                              if (!isPreviewMode) {
-                                // Save the edited content
-                                const newContent = e.currentTarget.textContent || '';
-                                const currentInlineData: CellData[] = config.inlineData || [];
-                                const existingCellIndex = currentInlineData.findIndex((cell) => cell.row === rowIdx && cell.col === colIdx);
-                                
-                                let updatedInlineData: CellData[];
-                                if (existingCellIndex >= 0) {
-                                  // Update existing cell data
-                                  updatedInlineData = [...currentInlineData];
-                                  updatedInlineData[existingCellIndex] = { row: rowIdx, col: colIdx, content: newContent };
-                                } else {
-                                  // Add new cell data
-                                  updatedInlineData = [...currentInlineData, { row: rowIdx, col: colIdx, content: newContent }];
-                                }
-                                
-                                onElementUpdate(el.id, {
-                                  tableConfig: {
-                                    ...config,
-                                    inlineData: updatedInlineData
-                                  }
-                                });
-                                
-                                // Remove visual feedback
-                                e.currentTarget.style.outlineColor = 'transparent';
-                                e.currentTarget.style.backgroundColor = '';
-                              }
-                            }}
+                            role={!isPreviewMode ? "textbox" : undefined}
+                            aria-label={!isPreviewMode ? `Edit ${col.header}` : undefined}
+                            onBlur={createCellBlurHandler(el.id, rowIdx, colIdx, config, onElementUpdate, isPreviewMode)}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter' && !e.shiftKey) {
                                 e.preventDefault();
@@ -1912,7 +1928,7 @@ export function Canvas({
                       const inlineData: CellData[] = config.inlineData || [];
                       const cellData = inlineData.find((cell) => cell.row === rIdx && cell.col === cIdx);
                       
-                      if (cellData && cellData.content !== undefined) {
+                      if (cellData) {
                         // Use inline edited data
                         cellValue = cellData.content;
                         displayValue = cellData.content;
@@ -1938,35 +1954,9 @@ export function Canvas({
                           className={clsx("p-2", !isPreviewMode && "cursor-text")}
                           contentEditable={!isPreviewMode}
                           suppressContentEditableWarning
-                          onBlur={(e) => {
-                            if (!isPreviewMode) {
-                              // Save the edited content
-                              const newContent = e.currentTarget.textContent || '';
-                              const currentInlineData: CellData[] = config.inlineData || [];
-                              const existingCellIndex = currentInlineData.findIndex((cell) => cell.row === rIdx && cell.col === cIdx);
-                              
-                              let updatedInlineData: CellData[];
-                              if (existingCellIndex >= 0) {
-                                // Update existing cell data
-                                updatedInlineData = [...currentInlineData];
-                                updatedInlineData[existingCellIndex] = { row: rIdx, col: cIdx, content: newContent };
-                              } else {
-                                // Add new cell data
-                                updatedInlineData = [...currentInlineData, { row: rIdx, col: cIdx, content: newContent }];
-                              }
-                              
-                              onElementUpdate(el.id, {
-                                tableConfig: {
-                                  ...config,
-                                  inlineData: updatedInlineData
-                                }
-                              });
-                              
-                              // Remove visual feedback
-                              e.currentTarget.style.outlineColor = 'transparent';
-                              e.currentTarget.style.backgroundColor = '';
-                            }
-                          }}
+                          role={!isPreviewMode ? "textbox" : undefined}
+                          aria-label={!isPreviewMode ? `Edit ${col.header}` : undefined}
+                          onBlur={createCellBlurHandler(el.id, rIdx, cIdx, config, onElementUpdate, isPreviewMode)}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' && !e.shiftKey) {
                               e.preventDefault();
