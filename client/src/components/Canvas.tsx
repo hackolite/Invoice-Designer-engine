@@ -179,6 +179,16 @@ function getMinimumHeightForInvoiceTable(config: TemplateElement['tableConfig'])
   return totalRows * MIN_ROW_HEIGHT;
 }
 
+// Helper function to calculate minimum height for a grid data table (tableType === 'grid')
+function getMinimumHeightForGridDataTable(config: TemplateElement['tableConfig']): number {
+  if (!config) return MIN_ROW_HEIGHT;
+  // Grid data tables display 1 header row + 3 data rows in editor mode
+  const headerRows = 1;
+  const dataRows = 3;
+  const totalRows = headerRows + dataRows;
+  return totalRows * MIN_ROW_HEIGHT;
+}
+
 export function Canvas({
   layout,
   sampleData,
@@ -2288,6 +2298,8 @@ export function Canvas({
             minHeight = getMinimumHeightForPriceTable(el.tableConfig);
           } else if (el.tableConfig.tableType === 'invoice') {
             minHeight = getMinimumHeightForInvoiceTable(el.tableConfig);
+          } else if (el.tableConfig.tableType === 'grid') {
+            minHeight = getMinimumHeightForGridDataTable(el.tableConfig);
           }
         }
 
@@ -2493,11 +2505,36 @@ export function Canvas({
                   );
                 }
               } else if (el.type === 'table' && el.tableConfig && el.tableConfig.tableType === 'grid') {
-                // For grid tables (data array tables), handle proportional resizing on width change
+                // For grid tables (data array tables), handle proportional resizing on height and/or width change
                 const config = el.tableConfig;
+                const heightChanged = el.height !== newHeight;
                 const widthChanged = el.width !== newWidth;
                 
+                // Calculate total rows for grid table (header + data rows)
+                // Grid tables display 1 header row + 3 data rows in editor mode
+                const headerRows = 1;
+                const dataRows = 3; // [1, 2, 3] dummy data rows in editor
+                const totalRows = headerRows + dataRows;
+                
+                let newRowHeights: number[] | undefined = config.rowHeights;
                 let newColWidths: number[] | undefined = config.colWidths;
+                
+                // Handle height changes - scale row heights proportionally
+                if (heightChanged) {
+                  const oldHeight = el.height;
+                  const heightRatio = newHeight / oldHeight;
+                  
+                  if (config.rowHeights && config.rowHeights.length > 0) {
+                    newRowHeights = config.rowHeights.map(h => h * heightRatio);
+                  } else if (totalRows > 0) {
+                    // If no custom row heights, create proportional ones based on equal distribution
+                    const scaledRowHeight = newHeight / totalRows;
+                    newRowHeights = Array(totalRows).fill(scaledRowHeight);
+                  } else {
+                    // Edge case: no rows defined, keep undefined to use default rendering
+                    newRowHeights = undefined;
+                  }
+                }
                 
                 // Handle width changes - ensure colWidths are initialized for proportional scaling
                 // Column widths are already percentages, so they scale naturally with width changes
@@ -2519,9 +2556,19 @@ export function Canvas({
                   y: newY,
                   tableConfig: {
                     ...config,
+                    rowHeights: newRowHeights,
                     colWidths: newColWidths
                   }
                 });
+                
+                // Adjust any tables that are vertically fused below this grid table
+                if (heightChanged) {
+                  adjustVerticallyFusedTables(
+                    { ...el, width: newWidth, height: newHeight, x: newX, y: newY },
+                    el.height,
+                    newHeight
+                  );
+                }
               } else {
                 onElementUpdate(el.id, {
                   width: newWidth,
