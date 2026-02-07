@@ -2779,7 +2779,7 @@ export function Canvas({
                           suppressContentEditableWarning
                           spellCheck={!isPreviewMode}
                           role={!isPreviewMode ? "textbox" : undefined}
-                          aria-label={!isPreviewMode ? `Edit footer middle cell` : undefined}
+                          aria-label={!isPreviewMode ? `Edit footer row ${idx + 1}, column ${colIdx + 2}` : undefined}
                           onBlur={createFooterMiddleCellBlurHandler(el.id, idx, colIdx + 1, config, onElementUpdate, isPreviewMode)}
                           onKeyDown={(e) => {
                             if (!isPreviewMode) {
@@ -2788,7 +2788,7 @@ export function Canvas({
                                 e.currentTarget.blur();
                               } else if (e.key === 'Escape') {
                                 // Revert to original content (before any edits)
-                                e.currentTarget.textContent = '';
+                                e.currentTarget.textContent = displayContent;
                                 e.currentTarget.blur();
                               } else if (e.key === 'Delete' || e.key === 'Backspace') {
                                 // Allow Delete/Backspace to clear middle cell content
