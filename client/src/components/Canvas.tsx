@@ -2560,25 +2560,25 @@ export function Canvas({
                               </ContextMenuSubTrigger>
                               <ContextMenuSubContent>
                                 <ContextMenuItem onClick={() => {
-                                  const currentWeight = footerLabelStyle.fontWeight || footerRow.style?.fontWeight;
+                                  const currentWeight = footerLabelStyle.fontWeight;
                                   handleInvoiceTableFooterStyleUpdate(el.id, idx, 'label', 'fontWeight', currentWeight === 'bold' ? 'normal' : 'bold');
                                 }}>
                                   <Bold className="w-4 h-4 mr-2" />
-                                  {(footerLabelStyle.fontWeight || footerRow.style?.fontWeight) === 'bold' ? 'Remove Bold' : 'Bold'}
+                                  {footerLabelStyle.fontWeight === 'bold' ? 'Remove Bold' : 'Bold'}
                                 </ContextMenuItem>
                                 <ContextMenuItem onClick={() => {
-                                  const currentStyle = footerLabelStyle.fontStyle || footerRow.style?.fontStyle;
+                                  const currentStyle = footerLabelStyle.fontStyle;
                                   handleInvoiceTableFooterStyleUpdate(el.id, idx, 'label', 'fontStyle', currentStyle === 'italic' ? 'normal' : 'italic');
                                 }}>
                                   <Italic className="w-4 h-4 mr-2" />
-                                  {(footerLabelStyle.fontStyle || footerRow.style?.fontStyle) === 'italic' ? 'Remove Italic' : 'Italic'}
+                                  {footerLabelStyle.fontStyle === 'italic' ? 'Remove Italic' : 'Italic'}
                                 </ContextMenuItem>
                                 <ContextMenuItem onClick={() => {
-                                  const currentDecoration = footerLabelStyle.textDecoration || footerRow.style?.textDecoration;
+                                  const currentDecoration = footerLabelStyle.textDecoration;
                                   handleInvoiceTableFooterStyleUpdate(el.id, idx, 'label', 'textDecoration', currentDecoration === 'underline' ? 'none' : 'underline');
                                 }}>
                                   <Underline className="w-4 h-4 mr-2" />
-                                  {(footerLabelStyle.textDecoration || footerRow.style?.textDecoration) === 'underline' ? 'Remove Underline' : 'Underline'}
+                                  {footerLabelStyle.textDecoration === 'underline' ? 'Remove Underline' : 'Underline'}
                                 </ContextMenuItem>
                               </ContextMenuSubContent>
                             </ContextMenuSub>
