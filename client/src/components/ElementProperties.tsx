@@ -497,8 +497,8 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                         </p>
                       )}
                     
-                    {element.tableConfig?.footerRows && element.tableConfig.footerRows.map((footerRow, idx) => {
-                      const footerRows = element.tableConfig?.footerRows || [];
+                    {element.tableConfig?.footerRows?.map((footerRow, idx) => {
+                      const footerRows = element.tableConfig!.footerRows!;
                       return (
                         <div key={idx} className="bg-muted/30 p-3 rounded-lg border space-y-2 text-sm relative group">
                           <div className="absolute -top-2 -right-2 flex gap-1">
