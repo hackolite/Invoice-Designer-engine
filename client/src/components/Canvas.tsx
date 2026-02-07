@@ -768,6 +768,17 @@ export function Canvas({
     });
   };
 
+  // Helper to clear cached data structures when invoice table binding changes
+  const getClearedTableConfigForBinding = (baseConfig: NonNullable<TemplateElement['tableConfig']>) => ({
+    ...baseConfig,
+    // Clear related data structures when binding changes
+    inlineData: [],
+    headerInlineData: [],
+    cellStyles: [],
+    headerStyles: [],
+    colWidths: undefined,
+  });
+
   // Handle cell binding updates for invoice tables
   const handleInvoiceTableCellBindingUpdate = (elementId: string, col: number, binding: string) => {
     const element = layout.elements.find(e => e.id === elementId);
@@ -782,7 +793,10 @@ export function Canvas({
       };
       
       onElementUpdate(elementId, {
-        tableConfig: { ...config, columns: newColumns }
+        tableConfig: getClearedTableConfigForBinding({
+          ...config, 
+          columns: newColumns,
+        })
       });
     }
   };
@@ -803,7 +817,10 @@ export function Canvas({
     };
     
     onElementUpdate(elementId, {
-      tableConfig: { ...config, footerRows: newFooterRows }
+      tableConfig: getClearedTableConfigForBinding({
+        ...config, 
+        footerRows: newFooterRows,
+      })
     });
   };
 
@@ -821,7 +838,10 @@ export function Canvas({
       };
       
       onElementUpdate(elementId, {
-        tableConfig: { ...config, columns: newColumns }
+        tableConfig: getClearedTableConfigForBinding({
+          ...config, 
+          columns: newColumns,
+        })
       });
     }
   };
