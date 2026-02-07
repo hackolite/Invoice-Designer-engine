@@ -66,6 +66,36 @@ function parseSampleData(sampleData: string): any {
   }
 }
 
+// Type definitions for footer cell data and styles
+interface FooterCellData {
+  row: number;
+  field: 'label' | 'value';
+  content: string;
+}
+
+interface FooterCellStyle {
+  row: number;
+  field: 'label' | 'value';
+  style?: {
+    textAlign?: string;
+    fontWeight?: string;
+    fontStyle?: string;
+    textDecoration?: string;
+  };
+}
+
+// Helper function to extract binding from value string
+function extractBinding(value: string): string | null {
+  if (value.startsWith('{') && value.endsWith('}') && value.length > 2) {
+    const binding = value.slice(1, -1).trim();
+    return binding.length > 0 ? binding : null;
+  }
+  return null;
+}
+
+// Constants for table styling
+const FOOTER_BACKGROUND_COLOR = '#f3f4f6';
+
 // Helper function to render element content for PDF/HTML export
 // Supports data binding when isPreviewMode is true
 const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sampleData: any): string => {
@@ -190,46 +220,53 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
       // Build footer HTML if footerRows exist (for invoice tables)
       let footerHtml = '';
       if (config.footerRows && config.footerRows.length > 0) {
-        const footerInlineData = config.footerInlineData || [];
-        const footerStyles = config.footerStyles || [];
+        const footerInlineData: FooterCellData[] = config.footerInlineData || [];
+        const footerStyles: FooterCellStyle[] = config.footerStyles || [];
         const currency = config.currency || 'USD';
         
+        // Create lookup maps for O(1) access
+        const inlineDataMap = new Map<string, string>();
+        footerInlineData.forEach(cell => {
+          inlineDataMap.set(`${cell.row}-${cell.field}`, cell.content);
+        });
+        
+        const stylesMap = new Map<string, FooterCellStyle['style']>();
+        footerStyles.forEach(cellStyle => {
+          stylesMap.set(`${cellStyle.row}-${cellStyle.field}`, cellStyle.style);
+        });
+        
         footerHtml = `<tfoot>${config.footerRows.map((footerRow, idx) => {
-          // Get inline edited data for label and value cells
-          const footerLabelCellData = footerInlineData.find((cell: any) => cell.row === idx && cell.field === 'label');
-          const footerValueCellData = footerInlineData.find((cell: any) => cell.row === idx && cell.field === 'value');
+          // Get inline edited data using map lookup
+          const labelKey = `${idx}-label`;
+          const valueKey = `${idx}-value`;
+          const footerLabelValue = inlineDataMap.get(labelKey) || footerRow.label;
           
-          // Get cell styles
-          const footerLabelStyle = footerStyles.find((f: any) => f.row === idx && f.field === 'label')?.style || {};
-          const footerValueStyle = footerStyles.find((f: any) => f.row === idx && f.field === 'value')?.style || {};
-          
-          // Determine label content (use inline data if available, otherwise original)
-          const footerLabelValue = footerLabelCellData ? footerLabelCellData.content : footerRow.label;
+          // Get cell styles using map lookup
+          const footerLabelStyle = stylesMap.get(labelKey) || {};
+          const footerValueStyle = stylesMap.get(valueKey) || {};
           
           // Determine value content
-          let footerDataValue;
-          if (footerValueCellData) {
+          let footerDataValue: string;
+          const inlineValue = inlineDataMap.get(valueKey);
+          
+          if (inlineValue) {
             // Use inline edited data for value (persists in both edit and preview modes)
-            footerDataValue = footerValueCellData.content;
+            footerDataValue = inlineValue;
           } else if (isPreviewMode) {
-            // Try to parse as binding first - check for pattern {bindingName}
-            if (footerRow.value.startsWith('{') && footerRow.value.endsWith('}') && footerRow.value.length > 2) {
-              const binding = footerRow.value.slice(1, -1).trim();
-              if (binding.length > 0) {
-                const rawVal = getNestedValue(sampleData, binding);
-                if (footerRow.format === 'currency') {
-                  if (currency === 'none') {
-                    footerDataValue = String(Number(rawVal) || 0);
-                  } else {
-                    footerDataValue = new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(rawVal) || 0);
-                  }
-                } else if (footerRow.format === 'number') {
-                  footerDataValue = new Intl.NumberFormat('en-US').format(Number(rawVal) || 0);
+            // Try to parse as binding first
+            const binding = extractBinding(footerRow.value);
+            if (binding) {
+              const rawVal = getNestedValue(sampleData, binding);
+              if (footerRow.format === 'currency') {
+                if (currency === 'none') {
+                  footerDataValue = String(Number(rawVal) || 0);
                 } else {
-                  footerDataValue = String(rawVal);
+                  footerDataValue = new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(rawVal) || 0);
                 }
+              } else if (footerRow.format === 'number') {
+                footerDataValue = new Intl.NumberFormat('en-US').format(Number(rawVal) || 0);
               } else {
-                footerDataValue = footerRow.value;
+                footerDataValue = String(rawVal);
               }
             } else {
               // Static text
@@ -250,7 +287,7 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
           const valueFontStyle = footerValueStyle.fontStyle || footerRow.style?.fontStyle || 'normal';
           const valueTextDecoration = footerValueStyle.textDecoration || footerRow.style?.textDecoration || 'none';
           
-          return `<tr style="background: #f3f4f6;">
+          return `<tr style="background: ${FOOTER_BACKGROUND_COLOR};">
             <td style="padding: 8px; border: ${gridBorderWidth}px solid ${gridBorderColor}; text-align: ${labelTextAlign}; font-weight: ${labelFontWeight}; font-style: ${labelFontStyle}; text-decoration: ${labelTextDecoration};">${footerLabelValue}</td>
             <td colspan="${config.columns.length - 1}" style="padding: 8px; border: ${gridBorderWidth}px solid ${gridBorderColor}; text-align: ${valueTextAlign}; font-weight: ${valueFontWeight}; font-style: ${valueFontStyle}; text-decoration: ${valueTextDecoration};">${footerDataValue}</td>
           </tr>`;
