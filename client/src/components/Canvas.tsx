@@ -17,11 +17,22 @@ import {
   ContextMenuSubTrigger,
 } from "@/components/ui/context-menu";
 
+// Type for inline cell data
+interface CellData {
+  row: number;
+  col: number;
+  content: string;
+}
+
 // Constants for table height normalization
 const HEIGHT_NORMALIZATION_THRESHOLD = 0.5; // Threshold in pixels for detecting height mismatches
 const INVOICE_TABLE_EDITOR_DATA_ROWS = 3; // Fixed number of sample data rows displayed in editor for invoice tables
 const GRID_TABLE_EDITOR_DATA_ROWS = 3; // Fixed number of sample data rows displayed in editor for grid tables
 const GRID_TABLE_HEADER_ROWS = 1; // Number of header rows in grid tables
+
+// Constants for cell editing visual feedback
+const CELL_EDIT_OUTLINE_COLOR = '#3b82f6'; // Blue-500
+const CELL_EDIT_BACKGROUND_COLOR = '#eff6ff'; // Blue-50
 
 // Simple lodash.get alternative for binding resolution
 function getValue(obj: any, path: string, defaultValue?: any) {
@@ -187,6 +198,48 @@ function getMinimumHeightForGridDataTable(config: TemplateElement['tableConfig']
   // Grid data tables display header rows + data rows in editor mode
   const totalRows = GRID_TABLE_HEADER_ROWS + GRID_TABLE_EDITOR_DATA_ROWS;
   return totalRows * MIN_ROW_HEIGHT;
+}
+
+// Helper function to create a cell blur handler for inline editing
+function createCellBlurHandler(
+  elementId: string,
+  rowIdx: number,
+  colIdx: number,
+  config: any,
+  onElementUpdate: (id: string, updates: Partial<TemplateElement>) => void,
+  isPreviewMode: boolean
+) {
+  return (e: React.FocusEvent<HTMLTableCellElement>) => {
+    if (!isPreviewMode) {
+      // Save the edited content
+      const newContent = e.currentTarget.textContent || '';
+      const currentInlineData: CellData[] = config.inlineData || [];
+      const existingCellIndex = currentInlineData.findIndex(
+        (cell) => cell.row === rowIdx && cell.col === colIdx
+      );
+      
+      let updatedInlineData: CellData[];
+      if (existingCellIndex >= 0) {
+        // Update existing cell data
+        updatedInlineData = [...currentInlineData];
+        updatedInlineData[existingCellIndex] = { row: rowIdx, col: colIdx, content: newContent };
+      } else {
+        // Add new cell data
+        updatedInlineData = [...currentInlineData, { row: rowIdx, col: colIdx, content: newContent }];
+      }
+      
+      onElementUpdate(elementId, {
+        tableConfig: {
+          ...config,
+          inlineData: updatedInlineData
+        }
+      });
+      
+      // Remove visual feedback
+      e.currentTarget.style.outlineColor = 'transparent';
+      e.currentTarget.style.backgroundColor = '';
+    }
+  };
 }
 
 export function Canvas({
@@ -1601,7 +1654,17 @@ export function Canvas({
                     }}>
                       {config.columns.map((col, colIdx) => {
                         let cellValue;
-                        if (isPreviewMode && col.binding) {
+                        let displayValue;
+                        
+                        // Check if we have inline edited data for this cell (only in edit mode)
+                        const inlineData: CellData[] = config.inlineData || [];
+                        const cellData = !isPreviewMode ? inlineData.find((cell) => cell.row === rowIdx && cell.col === colIdx) : null;
+                        
+                        if (cellData) {
+                          // Use inline edited data (edit mode only)
+                          cellValue = cellData.content;
+                          displayValue = cellData.content;
+                        } else if (isPreviewMode && col.binding) {
                           const rawVal = getValue(dataItem, col.binding);
                           if (col.format === 'currency') {
                             const currency = config.currency || 'USD';
@@ -1615,20 +1678,52 @@ export function Canvas({
                           } else {
                             cellValue = rawVal;
                           }
+                          displayValue = cellValue;
                         } else {
                           cellValue = `{${col.binding}}`;
+                          displayValue = cellValue;
                         }
                         
                         return (
-                          <td key={colIdx} className="p-2" style={{ 
-                            borderWidth: `${gridBorderWidth}px`,
-                            borderStyle: 'solid',
-                            borderColor: gridBorderColor,
-                            borderLeftWidth: (colIdx === 0 && adjacentTables.left) ? 0 : `${gridBorderWidth}px`,
-                            borderRightWidth: (colIdx === config.columns.length - 1) ? `${gridBorderWidth}px` : 0,
-                            borderBottomWidth: `${gridBorderWidth}px`,
-                          }}>
-                            {cellValue}
+                          <td 
+                            key={colIdx} 
+                            className={clsx("p-2", !isPreviewMode && "cursor-text")}
+                            contentEditable={!isPreviewMode}
+                            suppressContentEditableWarning
+                            spellCheck={!isPreviewMode}
+                            role={!isPreviewMode ? "textbox" : undefined}
+                            aria-label={!isPreviewMode ? `Edit ${col.header}` : undefined}
+                            onBlur={createCellBlurHandler(el.id, rowIdx, colIdx, config, onElementUpdate, isPreviewMode)}
+                            onKeyDown={(e) => {
+                              if (!isPreviewMode) {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                  e.preventDefault();
+                                  e.currentTarget.blur();
+                                } else if (e.key === 'Escape') {
+                                  // Revert to original content
+                                  e.currentTarget.textContent = cellValue;
+                                  e.currentTarget.blur();
+                                }
+                              }
+                            }}
+                            style={{ 
+                              borderWidth: `${gridBorderWidth}px`,
+                              borderStyle: 'solid',
+                              borderColor: gridBorderColor,
+                              borderLeftWidth: (colIdx === 0 && adjacentTables.left) ? 0 : `${gridBorderWidth}px`,
+                              borderRightWidth: (colIdx === config.columns.length - 1) ? `${gridBorderWidth}px` : 0,
+                              borderBottomWidth: `${gridBorderWidth}px`,
+                              outline: !isPreviewMode ? '1px solid transparent' : 'none',
+                              transition: !isPreviewMode ? 'outline-color 0.15s' : undefined,
+                            }}
+                            onFocus={(e) => {
+                              if (!isPreviewMode) {
+                                e.currentTarget.style.outlineColor = CELL_EDIT_OUTLINE_COLOR;
+                                e.currentTarget.style.backgroundColor = CELL_EDIT_BACKGROUND_COLOR;
+                              }
+                            }}
+                          >
+                            {displayValue}
                           </td>
                         );
                       })}
@@ -1834,30 +1929,72 @@ export function Canvas({
                   }}>
                     {config.columns.map((col, cIdx) => {
                       let cellValue;
-                      if (isPreviewMode) {
+                      let displayValue;
+                      
+                      // Check if we have inline edited data for this cell (only in edit mode)
+                      const inlineData: CellData[] = config.inlineData || [];
+                      const cellData = !isPreviewMode ? inlineData.find((cell) => cell.row === rIdx && cell.col === cIdx) : null;
+                      
+                      if (cellData) {
+                        // Use inline edited data (edit mode only)
+                        cellValue = cellData.content;
+                        displayValue = cellData.content;
+                      } else if (isPreviewMode) {
                         const rawVal = getValue(row, col.binding);
                         if (col.format === 'currency') {
                           cellValue = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(rawVal) || 0);
                         } else {
                           cellValue = rawVal;
                         }
+                        displayValue = cellValue;
                       } else {
                         cellValue = `{${col.binding}}`;
+                        displayValue = cellValue;
                       }
                       
                       const isFirstCol = cIdx === 0;
                       const isLastCol = cIdx === config.columns.length - 1;
                       
                       return (
-                        <td key={cIdx} className="p-2" style={{ 
-                          borderWidth: `${gridBorderWidth}px`,
-                          borderStyle: 'solid',
-                          borderColor: gridBorderColor,
-                          borderLeftWidth: (adjacentTables.left && isFirstCol) ? 0 : `${gridBorderWidth}px`,
-                          borderRightWidth: `${gridBorderWidth}px`,
-                          borderBottomWidth: `${gridBorderWidth}px`,
-                        }}>
-                          {cellValue}
+                        <td 
+                          key={cIdx} 
+                          className={clsx("p-2", !isPreviewMode && "cursor-text")}
+                          contentEditable={!isPreviewMode}
+                          suppressContentEditableWarning
+                          spellCheck={!isPreviewMode}
+                          role={!isPreviewMode ? "textbox" : undefined}
+                          aria-label={!isPreviewMode ? `Edit ${col.header}` : undefined}
+                          onBlur={createCellBlurHandler(el.id, rIdx, cIdx, config, onElementUpdate, isPreviewMode)}
+                          onKeyDown={(e) => {
+                            if (!isPreviewMode) {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                e.currentTarget.blur();
+                              } else if (e.key === 'Escape') {
+                                // Revert to original content
+                                e.currentTarget.textContent = cellValue;
+                                e.currentTarget.blur();
+                              }
+                            }
+                          }}
+                          style={{ 
+                            borderWidth: `${gridBorderWidth}px`,
+                            borderStyle: 'solid',
+                            borderColor: gridBorderColor,
+                            borderLeftWidth: (adjacentTables.left && isFirstCol) ? 0 : `${gridBorderWidth}px`,
+                            borderRightWidth: `${gridBorderWidth}px`,
+                            borderBottomWidth: `${gridBorderWidth}px`,
+                            outline: !isPreviewMode ? '1px solid transparent' : 'none',
+                            transition: !isPreviewMode ? 'outline-color 0.15s' : undefined,
+                          }}
+                          onFocus={(e) => {
+                            if (!isPreviewMode) {
+                              e.currentTarget.style.outlineColor = CELL_EDIT_OUTLINE_COLOR;
+                              e.currentTarget.style.backgroundColor = CELL_EDIT_BACKGROUND_COLOR;
+                            }
+                          }}
+                        >
+                          {displayValue}
                         </td>
                       );
                     })}
