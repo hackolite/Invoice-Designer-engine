@@ -54,7 +54,13 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
     onChange(element.id, {
       tableConfig: {
         ...element.tableConfig,
-        columns: [...element.tableConfig.columns, newCol]
+        columns: [...element.tableConfig.columns, newCol],
+        // Clear related data structures when column structure changes
+        inlineData: [],
+        headerInlineData: [],
+        cellStyles: [],
+        headerStyles: [],
+        colWidths: undefined,
       }
     });
   };
@@ -66,7 +72,13 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
     onChange(element.id, {
       tableConfig: {
         ...element.tableConfig,
-        columns: newCols
+        columns: newCols,
+        // Clear related data structures when column structure changes
+        inlineData: [],
+        headerInlineData: [],
+        cellStyles: [],
+        headerStyles: [],
+        colWidths: undefined,
       }
     });
   };
@@ -78,7 +90,13 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
     onChange(element.id, {
       tableConfig: {
         ...element.tableConfig,
-        columns: newCols
+        columns: newCols,
+        // Clear related data structures when column structure changes
+        inlineData: [],
+        headerInlineData: [],
+        cellStyles: [],
+        headerStyles: [],
+        colWidths: undefined,
       }
     });
   };
