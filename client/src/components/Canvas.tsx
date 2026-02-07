@@ -213,7 +213,7 @@ export function Canvas({
       if (element.gridTableConfig) {
         if (resizingBorder.type === 'row') {
           const delta = e.clientY - resizingBorder.startPos;
-          const newHeight = Math.max(20, resizingBorder.startSize + delta / scale);
+          const newHeight = Math.max(MIN_ROW_HEIGHT, resizingBorder.startSize + delta / scale);
           handleRowHeightResize(resizingBorder.elementId, resizingBorder.index, newHeight);
         } else if (resizingBorder.type === 'col') {
           const delta = e.clientX - resizingBorder.startPos;
@@ -227,7 +227,7 @@ export function Canvas({
       else if (element.tableConfig && element.tableConfig.tableType === 'price') {
         if (resizingBorder.type === 'row') {
           const delta = e.clientY - resizingBorder.startPos;
-          const newHeight = Math.max(20, resizingBorder.startSize + delta / scale);
+          const newHeight = Math.max(MIN_ROW_HEIGHT, resizingBorder.startSize + delta / scale);
           handlePriceTableRowHeightResize(resizingBorder.elementId, resizingBorder.index, newHeight);
         }
       }
@@ -235,7 +235,7 @@ export function Canvas({
       else if (element.tableConfig && element.tableConfig.tableType === 'invoice') {
         if (resizingBorder.type === 'row') {
           const delta = e.clientY - resizingBorder.startPos;
-          const newHeight = Math.max(20, resizingBorder.startSize + delta / scale);
+          const newHeight = Math.max(MIN_ROW_HEIGHT, resizingBorder.startSize + delta / scale);
           handleInvoiceTableRowHeightResize(resizingBorder.elementId, resizingBorder.index, newHeight);
         }
       }
