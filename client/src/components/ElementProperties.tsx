@@ -509,6 +509,14 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                     
                     {element.tableConfig?.footerRows?.map((footerRow, idx) => {
                       const footerRows = element.tableConfig!.footerRows!;
+                      
+                      // Get inline edited footer values if they exist
+                      const footerInlineData = element.tableConfig?.footerInlineData || [];
+                      const footerLabelCellData = footerInlineData.find((cell) => cell.row === idx && cell.field === 'label');
+                      const footerValueCellData = footerInlineData.find((cell) => cell.row === idx && cell.field === 'value');
+                      const displayLabelValue = footerLabelCellData ? footerLabelCellData.content : footerRow.label;
+                      const displayValueValue = footerValueCellData ? footerValueCellData.content : footerRow.value;
+                      
                       return (
                         <div key={idx} className="bg-muted/30 p-3 rounded-lg border space-y-2 text-sm relative group">
                           <div className="absolute -top-2 -right-2 flex gap-1">
@@ -555,7 +563,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                             <div>
                               <Label className="text-xs">Label</Label>
                               <Input 
-                                value={footerRow.label} 
+                                value={displayLabelValue} 
                                 onChange={(e) => handleInvoiceTableFooterRowUpdate(idx, 'label', e.target.value)}
                                 className="h-8"
                                 placeholder="e.g. Total"
@@ -564,7 +572,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                             <div>
                               <Label className="text-xs">Value</Label>
                               <Input 
-                                value={footerRow.value} 
+                                value={displayValueValue} 
                                 onChange={(e) => handleInvoiceTableFooterRowUpdate(idx, 'value', e.target.value)}
                                 className="h-8 font-mono"
                                 placeholder="e.g. {total}"
@@ -717,7 +725,13 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                     )}
                   </div>
                   
-                  {element.tableConfig.columns.map((col, idx) => (
+                  {element.tableConfig.columns.map((col, idx) => {
+                    // Get inline edited header value if it exists
+                    const headerInlineData = element.tableConfig?.headerInlineData || [];
+                    const headerCellData = headerInlineData.find((cell) => cell.col === idx);
+                    const displayHeaderValue = headerCellData ? headerCellData.content : col.header;
+                    
+                    return (
                     <div key={idx} className="bg-muted/30 p-3 rounded-lg border space-y-2 text-sm relative group">
                       {element.tableConfig!.tableType !== 'price' && (
                         <Button 
@@ -734,7 +748,7 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                         <div>
                           <Label className="text-xs">Header</Label>
                           <Input 
-                            value={col.header} 
+                            value={displayHeaderValue} 
                             onChange={(e) => handleTableColumnUpdate(idx, 'header', e.target.value)}
                             className="h-8"
                           />
@@ -771,7 +785,8 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                         </div>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 
                 {element.tableConfig.tableType === 'price' && (

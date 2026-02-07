@@ -69,13 +69,15 @@ function parseSampleData(sampleData: string): any {
 // Type definitions for footer cell data and styles
 interface FooterCellData {
   row: number;
-  field: 'label' | 'value';
+  field: 'label' | 'value' | 'middle';
+  col?: number; // Column index for middle cells
   content: string;
 }
 
 interface FooterCellStyle {
   row: number;
-  field: 'label' | 'value';
+  field: 'label' | 'value' | 'middle';
+  col?: number; // Column index for middle cells
   style?: {
     textAlign?: string;
     fontWeight?: string;
