@@ -48,20 +48,25 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
     });
   };
 
+  // Helper to create a clean table config update when column structure changes
+  const getClearedTableConfigUpdate = (baseConfig: any) => ({
+    ...baseConfig,
+    // Clear related data structures when column structure changes
+    inlineData: [],
+    headerInlineData: [],
+    cellStyles: [],
+    headerStyles: [],
+    colWidths: undefined,
+  });
+
   const handleTableColumnAdd = () => {
     if (!element.tableConfig) return;
     const newCol = { header: "New Column", binding: "newKey", width: "100px" };
     onChange(element.id, {
-      tableConfig: {
+      tableConfig: getClearedTableConfigUpdate({
         ...element.tableConfig,
         columns: [...element.tableConfig.columns, newCol],
-        // Clear related data structures when column structure changes
-        inlineData: [],
-        headerInlineData: [],
-        cellStyles: [],
-        headerStyles: [],
-        colWidths: undefined,
-      }
+      })
     });
   };
 
@@ -70,16 +75,10 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
     const newCols = [...element.tableConfig.columns];
     newCols.splice(index, 1);
     onChange(element.id, {
-      tableConfig: {
+      tableConfig: getClearedTableConfigUpdate({
         ...element.tableConfig,
         columns: newCols,
-        // Clear related data structures when column structure changes
-        inlineData: [],
-        headerInlineData: [],
-        cellStyles: [],
-        headerStyles: [],
-        colWidths: undefined,
-      }
+      })
     });
   };
 
@@ -88,16 +87,10 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
     const newCols = [...element.tableConfig.columns];
     newCols[index] = { ...newCols[index], [field]: value };
     onChange(element.id, {
-      tableConfig: {
+      tableConfig: getClearedTableConfigUpdate({
         ...element.tableConfig,
         columns: newCols,
-        // Clear related data structures when column structure changes
-        inlineData: [],
-        headerInlineData: [],
-        cellStyles: [],
-        headerStyles: [],
-        colWidths: undefined,
-      }
+      })
     });
   };
 
