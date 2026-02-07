@@ -782,7 +782,16 @@ export function Canvas({
       };
       
       onElementUpdate(elementId, {
-        tableConfig: { ...config, columns: newColumns }
+        tableConfig: { 
+          ...config, 
+          columns: newColumns,
+          // Clear related data structures when binding changes
+          inlineData: [],
+          headerInlineData: [],
+          cellStyles: [],
+          headerStyles: [],
+          colWidths: undefined,
+        }
       });
     }
   };
@@ -803,7 +812,16 @@ export function Canvas({
     };
     
     onElementUpdate(elementId, {
-      tableConfig: { ...config, footerRows: newFooterRows }
+      tableConfig: { 
+        ...config, 
+        footerRows: newFooterRows,
+        // Clear related data structures when binding changes
+        inlineData: [],
+        headerInlineData: [],
+        cellStyles: [],
+        headerStyles: [],
+        colWidths: undefined,
+      }
     });
   };
 
@@ -821,7 +839,16 @@ export function Canvas({
       };
       
       onElementUpdate(elementId, {
-        tableConfig: { ...config, columns: newColumns }
+        tableConfig: { 
+          ...config, 
+          columns: newColumns,
+          // Clear related data structures when binding changes
+          inlineData: [],
+          headerInlineData: [],
+          cellStyles: [],
+          headerStyles: [],
+          colWidths: undefined,
+        }
       });
     }
   };
