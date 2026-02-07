@@ -113,8 +113,10 @@ function buildDataPathTreeForItems(data: any, dataSource: string): Record<string
 // Build data path tree excluding items array for invoice table header/footer
 // This provides all top-level fields except the items array itself
 // NOTE: Currently assumes dataSource is a top-level key (e.g., "items").
-// For nested dataSources (e.g., "invoice.items"), this will exclude the entire parent object.
-// This is acceptable for most use cases where items are at the top level.
+// For nested dataSources (e.g., "invoice.items"), this will exclude the entire parent object "invoice".
+// This is acceptable for most use cases where items are at the top level of the data structure.
+// If you need nested dataSources with footer access to parent fields, restructure your data
+// to have items at the top level, or manually enter binding paths in the properties panel.
 function buildDataPathTreeExcludingItems(data: any, dataSource: string): Record<string, any> {
   if (!data || typeof data !== 'object') return {};
   
