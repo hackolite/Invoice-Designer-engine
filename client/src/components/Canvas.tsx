@@ -20,6 +20,8 @@ import {
 // Constants for table height normalization
 const HEIGHT_NORMALIZATION_THRESHOLD = 0.5; // Threshold in pixels for detecting height mismatches
 const INVOICE_TABLE_EDITOR_DATA_ROWS = 3; // Fixed number of sample data rows displayed in editor for invoice tables
+const GRID_TABLE_EDITOR_DATA_ROWS = 3; // Fixed number of sample data rows displayed in editor for grid tables
+const GRID_TABLE_HEADER_ROWS = 1; // Number of header rows in grid tables
 
 // Simple lodash.get alternative for binding resolution
 function getValue(obj: any, path: string, defaultValue?: any) {
@@ -182,10 +184,8 @@ function getMinimumHeightForInvoiceTable(config: TemplateElement['tableConfig'])
 // Helper function to calculate minimum height for a grid data table (tableType === 'grid')
 function getMinimumHeightForGridDataTable(config: TemplateElement['tableConfig']): number {
   if (!config) return MIN_ROW_HEIGHT;
-  // Grid data tables display 1 header row + 3 data rows in editor mode
-  const headerRows = 1;
-  const dataRows = 3;
-  const totalRows = headerRows + dataRows;
+  // Grid data tables display header rows + data rows in editor mode
+  const totalRows = GRID_TABLE_HEADER_ROWS + GRID_TABLE_EDITOR_DATA_ROWS;
   return totalRows * MIN_ROW_HEIGHT;
 }
 
@@ -1770,8 +1770,8 @@ export function Canvas({
       const gridColWidths = config.colWidths || initializeColumnWidths(config.columns);
       
       // Calculate row heights for grid table (header + data rows)
-      // Grid tables display 1 header row + data rows
-      const totalRows = 1 + data.length; // 1 header + data rows
+      // Grid tables display header rows + data rows
+      const totalRows = GRID_TABLE_HEADER_ROWS + data.length;
       let gridRowHeights = config.rowHeights || (totalRows > 0 ? Array(totalRows).fill(el.height / totalRows) : []);
       
       // Normalize row heights to prevent floating-point gaps
@@ -2524,10 +2524,8 @@ export function Canvas({
                 const widthChanged = el.width !== newWidth;
                 
                 // Calculate total rows for grid table (header + data rows)
-                // Grid tables display 1 header row + 3 data rows in editor mode
-                const headerRows = 1;
-                const dataRows = 3; // Count of dummy data rows shown in editor
-                const totalRows = headerRows + dataRows;
+                // Grid tables display header rows + data rows in editor mode
+                const totalRows = GRID_TABLE_HEADER_ROWS + GRID_TABLE_EDITOR_DATA_ROWS;
                 
                 let newRowHeights: number[] | undefined = config.rowHeights;
                 let newColWidths: number[] | undefined = config.colWidths;
