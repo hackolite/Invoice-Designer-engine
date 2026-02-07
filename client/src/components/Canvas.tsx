@@ -33,7 +33,8 @@ interface HeaderCellData {
 // Type for footer inline cell data
 interface FooterCellData {
   row: number;
-  field: 'label' | 'value';
+  field: 'label' | 'value' | 'middle';
+  col?: number; // Column index for middle cells
   content: string;
 }
 
@@ -407,6 +408,48 @@ function createFooterCellBlurHandler(
       } else {
         // Add new cell data
         updatedFooterInlineData = [...currentFooterInlineData, { row: rowIdx, field, content: newContent }];
+      }
+      
+      onElementUpdate(elementId, {
+        tableConfig: {
+          ...config,
+          footerInlineData: updatedFooterInlineData
+        }
+      });
+      
+      // Remove visual feedback
+      e.currentTarget.style.outlineColor = 'transparent';
+      e.currentTarget.style.backgroundColor = '';
+    }
+  };
+}
+
+// Handler for middle footer cell blur events
+function createFooterMiddleCellBlurHandler(
+  elementId: string,
+  rowIdx: number,
+  colIdx: number,
+  config: any,
+  onElementUpdate: (id: string, updates: Partial<TemplateElement>) => void,
+  isPreviewMode: boolean
+) {
+  return (e: React.FocusEvent<HTMLTableCellElement>) => {
+    if (!isPreviewMode) {
+      // Save the edited content
+      const newContent = e.currentTarget.textContent || '';
+      const currentFooterInlineData: FooterCellData[] = config.footerInlineData || [];
+      const existingCellIndex = currentFooterInlineData.findIndex(
+        (cell) => cell.row === rowIdx && cell.field === 'middle' && cell.col === colIdx
+      );
+      
+      let updatedFooterInlineData: FooterCellData[];
+      if (existingCellIndex >= 0) {
+        // Update existing cell data
+        updatedFooterInlineData = [...currentFooterInlineData];
+        updatedFooterInlineData[existingCellIndex] = { row: rowIdx, field: 'middle', col: colIdx, content: newContent };
+      } else {
+        // Add new cell data
+        updatedFooterInlineData = [...currentFooterInlineData, { row: rowIdx, field: 'middle', col: colIdx, content: newContent }];
       }
       
       onElementUpdate(elementId, {
@@ -2722,18 +2765,57 @@ export function Canvas({
                         )}
                       </ContextMenu>
                       {/* Remaining cells span or show the value in the last column */}
-                      {config.columns.slice(1, -1).map((_, colIdx) => (
+                      {config.columns.slice(1, -1).map((_, colIdx) => {
+                        // Check if we have inline edited data for middle footer cells
+                        const footerInlineData: FooterCellData[] = config.footerInlineData || [];
+                        const middleCellData = footerInlineData.find((cell) => cell.row === idx && cell.field === 'middle' && cell.col === colIdx + 1);
+                        const displayContent = middleCellData ? middleCellData.content : '';
+                        
+                        return (
                         <td 
                           key={colIdx + 1}
-                          className="p-2"
+                          className={clsx("p-2", !isPreviewMode && "cursor-text")}
+                          contentEditable={!isPreviewMode}
+                          suppressContentEditableWarning
+                          spellCheck={!isPreviewMode}
+                          role={!isPreviewMode ? "textbox" : undefined}
+                          aria-label={!isPreviewMode ? `Edit footer row ${idx + 1}, column ${colIdx + 2}` : undefined}
+                          onBlur={createFooterMiddleCellBlurHandler(el.id, idx, colIdx + 1, config, onElementUpdate, isPreviewMode)}
+                          onKeyDown={(e) => {
+                            if (!isPreviewMode) {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                e.currentTarget.blur();
+                              } else if (e.key === 'Escape') {
+                                // Revert to original content (before any edits)
+                                e.currentTarget.textContent = displayContent;
+                                e.currentTarget.blur();
+                              } else if (e.key === 'Delete' || e.key === 'Backspace') {
+                                // Allow Delete/Backspace to clear middle cell content
+                                // Stop propagation to prevent table deletion
+                                e.stopPropagation();
+                              }
+                            }
+                          }}
                           style={{
                             borderWidth: `${gridBorderWidth}px`,
                             borderStyle: 'solid',
                             borderColor: gridBorderColor,
                             borderBottomWidth: `${gridBorderWidth}px`,
+                            outline: !isPreviewMode ? '1px solid transparent' : 'none',
+                            transition: !isPreviewMode ? 'outline-color 0.15s' : undefined,
                           }}
-                        />
-                      ))}
+                          onFocus={(e) => {
+                            if (!isPreviewMode) {
+                              e.currentTarget.style.outlineColor = CELL_EDIT_OUTLINE_COLOR;
+                              e.currentTarget.style.backgroundColor = CELL_EDIT_BACKGROUND_COLOR;
+                            }
+                          }}
+                        >
+                          {displayContent}
+                        </td>
+                        );
+                      })}
                       <ContextMenu>
                         <ContextMenuTrigger asChild>
                           <td 
