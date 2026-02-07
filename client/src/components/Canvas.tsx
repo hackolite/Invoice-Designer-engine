@@ -1769,6 +1769,14 @@ export function Canvas({
       // Calculate column widths (use custom colWidths or initialize from columns)
       const gridColWidths = config.colWidths || initializeColumnWidths(config.columns);
       
+      // Calculate row heights for grid table (header + data rows)
+      // Grid tables display 1 header row + data rows
+      const totalRows = 1 + data.length; // 1 header + data rows
+      let gridRowHeights = config.rowHeights || (totalRows > 0 ? Array(totalRows).fill(el.height / totalRows) : []);
+      
+      // Normalize row heights to prevent floating-point gaps
+      gridRowHeights = normalizeRowHeights(gridRowHeights, el.height);
+      
       // Detect adjacent tables for border merging
       const adjacentTables = detectAdjacentTables(el);
       
@@ -1790,7 +1798,9 @@ export function Canvas({
               tableStyle === 'minimal' && "text-gray-900 font-bold",
               tableStyle === 'modern' && "bg-primary text-primary-foreground font-semibold"
             )}>
-              <tr>
+              <tr style={{
+                height: gridRowHeights[0] ? `${gridRowHeights[0]}px` : 'auto'
+              }}>
                 {config.columns.map((col, idx) => {
                   const isFirstCol = idx === 0;
                   const isLastCol = idx === config.columns.length - 1;
@@ -1818,7 +1828,10 @@ export function Canvas({
                   <tr key={rIdx} className={clsx(
                     tableStyle === 'default' && "hover:bg-gray-50",
                     tableStyle === 'modern' && rIdx % 2 === 0 ? "bg-primary/5" : "bg-white"
-                  )}>
+                  )}
+                  style={{
+                    height: gridRowHeights[rIdx + 1] ? `${gridRowHeights[rIdx + 1]}px` : 'auto'
+                  }}>
                     {config.columns.map((col, cIdx) => {
                       let cellValue;
                       if (isPreviewMode) {
@@ -2513,7 +2526,7 @@ export function Canvas({
                 // Calculate total rows for grid table (header + data rows)
                 // Grid tables display 1 header row + 3 data rows in editor mode
                 const headerRows = 1;
-                const dataRows = 3; // [1, 2, 3] dummy data rows in editor
+                const dataRows = 3; // Count of dummy data rows shown in editor
                 const totalRows = headerRows + dataRows;
                 
                 let newRowHeights: number[] | undefined = config.rowHeights;
