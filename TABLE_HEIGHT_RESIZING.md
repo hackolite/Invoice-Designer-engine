@@ -25,7 +25,7 @@ function getMinimumHeightForGridTable(config: any): number {
 }
 ```
 - Calculates: `number of rows × MIN_ROW_HEIGHT`
-- Example: A 5-row grid table has a minimum height of 100px (5 × 20px)
+- Example: A 5-row grid table has a minimum height of 50px (5 × 10px)
 
 #### Price Table
 ```typescript
@@ -37,7 +37,7 @@ function getMinimumHeightForPriceTable(config: any): number {
 ```
 - Calculates: `(columns + additional rows) × MIN_ROW_HEIGHT`
 - Columns in price tables become rows in the display
-- Example: A price table with 3 columns and 2 additional rows has a minimum height of 100px (5 × 20px)
+- Example: A price table with 3 columns and 2 additional rows has a minimum height of 50px (5 × 10px)
 
 #### Invoice Table
 ```typescript
@@ -52,10 +52,10 @@ function getMinimumHeightForInvoiceTable(config: any): number {
 ```
 - Calculates: `(header + data rows + footer rows) × MIN_ROW_HEIGHT`
 - Uses `INVOICE_TABLE_EDITOR_DATA_ROWS` constant (3 rows) for sample data display
-- Example: An invoice table with 1 header, 3 data rows, and 2 footer rows has a minimum height of 120px (6 × 20px)
+- Example: An invoice table with 1 header, 3 data rows, and 2 footer rows has a minimum height of 60px (6 × 10px)
 
 ### 2. Rnd Component Configuration
-The `minConstraints` prop is applied to the react-rnd `Rnd` component:
+The `minHeight` prop is applied to the react-rnd `Rnd` component:
 
 ```typescript
 {layout.elements.map((el) => {
@@ -80,7 +80,7 @@ The `minConstraints` prop is applied to the react-rnd `Rnd` component:
       position={{ x: el.x, y: el.y }}
       dragGrid={[GRID_SIZE, GRID_SIZE]}
       resizeGrid={[GRID_SIZE, GRID_SIZE]}
-      minConstraints={[undefined, minHeight]}  // NEW: Enforces minimum height
+      minHeight={minHeight}  // FIXED: Enforces minimum height constraint during resize
       lockAspectRatio={false}  // FIXED: Allows independent height resizing
       // ... other props
     />
@@ -90,15 +90,24 @@ The `minConstraints` prop is applied to the react-rnd `Rnd` component:
 
 ### 3. Key Changes
 
-#### Added: Minimum Height Constraints
-- `minConstraints={[undefined, minHeight]}` 
-- The first parameter (`undefined`) means no minimum width constraint (preserves existing behavior)
-- The second parameter (`minHeight`) enforces the calculated minimum height
+#### Fixed: Minimum Height Constraints
+- `minHeight={minHeight}` - Uses the proper react-rnd API prop name
+- Previously used invalid `minConstraints` prop which was not recognized by react-rnd
+- The `minHeight` prop properly enforces the calculated minimum height during resize operations
+- This prevents the blue border from "passing through" when reaching minimum height
 
 #### Fixed: Aspect Ratio Locking
 - Changed `lockAspectRatio={isSelected}` to `lockAspectRatio={false}`
 - Previous implementation locked aspect ratio when element was selected, preventing independent height resizing
 - New implementation allows independent width and height resizing
+
+## Bug Fix: Correct minHeight Implementation
+
+### Problem
+The initial implementation used `minConstraints={[undefined, minHeight]}` which is not a valid react-rnd prop. This caused the minimum height constraint to be completely ignored, allowing the blue selection border to "pass through" or compress beyond the minimum viable size.
+
+### Solution
+Changed to use the proper `minHeight={minHeight}` prop, which is the correct react-rnd API for enforcing minimum height constraints during resize operations.
 
 ## User Experience
 
@@ -111,13 +120,13 @@ The `minConstraints` prop is applied to the react-rnd `Rnd` component:
 - Tables can be resized in height independently from width
 - Blue selection border resize handles stop reducing height when minimum is reached
 - Minimum height is calculated based on table content (number of rows)
-- Each row is guaranteed at least 20 pixels of height
+- Each row is guaranteed at least 10 pixels of height (MIN_ROW_HEIGHT = 10px)
 - Visual feedback: resize handles become unresponsive when minimum is reached
 
 ## Constants Used
 
 ```typescript
-const MIN_ROW_HEIGHT = 20; // Minimum height for a row in pixels
+const MIN_ROW_HEIGHT = 10; // Minimum height for a row in pixels (reduced from 20px for maximum compression, aligns with GRID_SIZE)
 const INVOICE_TABLE_EDITOR_DATA_ROWS = 3; // Fixed number of sample data rows displayed in editor
 ```
 
@@ -131,7 +140,7 @@ const INVOICE_TABLE_EDITOR_DATA_ROWS = 3; // Fixed number of sample data rows di
 
 ## Technical Notes
 
-- The implementation uses the react-rnd library's built-in `minConstraints` prop
+- The implementation uses the react-rnd library's built-in `minHeight` prop (not `minConstraints`)
 - Calculations are performed dynamically for each element during rendering
 - Non-table elements (text, images, etc.) default to `MIN_ROW_HEIGHT` as minimum
 - The grid snapping (`resizeGrid`) still applies, ensuring heights snap to 10px intervals
@@ -150,7 +159,7 @@ To verify the implementation:
 1. Create a grid table with multiple rows
 2. Select the table (blue border appears)
 3. Try to resize the table height by dragging the bottom edge
-4. Verify that the table cannot be reduced below `rows × 20px`
+4. Verify that the table cannot be reduced below `rows × 10px`
 5. Repeat for price tables and invoice tables
 6. Verify that width resizing still works independently
 

@@ -19,10 +19,10 @@ function getMinimumHeightForInvoiceTable(config: TemplateElement['tableConfig'])
 
 Each function:
 - Uses proper TypeScript types from shared/schema.ts
-- Calculates minimum height as: `number_of_rows × MIN_ROW_HEIGHT (20px)`
+- Calculates minimum height as: `number_of_rows × MIN_ROW_HEIGHT (10px)`
 - Returns a sensible default if config is missing
 
-### 2. Modified Rnd Component Configuration (Lines 2282-2302)
+### 2. Modified Rnd Component Configuration (Lines 2282-2301)
 Added dynamic minimum height calculation and constraint enforcement:
 
 ```typescript
@@ -40,7 +40,7 @@ if (el.type === 'gridtable' && el.gridTableConfig) {
 
 // Apply to Rnd component
 <Rnd
-  minConstraints={[undefined, minHeight]} // no min width, enforced min height
+  minHeight={minHeight} // Enforces minimum height constraint during resize
   lockAspectRatio={false} // allow independent height/width resizing
 />
 ```
@@ -49,6 +49,17 @@ if (el.type === 'gridtable' && el.gridTableConfig) {
 Changed `lockAspectRatio={isSelected}` to `lockAspectRatio={false}`:
 - **Before**: When selected, aspect ratio was locked, preventing independent height resizing
 - **After**: Height and width can be resized independently
+
+## Bug Fix: Correct minHeight Implementation
+
+### Problem Identified
+The initial implementation attempted to use `minConstraints={[undefined, minHeight]}` which is **not a valid react-rnd prop**. The react-rnd library uses individual props `minHeight`, `minWidth`, `maxHeight`, and `maxWidth` instead of a constraints array. This caused the minimum height constraint to be completely ignored, allowing the blue selection border to "pass through" or compress beyond the minimum viable size.
+
+### Solution Applied
+Changed to use the proper `minHeight={minHeight}` prop, which is the correct react-rnd API for enforcing minimum height constraints during resize operations. This ensures:
+- The constraint is actively enforced during drag operations
+- The blue border stops at the minimum height and doesn't "pass through"
+- Behavior matches width resizing constraints
 
 ## Files Modified
 - `client/src/components/Canvas.tsx`: Added helpers and modified Rnd configuration
@@ -66,20 +77,20 @@ Changed `lockAspectRatio={isSelected}` to `lockAspectRatio={false}`:
 
 ### For Grid Tables
 ```
-Minimum Height = rows × 20px
-Example: 5 rows = 100px minimum
+Minimum Height = rows × 10px
+Example: 5 rows = 50px minimum
 ```
 
 ### For Price Tables
 ```
-Minimum Height = (columns + additional_rows) × 20px
-Example: 3 columns + 2 additional rows = 100px minimum
+Minimum Height = (columns + additional_rows) × 10px
+Example: 3 columns + 2 additional rows = 50px minimum
 ```
 
 ### For Invoice Tables
 ```
-Minimum Height = (1 header + 3 data_rows + footer_rows) × 20px
-Example: 1 + 3 + 2 = 120px minimum
+Minimum Height = (1 header + 3 data_rows + footer_rows) × 10px
+Example: 1 + 3 + 2 = 60px minimum
 ```
 
 ## User Experience
@@ -103,17 +114,17 @@ To verify the implementation works:
 1. **Grid Table Test**
    - Create a 5-row grid table
    - Select and try to reduce height
-   - Verify it stops at 100px (5 × 20px)
+   - Verify it stops at 50px (5 × 10px)
 
 2. **Price Table Test**
    - Create a price table with 3 items + 2 footer rows
    - Select and try to reduce height
-   - Verify it stops at 100px (5 × 20px)
+   - Verify it stops at 50px (5 × 10px)
 
 3. **Invoice Table Test**
    - Create an invoice table with 2 footer rows
    - Select and try to reduce height
-   - Verify it stops at 120px (1+3+2 × 20px)
+   - Verify it stops at 60px (1+3+2 × 10px)
 
 4. **Width Independence Test**
    - Resize any table's width while at minimum height

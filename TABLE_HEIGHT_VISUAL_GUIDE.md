@@ -49,19 +49,19 @@
            ↓  User drags...
            ↓
 ┌─────────────────────────┐
-│  Grid Table (5 rows)    │  Height: 100px
-│  Row 1                  │  (5 rows × 20px = 100px)
+│  Grid Table (5 rows)    │  Height: 50px
+│  Row 1                  │  (5 rows × 10px = 50px)
 │  Row 2                  │
 │  Row 3                  │  🛑 STOPS HERE
 │  Row 4                  │  Cannot reduce further!
 │  Row 5                  │
 └─────────────────────────┘
    MINIMUM REACHED ✓
-   Each row guaranteed 20px
+   Each row guaranteed 10px
 ```
 
 **Benefits:**
-- ✅ Minimum height enforced: `rows × 20px`
+- ✅ Minimum height enforced: `rows × 10px`
 - ✅ Content always visible
 - ✅ Blue border stops naturally
 - ✅ Great user experience
@@ -109,8 +109,8 @@ When you reach the minimum, the border **stops moving**.
 ```
 ┌─────────────────────────┐
 │  ╔═══════════════════╗  │
-│  ║ Price Table       ║  │  Height = 100px
-│  ║ Item 1: $10.00    ║  │  (5 rows × 20px)
+│  ║ Price Table       ║  │  Height = 50px
+│  ║ Item 1: $10.00    ║  │  (5 rows × 10px)
 │  ║ Item 2: $20.00    ║  │
 │  ║ Tax:    $3.00     ║  │  🛑 MINIMUM REACHED
 │  ║ Total:  $33.00    ║  │  Cannot reduce more!
@@ -124,18 +124,18 @@ When you reach the minimum, the border **stops moving**.
 
 ### Grid Table
 ```
-Minimum Height = Number of Rows × 20px
+Minimum Height = Number of Rows × 10px
 
 Examples:
 ┌─────────────┐
-│ 3 rows      │  → 60px minimum
+│ 3 rows      │  → 30px minimum
 │ Row 1       │
 │ Row 2       │
 │ Row 3       │
 └─────────────┘
 
 ┌─────────────┐
-│ 10 rows     │  → 200px minimum
+│ 10 rows     │  → 100px minimum
 │ Row 1       │
 │ Row 2       │
 │ ...         │
@@ -145,7 +145,7 @@ Examples:
 
 ### Price Table
 ```
-Minimum Height = (Number of Items + Footer Rows) × 20px
+Minimum Height = (Number of Items + Footer Rows) × 10px
 
 Example with 3 items + 2 footer rows:
 ┌─────────────────┐
@@ -155,12 +155,12 @@ Example with 3 items + 2 footer rows:
 │ Tax:    $4.50   │  ← Footer row
 │ Total:  $49.50  │  ← Footer row
 └─────────────────┘
-5 rows × 20px = 100px minimum
+5 rows × 10px = 50px minimum
 ```
 
 ### Invoice Table
 ```
-Minimum Height = (1 Header + 3 Data Rows + Footer Rows) × 20px
+Minimum Height = (1 Header + 3 Data Rows + Footer Rows) × 10px
 
 Example with 2 footer rows:
 ┌──────────────────────────┐
@@ -171,7 +171,7 @@ Example with 2 footer rows:
 │ Subtotal:   |     | $80  │  ← Footer row 1
 │ Total:      |     | $80  │  ← Footer row 2
 └──────────────────────────┘
-6 rows × 20px = 120px minimum
+6 rows × 10px = 60px minimum
 ```
 
 ---
@@ -205,24 +205,24 @@ Example with 2 footer rows:
 
 ### Minimum Row Height Constant
 ```typescript
-const MIN_ROW_HEIGHT = 20; // pixels per row
+const MIN_ROW_HEIGHT = 10; // pixels per row (aligns with GRID_SIZE for maximum compression)
 ```
 
 ### Calculation Examples
 
 **Grid Table (5 rows):**
 ```
-5 rows × 20px/row = 100px minimum
+5 rows × 10px/row = 50px minimum
 ```
 
 **Price Table (3 items + 2 footers):**
 ```
-(3 + 2) rows × 20px/row = 100px minimum
+(3 + 2) rows × 10px/row = 50px minimum
 ```
 
 **Invoice Table (1 header + 3 data + 2 footers):**
 ```
-(1 + 3 + 2) rows × 20px/row = 120px minimum
+(1 + 3 + 2) rows × 10px/row = 60px minimum
 ```
 
 ---
@@ -287,8 +287,8 @@ A: No, the minimum ensures tables remain usable. It's a safety feature.
 **Q: Does this affect existing templates?**
 A: No! Existing templates keep their current heights. The minimum only affects future resizing.
 
-**Q: Why 20px per row?**
-A: This is the `MIN_ROW_HEIGHT` constant, chosen to ensure text remains readable while allowing compact layouts.
+**Q: Why 10px per row?**
+A: This is the `MIN_ROW_HEIGHT` constant, chosen to align with `GRID_SIZE` and allow maximum compression while ensuring text remains readable with compact layouts.
 
 ---
 
@@ -300,7 +300,7 @@ To verify the feature works:
 - [ ] Drag bottom edge down (height increases) ✓
 - [ ] Drag bottom edge up (height decreases) ✓
 - [ ] Continue dragging up until it stops ✓
-- [ ] Verify height = rows × 20px ✓
+- [ ] Verify height = rows × 10px ✓
 - [ ] Try resizing width (should still work) ✓
 - [ ] Repeat for price tables ✓
 - [ ] Repeat for invoice tables ✓
@@ -317,7 +317,7 @@ To verify the feature works:
 - **Explanation:** This is grid snapping (10px intervals) - working as designed
 
 **Problem:** Minimum seems too restrictive
-- **Explanation:** Minimum is rows × 20px to ensure readability
+- **Explanation:** Minimum is rows × 10px to ensure readability while allowing maximum compression
 - **Solution:** Add/remove rows to change table structure
 
 ---
