@@ -2424,6 +2424,11 @@ export function Canvas({
                   const footerLabelValue = footerLabelCellData ? footerLabelCellData.content : originalLabelValue;
                   let footerDataValue;
                   
+                  // Get footer cell styles if they exist
+                  const footerStyles = config.footerStyles || [];
+                  const footerLabelStyle = footerStyles.find(f => f.row === idx && f.field === 'label')?.style || {};
+                  const footerValueStyle = footerStyles.find(f => f.row === idx && f.field === 'value')?.style || {};
+                  
                   if (footerValueCellData) {
                     // Use inline edited data for value (edit mode only)
                     footerDataValue = footerValueCellData.content;
@@ -2505,10 +2510,10 @@ export function Canvas({
                               borderColor: gridBorderColor,
                               borderLeftWidth: adjacentTables.left ? 0 : `${gridBorderWidth}px`,
                               borderBottomWidth: `${gridBorderWidth}px`,
-                              textAlign: (footerRow.style?.textAlign as React.CSSProperties['textAlign']) || 'left',
-                              fontWeight: footerRow.style?.fontWeight || 'bold',
-                              fontStyle: (footerRow.style?.fontStyle as React.CSSProperties['fontStyle']) || 'normal',
-                              textDecoration: footerRow.style?.textDecoration || 'none',
+                              textAlign: (footerLabelStyle.textAlign as React.CSSProperties['textAlign']) || (footerRow.style?.textAlign as React.CSSProperties['textAlign']) || 'left',
+                              fontWeight: footerLabelStyle.fontWeight || footerRow.style?.fontWeight || 'bold',
+                              fontStyle: (footerLabelStyle.fontStyle as React.CSSProperties['fontStyle']) || (footerRow.style?.fontStyle as React.CSSProperties['fontStyle']) || 'normal',
+                              textDecoration: footerLabelStyle.textDecoration || footerRow.style?.textDecoration || 'none',
                               outline: !isPreviewMode ? '1px solid transparent' : 'none',
                               transition: !isPreviewMode ? 'outline-color 0.15s' : undefined,
                             }}
@@ -2555,25 +2560,25 @@ export function Canvas({
                               </ContextMenuSubTrigger>
                               <ContextMenuSubContent>
                                 <ContextMenuItem onClick={() => {
-                                  const currentWeight = footerRow.style?.fontWeight;
+                                  const currentWeight = footerLabelStyle.fontWeight || footerRow.style?.fontWeight;
                                   handleInvoiceTableFooterStyleUpdate(el.id, idx, 'label', 'fontWeight', currentWeight === 'bold' ? 'normal' : 'bold');
                                 }}>
                                   <Bold className="w-4 h-4 mr-2" />
-                                  {footerRow.style?.fontWeight === 'bold' ? 'Remove Bold' : 'Bold'}
+                                  {(footerLabelStyle.fontWeight || footerRow.style?.fontWeight) === 'bold' ? 'Remove Bold' : 'Bold'}
                                 </ContextMenuItem>
                                 <ContextMenuItem onClick={() => {
-                                  const currentStyle = footerRow.style?.fontStyle;
+                                  const currentStyle = footerLabelStyle.fontStyle || footerRow.style?.fontStyle;
                                   handleInvoiceTableFooterStyleUpdate(el.id, idx, 'label', 'fontStyle', currentStyle === 'italic' ? 'normal' : 'italic');
                                 }}>
                                   <Italic className="w-4 h-4 mr-2" />
-                                  {footerRow.style?.fontStyle === 'italic' ? 'Remove Italic' : 'Italic'}
+                                  {(footerLabelStyle.fontStyle || footerRow.style?.fontStyle) === 'italic' ? 'Remove Italic' : 'Italic'}
                                 </ContextMenuItem>
                                 <ContextMenuItem onClick={() => {
-                                  const currentDecoration = footerRow.style?.textDecoration;
+                                  const currentDecoration = footerLabelStyle.textDecoration || footerRow.style?.textDecoration;
                                   handleInvoiceTableFooterStyleUpdate(el.id, idx, 'label', 'textDecoration', currentDecoration === 'underline' ? 'none' : 'underline');
                                 }}>
                                   <Underline className="w-4 h-4 mr-2" />
-                                  {footerRow.style?.textDecoration === 'underline' ? 'Remove Underline' : 'Underline'}
+                                  {(footerLabelStyle.textDecoration || footerRow.style?.textDecoration) === 'underline' ? 'Remove Underline' : 'Underline'}
                                 </ContextMenuItem>
                               </ContextMenuSubContent>
                             </ContextMenuSub>
