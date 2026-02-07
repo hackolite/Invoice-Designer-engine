@@ -53,9 +53,11 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
     ...baseConfig,
     // Clear related data structures when column structure changes
     inlineData: [],
-    headerInlineData: [],
+    // Preserve header data - users may have edited these values
+    // headerInlineData: [],
     cellStyles: [],
-    headerStyles: [],
+    // Preserve header styles - users may have customized these
+    // headerStyles: [],
     colWidths: undefined,
   });
 
