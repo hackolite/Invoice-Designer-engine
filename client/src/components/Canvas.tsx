@@ -769,15 +769,33 @@ export function Canvas({
     });
   };
 
-  // Helper to clear cached data structures when invoice table binding changes
-  const getClearedTableConfigForBinding = (baseConfig: NonNullable<TemplateElement['tableConfig']>) => ({
+  // Helper to clear cached data structures when invoice table body cell binding changes
+  // Only clears body cell data, preserves header and footer data
+  const getClearedTableConfigForBodyBinding = (baseConfig: NonNullable<TemplateElement['tableConfig']>) => ({
     ...baseConfig,
-    // Clear related data structures when binding changes
+    // Clear only body cell related data structures when binding changes
     inlineData: [],
-    headerInlineData: [],
     cellStyles: [],
-    headerStyles: [],
+    // Clear column width cache as binding changes might affect rendering widths
     colWidths: undefined,
+  });
+
+  // Helper to clear cached data structures when invoice table header binding changes
+  // Only clears header data, preserves body and footer data
+  const getClearedTableConfigForHeaderBinding = (baseConfig: NonNullable<TemplateElement['tableConfig']>) => ({
+    ...baseConfig,
+    // Clear only header related data structures when binding changes
+    headerInlineData: [],
+    headerStyles: [],
+  });
+
+  // Helper to clear cached data structures when invoice table footer binding changes
+  // Only clears footer data, preserves header and body data
+  const getClearedTableConfigForFooterBinding = (baseConfig: NonNullable<TemplateElement['tableConfig']>) => ({
+    ...baseConfig,
+    // Clear only footer related data structures when binding changes
+    footerInlineData: [],
+    footerStyles: [],
   });
 
   // Handle cell binding updates for invoice tables
@@ -794,7 +812,7 @@ export function Canvas({
       };
       
       onElementUpdate(elementId, {
-        tableConfig: getClearedTableConfigForBinding({
+        tableConfig: getClearedTableConfigForBodyBinding({
           ...config, 
           columns: newColumns,
         })
@@ -818,7 +836,7 @@ export function Canvas({
     };
     
     onElementUpdate(elementId, {
-      tableConfig: getClearedTableConfigForBinding({
+      tableConfig: getClearedTableConfigForFooterBinding({
         ...config, 
         footerRows: newFooterRows,
       })
@@ -839,7 +857,7 @@ export function Canvas({
       };
       
       onElementUpdate(elementId, {
-        tableConfig: getClearedTableConfigForBinding({
+        tableConfig: getClearedTableConfigForHeaderBinding({
           ...config, 
           columns: newColumns,
         })
