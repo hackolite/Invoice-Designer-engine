@@ -49,15 +49,12 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
   };
 
   // Helper to create a clean table config update when column structure changes
+  // Note: headerInlineData and headerStyles are preserved to maintain user edits
   const getClearedTableConfigUpdate = (baseConfig: NonNullable<TemplateElement['tableConfig']>) => ({
     ...baseConfig,
     // Clear related data structures when column structure changes
     inlineData: [],
-    // Preserve header data - users may have edited these values
-    // headerInlineData: [],
     cellStyles: [],
-    // Preserve header styles - users may have customized these
-    // headerStyles: [],
     colWidths: undefined,
   });
 
