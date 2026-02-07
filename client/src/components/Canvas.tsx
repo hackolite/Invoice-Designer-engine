@@ -777,6 +777,25 @@ export function Canvas({
     });
   };
 
+  // Handle header cell binding updates for invoice tables
+  const handleInvoiceTableHeaderBindingUpdate = (elementId: string, col: number, binding: string) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element || !element.tableConfig) return;
+    
+    const config = element.tableConfig;
+    const newColumns = [...config.columns];
+    if (col >= 0 && col < newColumns.length) {
+      newColumns[col] = {
+        ...newColumns[col],
+        header: `{${binding}}`
+      };
+      
+      onElementUpdate(elementId, {
+        tableConfig: { ...config, columns: newColumns }
+      });
+    }
+  };
+
   // Handlers for text element updates
   const handleTextContentUpdate = (elementId: string, content: string) => {
     onElementUpdate(elementId, { content });
@@ -917,6 +936,37 @@ export function Canvas({
             </ContextMenuSubTrigger>
             <ContextMenuSubContent>
               {renderDataTreeForInvoiceTableFooter(value, elementId, footerRowIndex)}
+            </ContextMenuSubContent>
+          </ContextMenuSub>
+        );
+      }
+    });
+  };
+
+  // Recursive function to render JSON data tree in context menu for invoice table header cells
+  const renderDataTreeForInvoiceTableHeader = (tree: Record<string, any>, elementId: string, col: number): JSX.Element[] => {
+    return Object.keys(tree).map((key) => {
+      const value = tree[key];
+      
+      if (typeof value === 'string') {
+        // Leaf node - this is a full path
+        return (
+          <ContextMenuItem 
+            key={value}
+            onClick={() => handleInvoiceTableHeaderBindingUpdate(elementId, col, value)}
+          >
+            {key} → {value}
+          </ContextMenuItem>
+        );
+      } else {
+        // Nested object - create submenu
+        return (
+          <ContextMenuSub key={key}>
+            <ContextMenuSubTrigger>
+              {key}
+            </ContextMenuSubTrigger>
+            <ContextMenuSubContent>
+              {renderDataTreeForInvoiceTableHeader(value, elementId, col)}
             </ContextMenuSubContent>
           </ContextMenuSub>
         );
@@ -2215,6 +2265,17 @@ export function Canvas({
                                 </ContextMenuItem>
                               </ContextMenuSubContent>
                             </ContextMenuSub>
+                            {sampleData && (
+                              <ContextMenuSub>
+                                <ContextMenuSubTrigger>
+                                  <Database className="w-4 h-4 mr-2" />
+                                  Bind Data
+                                </ContextMenuSubTrigger>
+                                <ContextMenuSubContent>
+                                  {renderDataTreeForInvoiceTableHeader(buildDataPathTreeExcludingItems(sampleData, config.dataSource), el.id, colIdx)}
+                                </ContextMenuSubContent>
+                              </ContextMenuSub>
+                            )}
                           </ContextMenuContent>
                         )}
                       </ContextMenu>
@@ -2635,10 +2696,10 @@ export function Canvas({
                               borderColor: gridBorderColor,
                               borderRightWidth: `${gridBorderWidth}px`,
                               borderBottomWidth: `${gridBorderWidth}px`,
-                              textAlign: (footerRow.style?.textAlign as React.CSSProperties['textAlign']) || 'right',
-                              fontWeight: footerRow.style?.fontWeight || 'bold',
-                              fontStyle: (footerRow.style?.fontStyle as React.CSSProperties['fontStyle']) || 'normal',
-                              textDecoration: footerRow.style?.textDecoration || 'none',
+                              textAlign: (footerValueStyle.textAlign as React.CSSProperties['textAlign']) || (footerRow.style?.textAlign as React.CSSProperties['textAlign']) || 'right',
+                              fontWeight: footerValueStyle.fontWeight || footerRow.style?.fontWeight || 'bold',
+                              fontStyle: (footerValueStyle.fontStyle as React.CSSProperties['fontStyle']) || (footerRow.style?.fontStyle as React.CSSProperties['fontStyle']) || 'normal',
+                              textDecoration: footerValueStyle.textDecoration || footerRow.style?.textDecoration || 'none',
                               outline: !isPreviewMode ? '1px solid transparent' : 'none',
                               transition: !isPreviewMode ? 'outline-color 0.15s' : undefined,
                             }}
@@ -2654,6 +2715,59 @@ export function Canvas({
                         </ContextMenuTrigger>
                         {!isPreviewMode && (
                           <ContextMenuContent className="pointer-events-auto">
+                            <ContextMenuSub>
+                              <ContextMenuSubTrigger>
+                                <AlignLeft className="w-4 h-4 mr-2" />
+                                Text Align
+                              </ContextMenuSubTrigger>
+                              <ContextMenuSubContent>
+                                <ContextMenuItem onClick={() => handleInvoiceTableFooterStyleUpdate(el.id, idx, 'value', 'textAlign', 'left')}>
+                                  <AlignLeft className="w-4 h-4 mr-2" />
+                                  Left
+                                </ContextMenuItem>
+                                <ContextMenuItem onClick={() => handleInvoiceTableFooterStyleUpdate(el.id, idx, 'value', 'textAlign', 'center')}>
+                                  <AlignCenter className="w-4 h-4 mr-2" />
+                                  Center
+                                </ContextMenuItem>
+                                <ContextMenuItem onClick={() => handleInvoiceTableFooterStyleUpdate(el.id, idx, 'value', 'textAlign', 'right')}>
+                                  <AlignRight className="w-4 h-4 mr-2" />
+                                  Right
+                                </ContextMenuItem>
+                                <ContextMenuItem onClick={() => handleInvoiceTableFooterStyleUpdate(el.id, idx, 'value', 'textAlign', 'justify')}>
+                                  <AlignJustify className="w-4 h-4 mr-2" />
+                                  Justify
+                                </ContextMenuItem>
+                              </ContextMenuSubContent>
+                            </ContextMenuSub>
+                            <ContextMenuSub>
+                              <ContextMenuSubTrigger>
+                                <Bold className="w-4 h-4 mr-2" />
+                                Text Style
+                              </ContextMenuSubTrigger>
+                              <ContextMenuSubContent>
+                                <ContextMenuItem onClick={() => {
+                                  const currentWeight = footerValueStyle.fontWeight;
+                                  handleInvoiceTableFooterStyleUpdate(el.id, idx, 'value', 'fontWeight', currentWeight === 'bold' ? 'normal' : 'bold');
+                                }}>
+                                  <Bold className="w-4 h-4 mr-2" />
+                                  {footerValueStyle.fontWeight === 'bold' ? 'Remove Bold' : 'Bold'}
+                                </ContextMenuItem>
+                                <ContextMenuItem onClick={() => {
+                                  const currentStyle = footerValueStyle.fontStyle;
+                                  handleInvoiceTableFooterStyleUpdate(el.id, idx, 'value', 'fontStyle', currentStyle === 'italic' ? 'normal' : 'italic');
+                                }}>
+                                  <Italic className="w-4 h-4 mr-2" />
+                                  {footerValueStyle.fontStyle === 'italic' ? 'Remove Italic' : 'Italic'}
+                                </ContextMenuItem>
+                                <ContextMenuItem onClick={() => {
+                                  const currentDecoration = footerValueStyle.textDecoration;
+                                  handleInvoiceTableFooterStyleUpdate(el.id, idx, 'value', 'textDecoration', currentDecoration === 'underline' ? 'none' : 'underline');
+                                }}>
+                                  <Underline className="w-4 h-4 mr-2" />
+                                  {footerValueStyle.textDecoration === 'underline' ? 'Remove Underline' : 'Underline'}
+                                </ContextMenuItem>
+                              </ContextMenuSubContent>
+                            </ContextMenuSub>
                             {sampleData && (
                               <ContextMenuSub>
                                 <ContextMenuSubTrigger>
