@@ -65,6 +65,11 @@ export interface TemplateElement {
       format?: 'currency' | 'number' | 'text';
       style?: Record<string, string | number>; // Support for footer-level styling (textAlign, fontWeight, fontStyle, etc.)
     }[];
+    inlineData?: { // For storing inline edited cell data in edit mode
+      row: number;
+      col: number;
+      content: string;
+    }[];
     rowHeights?: number[]; // Individual height for each row (optional, for custom sizing)
     colWidths?: number[]; // Individual width percentages for each column (optional, for proportional sizing)
   };

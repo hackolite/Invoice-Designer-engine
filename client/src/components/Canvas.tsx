@@ -1601,7 +1601,17 @@ export function Canvas({
                     }}>
                       {config.columns.map((col, colIdx) => {
                         let cellValue;
-                        if (isPreviewMode && col.binding) {
+                        let displayValue;
+                        
+                        // Check if we have inline edited data for this cell
+                        const inlineData = config.inlineData || [];
+                        const cellData = inlineData.find((cell: any) => cell.row === rowIdx && cell.col === colIdx);
+                        
+                        if (cellData && cellData.content !== undefined) {
+                          // Use inline edited data
+                          cellValue = cellData.content;
+                          displayValue = cellData.content;
+                        } else if (isPreviewMode && col.binding) {
                           const rawVal = getValue(dataItem, col.binding);
                           if (col.format === 'currency') {
                             const currency = config.currency || 'USD';
@@ -1615,20 +1625,72 @@ export function Canvas({
                           } else {
                             cellValue = rawVal;
                           }
+                          displayValue = cellValue;
                         } else {
                           cellValue = `{${col.binding}}`;
+                          displayValue = cellValue;
                         }
                         
                         return (
-                          <td key={colIdx} className="p-2" style={{ 
-                            borderWidth: `${gridBorderWidth}px`,
-                            borderStyle: 'solid',
-                            borderColor: gridBorderColor,
-                            borderLeftWidth: (colIdx === 0 && adjacentTables.left) ? 0 : `${gridBorderWidth}px`,
-                            borderRightWidth: (colIdx === config.columns.length - 1) ? `${gridBorderWidth}px` : 0,
-                            borderBottomWidth: `${gridBorderWidth}px`,
-                          }}>
-                            {cellValue}
+                          <td 
+                            key={colIdx} 
+                            className={clsx("p-2", !isPreviewMode && "cursor-text")}
+                            contentEditable={!isPreviewMode}
+                            suppressContentEditableWarning
+                            onBlur={(e) => {
+                              if (!isPreviewMode) {
+                                const newContent = e.currentTarget.textContent || '';
+                                const currentInlineData = config.inlineData || [];
+                                const existingCellIndex = currentInlineData.findIndex((cell: any) => cell.row === rowIdx && cell.col === colIdx);
+                                
+                                let updatedInlineData;
+                                if (existingCellIndex >= 0) {
+                                  // Update existing cell data
+                                  updatedInlineData = [...currentInlineData];
+                                  updatedInlineData[existingCellIndex] = { row: rowIdx, col: colIdx, content: newContent };
+                                } else {
+                                  // Add new cell data
+                                  updatedInlineData = [...currentInlineData, { row: rowIdx, col: colIdx, content: newContent }];
+                                }
+                                
+                                onElementUpdate(el.id, {
+                                  tableConfig: {
+                                    ...config,
+                                    inlineData: updatedInlineData
+                                  }
+                                });
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                e.currentTarget.blur();
+                              }
+                            }}
+                            style={{ 
+                              borderWidth: `${gridBorderWidth}px`,
+                              borderStyle: 'solid',
+                              borderColor: gridBorderColor,
+                              borderLeftWidth: (colIdx === 0 && adjacentTables.left) ? 0 : `${gridBorderWidth}px`,
+                              borderRightWidth: (colIdx === config.columns.length - 1) ? `${gridBorderWidth}px` : 0,
+                              borderBottomWidth: `${gridBorderWidth}px`,
+                              outline: !isPreviewMode ? '1px solid transparent' : 'none',
+                              transition: 'outline-color 0.15s',
+                            }}
+                            onFocus={(e) => {
+                              if (!isPreviewMode) {
+                                e.currentTarget.style.outlineColor = '#3b82f6';
+                                e.currentTarget.style.backgroundColor = '#eff6ff';
+                              }
+                            }}
+                            onBlurCapture={(e) => {
+                              if (!isPreviewMode) {
+                                e.currentTarget.style.outlineColor = 'transparent';
+                                e.currentTarget.style.backgroundColor = '';
+                              }
+                            }}
+                          >
+                            {displayValue}
                           </td>
                         );
                       })}
