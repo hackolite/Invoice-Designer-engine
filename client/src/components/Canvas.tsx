@@ -2193,9 +2193,9 @@ export function Canvas({
                   height: rowHeights[0] ? `${rowHeights[0]}px` : 'auto'
                 }}>
                   {config.columns.map((col, colIdx) => {
-                    // Check if we have inline edited data for this header cell (only in edit mode)
+                    // Check if we have inline edited data for this header cell
                     const headerInlineData: HeaderCellData[] = config.headerInlineData || [];
-                    const headerCellData = !isPreviewMode ? headerInlineData.find((cell) => cell.col === colIdx) : null;
+                    const headerCellData = headerInlineData.find((cell) => cell.col === colIdx);
                     
                     const originalValue = col.header;
                     const displayValue = headerCellData ? headerCellData.content : originalValue;
@@ -2348,12 +2348,12 @@ export function Canvas({
                         let cellValue;
                         let displayValue;
                         
-                        // Check if we have inline edited data for this cell (only in edit mode)
+                        // Check if we have inline edited data for this cell
                         const inlineData: CellData[] = config.inlineData || [];
-                        const cellData = !isPreviewMode ? inlineData.find((cell) => cell.row === rowIdx && cell.col === colIdx) : null;
+                        const cellData = inlineData.find((cell) => cell.row === rowIdx && cell.col === colIdx);
                         
                         if (cellData) {
-                          // Use inline edited data (edit mode only)
+                          // Use inline edited data (persists in both edit and preview modes)
                           cellValue = cellData.content;
                           displayValue = cellData.content;
                         } else if (isPreviewMode && col.binding) {
@@ -2532,10 +2532,10 @@ export function Canvas({
                 })}
                 {/* Footer rows that stay at bottom */}
                 {config.footerRows && config.footerRows.map((footerRow, idx) => {
-                  // Check if we have inline edited data for footer cells (only in edit mode)
+                  // Check if we have inline edited data for footer cells
                   const footerInlineData: FooterCellData[] = config.footerInlineData || [];
-                  const footerLabelCellData = !isPreviewMode ? footerInlineData.find((cell) => cell.row === idx && cell.field === 'label') : null;
-                  const footerValueCellData = !isPreviewMode ? footerInlineData.find((cell) => cell.row === idx && cell.field === 'value') : null;
+                  const footerLabelCellData = footerInlineData.find((cell) => cell.row === idx && cell.field === 'label');
+                  const footerValueCellData = footerInlineData.find((cell) => cell.row === idx && cell.field === 'value');
                   
                   const originalLabelValue = footerRow.label;
                   const originalValueValue = footerRow.value;
@@ -2548,7 +2548,7 @@ export function Canvas({
                   const footerValueStyle = footerStyles.find(f => f.row === idx && f.field === 'value')?.style || {};
                   
                   if (footerValueCellData) {
-                    // Use inline edited data for value (edit mode only)
+                    // Use inline edited data for value (persists in both edit and preview modes)
                     footerDataValue = footerValueCellData.content;
                   } else if (isPreviewMode) {
                     // Try to parse as binding first - check for pattern {bindingName}
