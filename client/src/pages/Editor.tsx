@@ -66,6 +66,48 @@ function parseSampleData(sampleData: string): any {
   }
 }
 
+// Type definitions for footer cell data and styles
+interface FooterCellData {
+  row: number;
+  field: 'label' | 'value';
+  content: string;
+}
+
+interface FooterCellStyle {
+  row: number;
+  field: 'label' | 'value';
+  style?: {
+    textAlign?: string;
+    fontWeight?: string;
+    fontStyle?: string;
+    textDecoration?: string;
+  };
+}
+
+// Helper function to extract binding from value string
+function extractBinding(value: string): string | null {
+  if (value.startsWith('{') && value.endsWith('}') && value.length > 2) {
+    const binding = value.slice(1, -1).trim();
+    return binding.length > 0 ? binding : null;
+  }
+  return null;
+}
+
+// Constants for table styling
+const FOOTER_BACKGROUND_COLOR = '#f3f4f6';
+
+// Helper function to escape HTML special characters
+function escapeHtml(text: string): string {
+  const htmlEscapes: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  };
+  return String(text).replace(/[&<>"']/g, char => htmlEscapes[char]);
+}
+
 // Helper function to render element content for PDF/HTML export
 // Supports data binding when isPreviewMode is true
 const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sampleData: any): string => {
@@ -180,12 +222,93 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
         </tbody>
       </table>`;
     } else {
-      // Grid table (array of items)
+      // Grid table (array of items) - includes invoice tables
       const data = isPreviewMode 
         ? getNestedValue(sampleData, config.dataSource, []) 
         : [{}]; // Single dummy row for template mode
       
       const rows = Array.isArray(data) ? data : [data];
+      
+      // Build footer HTML if footerRows exist (for invoice tables)
+      let footerHtml = '';
+      if (config.footerRows && config.footerRows.length > 0) {
+        const footerInlineData: FooterCellData[] = config.footerInlineData || [];
+        const footerStyles: FooterCellStyle[] = config.footerStyles || [];
+        const currency = config.currency || 'USD';
+        
+        // Create lookup maps for O(1) access
+        const inlineDataMap = new Map<string, string>();
+        footerInlineData.forEach(cell => {
+          inlineDataMap.set(`${cell.row}-${cell.field}`, cell.content);
+        });
+        
+        const stylesMap = new Map<string, FooterCellStyle['style']>();
+        footerStyles.forEach(cellStyle => {
+          stylesMap.set(`${cellStyle.row}-${cellStyle.field}`, cellStyle.style);
+        });
+        
+        footerHtml = `<tfoot>${config.footerRows.map((footerRow, idx) => {
+          // Get inline edited data using map lookup
+          const labelKey = `${idx}-label`;
+          const valueKey = `${idx}-value`;
+          const footerLabelValue = inlineDataMap.get(labelKey) || footerRow.label;
+          
+          // Get cell styles using map lookup
+          const footerLabelStyle = stylesMap.get(labelKey) || {};
+          const footerValueStyle = stylesMap.get(valueKey) || {};
+          
+          // Determine value content
+          let footerDataValue: string;
+          const inlineValue = inlineDataMap.get(valueKey);
+          
+          if (inlineValue) {
+            // Use inline edited data for value (persists in both edit and preview modes)
+            footerDataValue = inlineValue;
+          } else if (isPreviewMode) {
+            // Try to parse as binding first
+            const binding = extractBinding(footerRow.value);
+            if (binding) {
+              const rawVal = getNestedValue(sampleData, binding);
+              if (footerRow.format === 'currency') {
+                if (currency === 'none') {
+                  footerDataValue = String(Number(rawVal) || 0);
+                } else {
+                  footerDataValue = new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(rawVal) || 0);
+                }
+              } else if (footerRow.format === 'number') {
+                footerDataValue = new Intl.NumberFormat('en-US').format(Number(rawVal) || 0);
+              } else {
+                footerDataValue = String(rawVal);
+              }
+            } else {
+              // Static text
+              footerDataValue = footerRow.value;
+            }
+          } else {
+            footerDataValue = footerRow.value;
+          }
+          
+          // Build style strings for cells
+          const labelTextAlign = footerLabelStyle.textAlign || footerRow.style?.textAlign || 'left';
+          const labelFontWeight = footerLabelStyle.fontWeight || footerRow.style?.fontWeight || 'bold';
+          const labelFontStyle = footerLabelStyle.fontStyle || footerRow.style?.fontStyle || 'normal';
+          const labelTextDecoration = footerLabelStyle.textDecoration || footerRow.style?.textDecoration || 'none';
+          
+          const valueTextAlign = footerValueStyle.textAlign || footerRow.style?.textAlign || 'right';
+          const valueFontWeight = footerValueStyle.fontWeight || footerRow.style?.fontWeight || 'bold';
+          const valueFontStyle = footerValueStyle.fontStyle || footerRow.style?.fontStyle || 'normal';
+          const valueTextDecoration = footerValueStyle.textDecoration || footerRow.style?.textDecoration || 'none';
+          
+          // Escape HTML to prevent XSS
+          const escapedLabel = escapeHtml(footerLabelValue);
+          const escapedValue = escapeHtml(footerDataValue);
+          
+          return `<tr style="background: ${FOOTER_BACKGROUND_COLOR};">
+            <td style="padding: 8px; border: ${gridBorderWidth}px solid ${gridBorderColor}; text-align: ${labelTextAlign}; font-weight: ${labelFontWeight}; font-style: ${labelFontStyle}; text-decoration: ${labelTextDecoration};">${escapedLabel}</td>
+            <td colspan="${config.columns.length - 1}" style="padding: 8px; border: ${gridBorderWidth}px solid ${gridBorderColor}; text-align: ${valueTextAlign}; font-weight: ${valueFontWeight}; font-style: ${valueFontStyle}; text-decoration: ${valueTextDecoration};">${escapedValue}</td>
+          </tr>`;
+        }).join('')}</tfoot>`;
+      }
       
       tableHtml = `<table style="width: 100%; border-collapse: collapse; border: ${gridBorderWidth}px solid ${gridBorderColor};">
         <thead>
@@ -217,6 +340,7 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
             </tr>
           `).join('')}
         </tbody>
+        ${footerHtml}
       </table>`;
     }
     
