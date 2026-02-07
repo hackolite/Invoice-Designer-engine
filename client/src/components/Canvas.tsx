@@ -1036,6 +1036,104 @@ export function Canvas({
     });
   };
 
+  // Handle applying cell content to entire column (for invoice tables)
+  const handleApplyCellToColumn = (elementId: string, sourceRow: number, col: number) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element || !element.tableConfig) return;
+    
+    const config = element.tableConfig;
+    const currentInlineData: CellData[] = config.inlineData || [];
+    
+    // Find the source cell's content
+    const sourceCellData = currentInlineData.find(
+      (cell) => cell.row === sourceRow && cell.col === col
+    );
+    
+    if (!sourceCellData) return; // No content to apply
+    
+    // Apply the content to all rows in the column
+    // For invoice tables, we have a fixed number of rows in edit mode (3 rows)
+    const dataRows = INVOICE_TABLE_EDITOR_DATA_ROWS; // This is 3 for invoice tables
+    
+    let updatedInlineData = [...currentInlineData];
+    
+    for (let row = 0; row < dataRows; row++) {
+      if (row === sourceRow) continue; // Skip the source row
+      
+      const existingCellIndex = updatedInlineData.findIndex(
+        (cell) => cell.row === row && cell.col === col
+      );
+      
+      if (existingCellIndex >= 0) {
+        // Update existing cell data
+        updatedInlineData[existingCellIndex] = { 
+          row, 
+          col, 
+          content: sourceCellData.content 
+        };
+      } else {
+        // Add new cell data
+        updatedInlineData.push({ 
+          row, 
+          col, 
+          content: sourceCellData.content 
+        });
+      }
+    }
+    
+    onElementUpdate(elementId, {
+      tableConfig: {
+        ...config,
+        inlineData: updatedInlineData
+      }
+    });
+  };
+
+  // Handle applying cell style to entire column (for invoice tables)
+  const handleApplyCellStyleToColumn = (elementId: string, sourceRow: number, col: number) => {
+    const element = layout.elements.find(e => e.id === elementId);
+    if (!element || !element.tableConfig) return;
+    
+    const config = element.tableConfig;
+    const cellStyles = config.cellStyles || [];
+    
+    // Find the source cell's style
+    const sourceCellStyle = cellStyles.find(c => c.row === sourceRow && c.col === col);
+    
+    if (!sourceCellStyle || !sourceCellStyle.style) return; // No style to apply
+    
+    // Apply the style to all rows in the column
+    const dataRows = INVOICE_TABLE_EDITOR_DATA_ROWS;
+    
+    let updatedCellStyles = [...cellStyles];
+    
+    for (let row = 0; row < dataRows; row++) {
+      if (row === sourceRow) continue; // Skip the source row
+      
+      const existingStyleIndex = updatedCellStyles.findIndex(c => c.row === row && c.col === col);
+      
+      if (existingStyleIndex >= 0) {
+        // Update existing cell style
+        updatedCellStyles[existingStyleIndex] = {
+          row,
+          col,
+          style: { ...sourceCellStyle.style }
+        };
+      } else {
+        // Add new cell style
+        updatedCellStyles.push({
+          row,
+          col,
+          style: { ...sourceCellStyle.style }
+        });
+      }
+    }
+    
+    onElementUpdate(elementId, {
+      tableConfig: { ...config, cellStyles: updatedCellStyles }
+    });
+  };
+
   // Handle row height resizing
   const handleRowHeightResize = (elementId: string, rowIndex: number, newHeight: number) => {
     const element = layout.elements.find(e => e.id === elementId);
@@ -2289,6 +2387,23 @@ export function Canvas({
                                     </ContextMenuSubContent>
                                   </ContextMenuSub>
                                 )}
+                                <ContextMenuSeparator />
+                                <ContextMenuSub>
+                                  <ContextMenuSubTrigger>
+                                    <Columns className="w-4 h-4 mr-2" />
+                                    Apply to Column
+                                  </ContextMenuSubTrigger>
+                                  <ContextMenuSubContent>
+                                    <ContextMenuItem onClick={() => handleApplyCellToColumn(el.id, rowIdx, colIdx)}>
+                                      <Copy className="w-4 h-4 mr-2" />
+                                      Apply Content
+                                    </ContextMenuItem>
+                                    <ContextMenuItem onClick={() => handleApplyCellStyleToColumn(el.id, rowIdx, colIdx)}>
+                                      <Palette className="w-4 h-4 mr-2" />
+                                      Apply Style
+                                    </ContextMenuItem>
+                                  </ContextMenuSubContent>
+                                </ContextMenuSub>
                               </ContextMenuContent>
                             )}
                           </ContextMenu>
