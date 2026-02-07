@@ -1639,6 +1639,7 @@ export function Canvas({
                             suppressContentEditableWarning
                             onBlur={(e) => {
                               if (!isPreviewMode) {
+                                // Save the edited content
                                 const newContent = e.currentTarget.textContent || '';
                                 const currentInlineData = config.inlineData || [];
                                 const existingCellIndex = currentInlineData.findIndex((cell: any) => cell.row === rowIdx && cell.col === colIdx);
@@ -1659,6 +1660,10 @@ export function Canvas({
                                     inlineData: updatedInlineData
                                   }
                                 });
+                                
+                                // Remove visual feedback
+                                e.currentTarget.style.outlineColor = 'transparent';
+                                e.currentTarget.style.backgroundColor = '';
                               }
                             }}
                             onKeyDown={(e) => {
@@ -1681,12 +1686,6 @@ export function Canvas({
                               if (!isPreviewMode) {
                                 e.currentTarget.style.outlineColor = '#3b82f6';
                                 e.currentTarget.style.backgroundColor = '#eff6ff';
-                              }
-                            }}
-                            onBlurCapture={(e) => {
-                              if (!isPreviewMode) {
-                                e.currentTarget.style.outlineColor = 'transparent';
-                                e.currentTarget.style.backgroundColor = '';
                               }
                             }}
                           >
@@ -1896,30 +1895,91 @@ export function Canvas({
                   }}>
                     {config.columns.map((col, cIdx) => {
                       let cellValue;
-                      if (isPreviewMode) {
+                      let displayValue;
+                      
+                      // Check if we have inline edited data for this cell
+                      const inlineData = config.inlineData || [];
+                      const cellData = inlineData.find((cell: any) => cell.row === rIdx && cell.col === cIdx);
+                      
+                      if (cellData && cellData.content !== undefined) {
+                        // Use inline edited data
+                        cellValue = cellData.content;
+                        displayValue = cellData.content;
+                      } else if (isPreviewMode) {
                         const rawVal = getValue(row, col.binding);
                         if (col.format === 'currency') {
                           cellValue = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(rawVal) || 0);
                         } else {
                           cellValue = rawVal;
                         }
+                        displayValue = cellValue;
                       } else {
                         cellValue = `{${col.binding}}`;
+                        displayValue = cellValue;
                       }
                       
                       const isFirstCol = cIdx === 0;
                       const isLastCol = cIdx === config.columns.length - 1;
                       
                       return (
-                        <td key={cIdx} className="p-2" style={{ 
-                          borderWidth: `${gridBorderWidth}px`,
-                          borderStyle: 'solid',
-                          borderColor: gridBorderColor,
-                          borderLeftWidth: (adjacentTables.left && isFirstCol) ? 0 : `${gridBorderWidth}px`,
-                          borderRightWidth: `${gridBorderWidth}px`,
-                          borderBottomWidth: `${gridBorderWidth}px`,
-                        }}>
-                          {cellValue}
+                        <td 
+                          key={cIdx} 
+                          className={clsx("p-2", !isPreviewMode && "cursor-text")}
+                          contentEditable={!isPreviewMode}
+                          suppressContentEditableWarning
+                          onBlur={(e) => {
+                            if (!isPreviewMode) {
+                              // Save the edited content
+                              const newContent = e.currentTarget.textContent || '';
+                              const currentInlineData = config.inlineData || [];
+                              const existingCellIndex = currentInlineData.findIndex((cell: any) => cell.row === rIdx && cell.col === cIdx);
+                              
+                              let updatedInlineData;
+                              if (existingCellIndex >= 0) {
+                                // Update existing cell data
+                                updatedInlineData = [...currentInlineData];
+                                updatedInlineData[existingCellIndex] = { row: rIdx, col: cIdx, content: newContent };
+                              } else {
+                                // Add new cell data
+                                updatedInlineData = [...currentInlineData, { row: rIdx, col: cIdx, content: newContent }];
+                              }
+                              
+                              onElementUpdate(el.id, {
+                                tableConfig: {
+                                  ...config,
+                                  inlineData: updatedInlineData
+                                }
+                              });
+                              
+                              // Remove visual feedback
+                              e.currentTarget.style.outlineColor = 'transparent';
+                              e.currentTarget.style.backgroundColor = '';
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              e.currentTarget.blur();
+                            }
+                          }}
+                          style={{ 
+                            borderWidth: `${gridBorderWidth}px`,
+                            borderStyle: 'solid',
+                            borderColor: gridBorderColor,
+                            borderLeftWidth: (adjacentTables.left && isFirstCol) ? 0 : `${gridBorderWidth}px`,
+                            borderRightWidth: `${gridBorderWidth}px`,
+                            borderBottomWidth: `${gridBorderWidth}px`,
+                            outline: !isPreviewMode ? '1px solid transparent' : 'none',
+                            transition: 'outline-color 0.15s',
+                          }}
+                          onFocus={(e) => {
+                            if (!isPreviewMode) {
+                              e.currentTarget.style.outlineColor = '#3b82f6';
+                              e.currentTarget.style.backgroundColor = '#eff6ff';
+                            }
+                          }}
+                        >
+                          {displayValue}
                         </td>
                       );
                     })}
