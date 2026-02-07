@@ -59,6 +59,16 @@ function getValue(obj: any, path: string, defaultValue?: any) {
   return result === undefined ? defaultValue : result;
 }
 
+// Helper function to extract binding from value string
+// Returns the binding name if value matches pattern {bindingName}, otherwise null
+function extractBinding(value: string): string | null {
+  if (value.startsWith('{') && value.endsWith('}') && value.length > 2) {
+    const binding = value.slice(1, -1).trim();
+    return binding.length > 0 ? binding : null;
+  }
+  return null;
+}
+
 // Normalize row heights to fit exactly within container using integer pixels
 // This prevents floating-point rounding gaps between fused tables
 function normalizeRowHeights(rowHeights: number[], containerHeight: number): number[] {
@@ -2910,7 +2920,23 @@ export function Canvas({
                         // Check if we have inline edited data for middle footer cells
                         const footerInlineData: FooterCellData[] = config.footerInlineData || [];
                         const middleCellData = footerInlineData.find((cell) => cell.row === idx && cell.field === 'middle' && cell.col === colIdx + 1);
-                        const displayContent = middleCellData ? middleCellData.content : '';
+                        
+                        // Store original content for revert functionality
+                        const originalMiddleContent = middleCellData ? middleCellData.content : '';
+                        
+                        // Resolve binding and format value in preview mode
+                        let displayContent = originalMiddleContent;
+                        
+                        // In preview mode, resolve bindings in middle cells
+                        if (isPreviewMode && displayContent) {
+                          const binding = extractBinding(displayContent);
+                          if (binding) {
+                            const rawVal = getValue(sampleData, binding);
+                            // If binding resolves to a value, display it; otherwise keep original binding syntax
+                            // This is more user-friendly than displaying "undefined"
+                            displayContent = rawVal !== undefined ? String(rawVal) : displayContent;
+                          }
+                        }
                         
                         // Get style for middle cell
                         const footerStyles: FooterCellStyle[] = config.footerStyles || [];
@@ -2935,7 +2961,7 @@ export function Canvas({
                                     e.currentTarget.blur();
                                   } else if (e.key === 'Escape') {
                                     // Revert to original content (before any edits)
-                                    e.currentTarget.textContent = displayContent;
+                                    e.currentTarget.textContent = originalMiddleContent;
                                     e.currentTarget.blur();
                                   } else if (e.key === 'Delete' || e.key === 'Backspace') {
                                     // Allow Delete/Backspace to clear middle cell content
