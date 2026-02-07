@@ -119,8 +119,9 @@ function buildDataPathTreeForItems(data: any, dataSource: string): Record<string
   // Use the first item as the template for available fields
   const firstItem = items[0];
   
-  // Build tree from first item structure (without path prefix since bindings are relative to item)
-  return buildDataPathTree(firstItem, '');
+  // Build tree from first item structure with the dataSource as prefix
+  // This ensures bindings show the complete path (e.g., "items.name" instead of "name")
+  return buildDataPathTree(firstItem, dataSource);
 }
 
 // Build data path tree excluding items array for invoice table header/footer
@@ -2356,7 +2357,13 @@ export function Canvas({
                           cellValue = cellData.content;
                           displayValue = cellData.content;
                         } else if (isPreviewMode && col.binding) {
-                          const rawVal = getValue(dataItem, col.binding);
+                          // Handle complete paths: if binding starts with dataSource prefix, strip it
+                          // e.g., "items.name" -> "name" when accessing individual item
+                          let bindingPath = col.binding;
+                          if (config.dataSource && col.binding.startsWith(config.dataSource + '.')) {
+                            bindingPath = col.binding.substring(config.dataSource.length + 1);
+                          }
+                          const rawVal = getValue(dataItem, bindingPath);
                           if (col.format === 'currency') {
                             const currency = config.currency || 'USD';
                             if (currency === 'none') {
