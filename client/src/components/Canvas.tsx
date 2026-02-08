@@ -2646,15 +2646,17 @@ export function Canvas({
                             if (col.format === 'currency') {
                               const currency = config.currency || 'USD';
                               if (currency === 'none') {
-                                cellValue = Number(rawVal) || 0;
+                                // Use ?? to handle undefined/null explicitly
+                                cellValue = Number(rawVal ?? 0);
                               } else {
-                                cellValue = new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(rawVal) || 0);
+                                cellValue = new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(rawVal ?? 0));
                               }
                             } else if (col.format === 'number') {
-                              cellValue = new Intl.NumberFormat('en-US').format(Number(rawVal) || 0);
+                              cellValue = new Intl.NumberFormat('en-US').format(Number(rawVal ?? 0));
                             } else {
                               // Show resolved value if available (including falsy values like 0, false, ''), 
                               // otherwise show the binding path
+                              // Note: empty string ('') is a valid value and will be displayed as empty
                               cellValue = (rawVal !== undefined && rawVal !== null) ? rawVal : cellData.content;
                             }
                             displayValue = cellValue;
