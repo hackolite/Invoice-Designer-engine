@@ -334,33 +334,6 @@ function createCellBlurHandler(
         updatedInlineData.push({ row: rowIdx, col: colIdx, content: newContent });
       }
       
-      // AUTOMATIC COLUMN PROPAGATION:
-      // Apply the edited content to all other rows in the column (excluding header and footer)
-      // This ensures all data rows in the column have the same content
-      for (let row = 0; row < INVOICE_TABLE_EDITOR_DATA_ROWS; row++) {
-        if (row === rowIdx) continue; // Skip the source row (already updated above)
-        
-        const targetCellIndex = updatedInlineData.findIndex(
-          (cell) => cell.row === row && cell.col === colIdx
-        );
-        
-        if (targetCellIndex >= 0) {
-          // Update existing cell data in this row
-          updatedInlineData[targetCellIndex] = { 
-            row, 
-            col: colIdx, 
-            content: newContent 
-          };
-        } else {
-          // Add new cell data for this row
-          updatedInlineData.push({ 
-            row, 
-            col: colIdx, 
-            content: newContent 
-          });
-        }
-      }
-      
       onElementUpdate(elementId, {
         tableConfig: {
           ...config,
