@@ -2589,14 +2589,26 @@ export function Canvas({
                           // Use inline edited data (persists in both edit and preview modes)
                           cellValue = cellData.content;
                           displayValue = cellData.content;
-                        } else if (isPreviewMode && col.binding) {
+                        } else if (col.binding) {
+                          // Resolve binding in both preview and edit modes to show actual data
                           // Handle complete paths: if binding starts with dataSource prefix, strip it
                           // e.g., "items.name" -> "name" when accessing individual item
                           let bindingPath = col.binding;
                           if (config.dataSource && col.binding.startsWith(config.dataSource + '.')) {
                             bindingPath = col.binding.substring(config.dataSource.length + 1);
                           }
-                          const rawVal = getValue(dataItem, bindingPath);
+                          
+                          // In edit mode, get sample data from sampleData; in preview mode, use dataItem
+                          let resolvedDataItem = dataItem;
+                          if (!isPreviewMode && sampleData && config.dataSource) {
+                            // In edit mode, get real sample data from the dataSource
+                            const realSourceData = getValue(sampleData, config.dataSource, []);
+                            if (Array.isArray(realSourceData) && realSourceData.length > rowIdx) {
+                              resolvedDataItem = realSourceData[rowIdx];
+                            }
+                          }
+                          
+                          const rawVal = getValue(resolvedDataItem, bindingPath);
                           if (col.format === 'currency') {
                             const currency = config.currency || 'USD';
                             if (currency === 'none') {
@@ -2607,11 +2619,11 @@ export function Canvas({
                           } else if (col.format === 'number') {
                             cellValue = new Intl.NumberFormat('en-US').format(Number(rawVal) || 0);
                           } else {
-                            cellValue = rawVal;
+                            cellValue = rawVal !== undefined ? rawVal : `{${col.binding}}`;
                           }
                           displayValue = cellValue;
                         } else {
-                          cellValue = `{${col.binding}}`;
+                          cellValue = `{${col.binding || ''}}`;
                           displayValue = cellValue;
                         }
                         
