@@ -2590,41 +2590,37 @@ export function Canvas({
                           cellValue = cellData.content;
                           displayValue = cellData.content;
                         } else if (col.binding) {
-                          // Resolve binding in both preview and edit modes to show actual data.
-                          // This allows users to see real sample values in edit mode, making it easier
-                          // to understand what their invoice will look like with actual data.
-                          // Handle complete paths: if binding starts with dataSource prefix, strip it
-                          // e.g., "items.name" -> "name" when accessing individual item
-                          let bindingPath = col.binding;
-                          if (config.dataSource && col.binding.startsWith(config.dataSource + '.')) {
-                            bindingPath = col.binding.substring(config.dataSource.length + 1);
-                          }
-                          
-                          // In edit mode, get sample data from sampleData; in preview mode, use dataItem
-                          let resolvedDataItem = dataItem;
-                          if (!isPreviewMode && sampleData && config.dataSource) {
-                            // In edit mode, get real sample data from the dataSource
-                            const realSourceData = getValue(sampleData, config.dataSource, []);
-                            if (Array.isArray(realSourceData) && realSourceData.length > rowIdx) {
-                              resolvedDataItem = realSourceData[rowIdx];
-                            }
-                          }
-                          
-                          const rawVal = getValue(resolvedDataItem, bindingPath);
-                          if (col.format === 'currency') {
-                            const currency = config.currency || 'USD';
-                            if (currency === 'none') {
-                              cellValue = Number(rawVal) || 0;
-                            } else {
-                              cellValue = new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(rawVal) || 0);
-                            }
-                          } else if (col.format === 'number') {
-                            cellValue = new Intl.NumberFormat('en-US').format(Number(rawVal) || 0);
+                          // In edit mode for invoice table data rows, show JSON path instead of resolved values
+                          // In preview/generate/export mode, show resolved values
+                          if (!isPreviewMode) {
+                            // EDIT MODE: Display the binding path as-is
+                            cellValue = `{${col.binding}}`;
+                            displayValue = cellValue;
                           } else {
-                            // Show resolved value if available (including explicit null), otherwise show binding path
-                            cellValue = rawVal != null ? rawVal : `{${col.binding}}`;
+                            // PREVIEW/GENERATE MODE: Resolve binding and show actual data
+                            // Handle complete paths: if binding starts with dataSource prefix, strip it
+                            // e.g., "items.name" -> "name" when accessing individual item
+                            let bindingPath = col.binding;
+                            if (config.dataSource && col.binding.startsWith(config.dataSource + '.')) {
+                              bindingPath = col.binding.substring(config.dataSource.length + 1);
+                            }
+                            
+                            const rawVal = getValue(dataItem, bindingPath);
+                            if (col.format === 'currency') {
+                              const currency = config.currency || 'USD';
+                              if (currency === 'none') {
+                                cellValue = Number(rawVal) || 0;
+                              } else {
+                                cellValue = new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(rawVal) || 0);
+                              }
+                            } else if (col.format === 'number') {
+                              cellValue = new Intl.NumberFormat('en-US').format(Number(rawVal) || 0);
+                            } else {
+                              // Show resolved value if available (including explicit null), otherwise show binding path
+                              cellValue = rawVal != null ? rawVal : `{${col.binding}}`;
+                            }
+                            displayValue = cellValue;
                           }
-                          displayValue = cellValue;
                         } else {
                           // No binding configured - show empty cell
                           cellValue = '';
