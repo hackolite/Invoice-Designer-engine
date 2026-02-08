@@ -8,11 +8,14 @@ This document verifies that binding paths between braces are properly generated 
 ### Two Types of Binding Formats
 
 1. **Single Braces `{bindingPath}`**
-   - Used in: Table footer rows, table header values, grid table cells
+   - Used in: Table elements (price table, invoice table, grid table)
+   - Used for: Table cell values, footer rows, column bindings
+   - Display: Shows `{binding}` in edit mode, resolves to actual value in preview/generate mode
    - Example: `{customer.name}`, `{total}`, `{items.0.price}`
 
 2. **Double Braces `{{bindingPath}}`**
-   - Used in: Text elements, displayed as placeholders in edit mode
+   - Used in: Text elements and badge elements
+   - Display: Shows `{{binding}}` as placeholder in edit mode, resolves to actual value in preview/generate mode
    - Example: `{{invoiceNumber}}`, `{{customer.address.city}}`
 
 ## Binding Resolution Logic
@@ -55,12 +58,12 @@ function extractBinding(value: string): string | null {
 
 | Element Type | Binding Support | Format | Code Location |
 |--------------|----------------|--------|---------------|
-| **Text** | ✅ Yes | `{binding}` or `{{binding}}` | Canvas.tsx:1950-1961 |
-| **Badge** | ✅ Yes | `{binding}` | Canvas.tsx:2142 |
+| **Text** | ✅ Yes | `{{binding}}` | Canvas.tsx:1950-1961 |
+| **Badge** | ✅ Yes | `{{binding}}` | Canvas.tsx:2142 |
 | **QR Code** | ✅ Yes | `{binding}` | Canvas.tsx:2108-2110 |
 | **Table (Invoice)** | ✅ Yes | `{binding}` in columns, footers | Canvas.tsx:2595-2791 |
 | **Table (Price)** | ✅ Yes | `{binding}` in columns | Canvas.tsx:2195-2273 |
-| **Grid Table** | ✅ Yes | `{{binding}}` in cells | Canvas.tsx:3515-3524 |
+| **Grid Table** | ✅ Yes | `{binding}` in cells | Canvas.tsx:3574 |
 | **Image** | ❌ No | N/A | - |
 | **Signature** | ❌ No | N/A | - |
 | **Line** | ❌ No | N/A | - |
