@@ -437,35 +437,17 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
               const headerCellStyle = headerStylesMap.get(idx) || {};
               
               // Determine header display value
+              // Priority: inline edited data > original column header
+              const content = headerCellData || col.header;
+              
+              // In export context, always resolve bindings (isPreviewMode is always true)
               let headerValue: string;
-              if (headerCellData) {
-                // Use inline edited data
-                // In preview mode (which is always true for exports), resolve bindings
-                if (isPreviewMode) {
-                  const binding = extractBinding(headerCellData);
-                  if (binding) {
-                    const rawVal = getNestedValue(sampleData, binding);
-                    headerValue = rawVal !== undefined ? String(rawVal) : headerCellData;
-                  } else {
-                    headerValue = headerCellData;
-                  }
-                } else {
-                  headerValue = headerCellData;
-                }
+              const binding = extractBinding(content);
+              if (binding) {
+                const rawVal = getNestedValue(sampleData, binding);
+                headerValue = rawVal !== undefined ? String(rawVal) : content;
               } else {
-                // No inline edit - use original header value
-                // In preview mode, resolve the binding
-                if (isPreviewMode) {
-                  const binding = extractBinding(col.header);
-                  if (binding) {
-                    const rawVal = getNestedValue(sampleData, binding);
-                    headerValue = rawVal !== undefined ? String(rawVal) : col.header;
-                  } else {
-                    headerValue = col.header;
-                  }
-                } else {
-                  headerValue = col.header;
-                }
+                headerValue = content;
               }
               
               // Apply styles
