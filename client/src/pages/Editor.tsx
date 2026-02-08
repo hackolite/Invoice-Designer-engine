@@ -268,7 +268,18 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
           
           if (inlineLabel) {
             // Use inline edited data for label (persists in both edit and preview modes)
-            footerLabelValue = inlineLabel;
+            // In preview mode, resolve bindings within inline content
+            if (isPreviewMode) {
+              const binding = extractBinding(inlineLabel);
+              if (binding) {
+                const rawVal = getNestedValue(sampleData, binding);
+                footerLabelValue = rawVal !== undefined ? String(rawVal) : inlineLabel;
+              } else {
+                footerLabelValue = inlineLabel;
+              }
+            } else {
+              footerLabelValue = inlineLabel;
+            }
           } else if (isPreviewMode) {
             // Try to parse as binding first
             const binding = extractBinding(footerRow.label);
@@ -293,7 +304,28 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
           
           if (inlineValue) {
             // Use inline edited data for value (persists in both edit and preview modes)
-            footerDataValue = inlineValue;
+            // In preview mode, resolve bindings within inline content
+            if (isPreviewMode) {
+              const binding = extractBinding(inlineValue);
+              if (binding) {
+                const rawVal = getNestedValue(sampleData, binding);
+                if (footerRow.format === 'currency') {
+                  if (currency === 'none') {
+                    footerDataValue = String(Number(rawVal) || 0);
+                  } else {
+                    footerDataValue = new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(rawVal) || 0);
+                  }
+                } else if (footerRow.format === 'number') {
+                  footerDataValue = new Intl.NumberFormat('en-US').format(Number(rawVal) || 0);
+                } else {
+                  footerDataValue = rawVal !== undefined ? String(rawVal) : inlineValue;
+                }
+              } else {
+                footerDataValue = inlineValue;
+              }
+            } else {
+              footerDataValue = inlineValue;
+            }
           } else if (isPreviewMode) {
             // Try to parse as binding first
             const binding = extractBinding(footerRow.value);
