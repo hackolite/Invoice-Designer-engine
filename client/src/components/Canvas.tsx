@@ -855,15 +855,6 @@ export function Canvas({
     headerStyles: [],
   });
 
-  // Helper to clear cached data structures when invoice table footer binding changes
-  // Only clears footer data, preserves header and body data
-  const getClearedTableConfigForFooterBinding = (baseConfig: NonNullable<TemplateElement['tableConfig']>) => ({
-    ...baseConfig,
-    // Clear only footer related data structures when binding changes
-    footerInlineData: [],
-    footerStyles: [],
-  });
-
   // Handle cell binding updates for invoice tables
   const handleInvoiceTableCellBindingUpdate = (elementId: string, col: number, binding: string) => {
     const element = layout.elements.find(e => e.id === elementId);
@@ -901,11 +892,25 @@ export function Canvas({
       value: `{${binding}}`
     };
     
+    // Only clear the specific VALUE cell's inline data, preserve all other cells
+    const footerInlineData: FooterCellData[] = config.footerInlineData || [];
+    const updatedFooterInlineData = footerInlineData.filter(
+      (cell) => !(cell.row === footerRowIndex && cell.field === 'value')
+    );
+    
+    // Only clear the specific VALUE cell's styles, preserve all other styles
+    const footerStyles: FooterCellStyle[] = config.footerStyles || [];
+    const updatedFooterStyles = footerStyles.filter(
+      (style) => !(style.row === footerRowIndex && style.field === 'value')
+    );
+    
     onElementUpdate(elementId, {
-      tableConfig: getClearedTableConfigForFooterBinding({
+      tableConfig: {
         ...config, 
         footerRows: newFooterRows,
-      })
+        footerInlineData: updatedFooterInlineData,
+        footerStyles: updatedFooterStyles,
+      }
     });
   };
 
@@ -924,11 +929,25 @@ export function Canvas({
       label: `{${binding}}`
     };
     
+    // Only clear the specific LABEL cell's inline data, preserve all other cells
+    const footerInlineData: FooterCellData[] = config.footerInlineData || [];
+    const updatedFooterInlineData = footerInlineData.filter(
+      (cell) => !(cell.row === footerRowIndex && cell.field === 'label')
+    );
+    
+    // Only clear the specific LABEL cell's styles, preserve all other styles
+    const footerStyles: FooterCellStyle[] = config.footerStyles || [];
+    const updatedFooterStyles = footerStyles.filter(
+      (style) => !(style.row === footerRowIndex && style.field === 'label')
+    );
+    
     onElementUpdate(elementId, {
-      tableConfig: getClearedTableConfigForFooterBinding({
+      tableConfig: {
         ...config, 
         footerRows: newFooterRows,
-      })
+        footerInlineData: updatedFooterInlineData,
+        footerStyles: updatedFooterStyles,
+      }
     });
   };
 
