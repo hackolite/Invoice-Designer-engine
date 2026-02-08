@@ -245,7 +245,7 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
         cellInlineDataMap.set(`${cell.row}-${cell.col}`, cell.content);
       });
       
-      // Get inline data for header cells (persists in both edit and preview modes)
+      // Get inline data for header cells
       const headerInlineData: { col: number; content: string; }[] = config.headerInlineData || [];
       const headerInlineDataMap = new Map<number, string>();
       headerInlineData.forEach(cell => {
@@ -440,7 +440,7 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
               // Priority: inline edited data > original column header
               const content = headerCellData || col.header;
               
-              // In export context, always resolve bindings (isPreviewMode is always true)
+              // Export always resolves bindings to show actual values
               let headerValue: string;
               const binding = extractBinding(content);
               if (binding) {
