@@ -82,6 +82,17 @@ function extractBinding(value: string): string | null {
   return null;
 }
 
+// Helper function to resolve binding in content or return original content
+// Extracts binding from {path} format and resolves it against sampleData
+function resolveBindingValue(content: string, sampleData: any): string {
+  const binding = extractBinding(content);
+  if (binding) {
+    const resolvedVal = getValue(sampleData, binding);
+    return resolvedVal !== undefined ? String(resolvedVal) : content;
+  }
+  return content;
+}
+
 // Normalize row heights to fit exactly within container using integer pixels
 // This prevents floating-point rounding gaps between fused tables
 function normalizeRowHeights(rowHeights: number[], containerHeight: number): number[] {
@@ -2431,7 +2442,20 @@ export function Canvas({
                     const headerCellData = headerInlineData.find((cell) => cell.col === colIdx);
                     
                     const originalValue = col.header;
-                    const displayValue = headerCellData ? headerCellData.content : originalValue;
+                    let displayValue: string;
+                    
+                    // Determine display value based on mode and data
+                    if (headerCellData) {
+                      // Inline edited data takes precedence
+                      displayValue = isPreviewMode 
+                        ? resolveBindingValue(headerCellData.content, sampleData)
+                        : headerCellData.content;
+                    } else {
+                      // No inline edit - use original header value
+                      displayValue = isPreviewMode 
+                        ? resolveBindingValue(originalValue, sampleData)
+                        : originalValue;
+                    }
                     
                     // Get header cell style if it exists
                     const headerStyles = config.headerStyles || [];
