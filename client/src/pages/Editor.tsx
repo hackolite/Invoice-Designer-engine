@@ -1003,7 +1003,9 @@ export default function Editor() {
 
   // Helper function to synchronize grid table column counts with actual cells
   // Updates config.cols to match the actual number of columns used
-  const synchronizeGridTableColumns = (layoutToSync: TemplateLayout): TemplateLayout => {
+  // Returns the layout and a boolean indicating if changes were made
+  const synchronizeGridTableColumns = (layoutToSync: TemplateLayout): { layout: TemplateLayout; hasChanges: boolean } => {
+    let hasChanges = false;
     const updatedElements = layoutToSync.elements.map(el => {
       if (el.type === 'gridtable' && el.gridTableConfig) {
         const config = el.gridTableConfig;
@@ -1011,6 +1013,7 @@ export default function Editor() {
         
         // Only update if there's a mismatch
         if (actualCols !== config.cols && actualCols > 0) {
+          hasChanges = true;
           return {
             ...el,
             gridTableConfig: {
@@ -1023,10 +1026,33 @@ export default function Editor() {
       return el;
     });
     
+    // Only return a new object if changes were made
+    if (hasChanges) {
+      return {
+        layout: {
+          ...layoutToSync,
+          elements: updatedElements
+        },
+        hasChanges: true
+      };
+    }
+    
     return {
-      ...layoutToSync,
-      elements: updatedElements
+      layout: layoutToSync,
+      hasChanges: false
     };
+  };
+
+  // Helper to ensure grid table columns are synchronized with actual cell data
+  // Updates layout state if changes are needed and returns the synchronized layout
+  const ensureGridTablesSynchronized = (): TemplateLayout | null => {
+    if (!layout) return null;
+    
+    const { layout: syncedLayout, hasChanges } = synchronizeGridTableColumns(layout);
+    if (hasChanges) {
+      setLayout(syncedLayout);
+    }
+    return syncedLayout;
   };
 
   const handleSave = async () => {
@@ -1095,12 +1121,7 @@ export default function Editor() {
               size="sm" 
               onClick={() => {
                 // Synchronize grid table columns when entering preview/play mode
-                if (layout) {
-                  const syncedLayout = synchronizeGridTableColumns(layout);
-                  if (syncedLayout !== layout) {
-                    setLayout(syncedLayout);
-                  }
-                }
+                ensureGridTablesSynchronized();
                 setIsPreviewMode(true);
               }}
               className="h-7 text-xs"
@@ -1118,12 +1139,8 @@ export default function Editor() {
               if (!layout) return;
               
               // Synchronize grid table columns before export
-              const syncedLayout = synchronizeGridTableColumns(layout);
-              
-              // Update layout state if there were changes
-              if (syncedLayout !== layout) {
-                setLayout(syncedLayout);
-              }
+              const exportLayout = ensureGridTablesSynchronized();
+              if (!exportLayout) return;
               
               // Parse sample data from string to object
               const parsedData = parseSampleData(sampleData);
@@ -1145,7 +1162,7 @@ export default function Editor() {
 </head>
 <body>
   <div class="page">
-    ${syncedLayout.elements.map(el => renderElementForExport(el, true, parsedData)).join('')}
+    ${exportLayout.elements.map(el => renderElementForExport(el, true, parsedData)).join('')}
   </div>
 </body>
 </html>`;
@@ -1167,12 +1184,8 @@ export default function Editor() {
               if (!layout) return;
               
               // Synchronize grid table columns before export
-              const syncedLayout = synchronizeGridTableColumns(layout);
-              
-              // Update layout state if there were changes
-              if (syncedLayout !== layout) {
-                setLayout(syncedLayout);
-              }
+              const exportLayout = ensureGridTablesSynchronized();
+              if (!exportLayout) return;
               
               // Parse sample data from string to object
               const parsedData = parseSampleData(sampleData);
@@ -1199,7 +1212,7 @@ export default function Editor() {
 </head>
 <body>
   <div class="page">
-    ${syncedLayout.elements.map(el => renderElementForExport(el, true, parsedData)).join('')}
+    ${exportLayout.elements.map(el => renderElementForExport(el, true, parsedData)).join('')}
   </div>
   <script>
     window.onload = () => {
