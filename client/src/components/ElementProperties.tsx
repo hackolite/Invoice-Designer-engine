@@ -510,12 +510,10 @@ export function ElementProperties({ element, onChange, onDelete, onClone }: Elem
                     {element.tableConfig?.footerRows?.map((footerRow, idx) => {
                       const footerRows = element.tableConfig!.footerRows!;
                       
-                      // Get inline edited footer values if they exist
-                      const footerInlineData = element.tableConfig?.footerInlineData || [];
-                      const footerLabelCellData = footerInlineData.find((cell) => cell.row === idx && cell.field === 'label');
-                      const footerValueCellData = footerInlineData.find((cell) => cell.row === idx && cell.field === 'value');
-                      const displayLabelValue = footerLabelCellData ? footerLabelCellData.content : footerRow.label;
-                      const displayValueValue = footerValueCellData ? footerValueCellData.content : footerRow.value;
+                      // Properties panel should show the template values from footerRows,
+                      // not the inline edited values (footerInlineData is for canvas edits only)
+                      const displayLabelValue = footerRow.label;
+                      const displayValueValue = footerRow.value;
                       
                       return (
                         <div key={idx} className="bg-muted/30 p-3 rounded-lg border space-y-2 text-sm relative group">
