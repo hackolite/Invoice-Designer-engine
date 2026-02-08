@@ -1088,7 +1088,7 @@ export default function Editor() {
 </head>
 <body>
   <div class="page">
-    ${layout.elements.map(el => renderElementForExport(el, isPreviewMode, parsedData)).join('')}
+    ${layout.elements.map(el => renderElementForExport(el, true, parsedData)).join('')}
   </div>
 </body>
 </html>`;
@@ -1096,7 +1096,7 @@ export default function Editor() {
               const url = URL.createObjectURL(blob);
               const a = document.createElement('a');
               a.href = url;
-              a.download = `template-${isPreviewMode ? 'values' : 'attributes'}.html`;
+              a.download = `template-values.html`;
               a.click();
             }}
           >
@@ -1134,7 +1134,7 @@ export default function Editor() {
 </head>
 <body>
   <div class="page">
-    ${layout.elements.map(el => renderElementForExport(el, isPreviewMode, parsedData)).join('')}
+    ${layout.elements.map(el => renderElementForExport(el, true, parsedData)).join('')}
   </div>
   <script>
     window.onload = () => {
