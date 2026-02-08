@@ -110,6 +110,13 @@ function escapeHtml(text: string): string {
   return String(text).replace(/[&<>"']/g, char => htmlEscapes[char]);
 }
 
+// Helper function to calculate actual column count from cells array
+// Takes into account cell positions and colspan to determine the real number of columns
+function calculateActualColumns(cells: Array<{ row: number; col: number; colSpan?: number }>): number {
+  if (!cells || cells.length === 0) return 0;
+  return Math.max(...cells.map(cell => cell.col + (cell.colSpan || 1)));
+}
+
 // Helper function to render element content for PDF/HTML export
 // Supports data binding when isPreviewMode is true
 const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sampleData: any): string => {
@@ -470,6 +477,10 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
     const gridBorderColor = (el.style?.gridBorderColor as string) || '#000000';
     const gridBorderWidth = (el.style?.gridBorderWidth as number) || 1;
     
+    // Calculate actual number of columns from cells array (accounting for colspan)
+    // This ensures the PDF reflects what's actually displayed, not just config.cols
+    const actualCols = calculateActualColumns(config.cells);
+    
     // Create a map of cells by position for easier lookup
     const cellMap = new Map<string, typeof config.cells[0]>();
     const occupiedCells = new Set<string>();
@@ -489,8 +500,9 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
     });
     
     // Generate table HTML with proper cell spanning
+    // Use actualCols to render the correct number of columns as displayed
     const rowsHtml = Array.from({ length: config.rows }, (_, rowIdx) => {
-      const cellsHtml = Array.from({ length: config.cols }, (_, colIdx) => {
+      const cellsHtml = Array.from({ length: actualCols }, (_, colIdx) => {
         const key = `${rowIdx}-${colIdx}`;
         
         // Skip cells that are occupied by a spanning cell
@@ -565,8 +577,8 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
         const textDecoration = footerStyle.textDecoration || 'none';
         
         return `<tr>
-          <th colspan="${Math.floor(config.cols / 2)}" style="padding: 8px; border: ${gridBorderWidth}px solid ${gridBorderColor}; text-align: ${textAlign}; font-weight: ${fontWeight}; font-style: ${fontStyle}; text-decoration: ${textDecoration};">${footerRow.label}</th>
-          <td colspan="${config.cols - Math.floor(config.cols / 2)}" style="padding: 8px; border: ${gridBorderWidth}px solid ${gridBorderColor}; text-align: ${textAlign}; font-weight: ${fontWeight}; font-style: ${fontStyle}; text-decoration: ${textDecoration};">${footerValue}</td>
+          <th colspan="${Math.floor(actualCols / 2)}" style="padding: 8px; border: ${gridBorderWidth}px solid ${gridBorderColor}; text-align: ${textAlign}; font-weight: ${fontWeight}; font-style: ${fontStyle}; text-decoration: ${textDecoration};">${footerRow.label}</th>
+          <td colspan="${actualCols - Math.floor(actualCols / 2)}" style="padding: 8px; border: ${gridBorderWidth}px solid ${gridBorderColor}; text-align: ${textAlign}; font-weight: ${fontWeight}; font-style: ${fontStyle}; text-decoration: ${textDecoration};">${footerValue}</td>
         </tr>`;
       }).join('')}</tfoot>`;
     }
@@ -989,6 +1001,60 @@ export default function Editor() {
     });
   };
 
+  // Helper function to synchronize grid table column counts with actual cells
+  // Updates config.cols to match the actual number of columns used
+  // Returns the layout and a boolean indicating if changes were made
+  const synchronizeGridTableColumns = (layoutToSync: TemplateLayout): { layout: TemplateLayout; hasChanges: boolean } => {
+    let hasChanges = false;
+    const updatedElements = layoutToSync.elements.map(el => {
+      if (el.type === 'gridtable' && el.gridTableConfig) {
+        const config = el.gridTableConfig;
+        const actualCols = calculateActualColumns(config.cells);
+        
+        // Only update if there's a mismatch
+        if (actualCols !== config.cols && actualCols > 0) {
+          hasChanges = true;
+          return {
+            ...el,
+            gridTableConfig: {
+              ...config,
+              cols: actualCols
+            }
+          };
+        }
+      }
+      return el;
+    });
+    
+    // Only return a new object if changes were made
+    if (hasChanges) {
+      return {
+        layout: {
+          ...layoutToSync,
+          elements: updatedElements
+        },
+        hasChanges: true
+      };
+    }
+    
+    return {
+      layout: layoutToSync,
+      hasChanges: false
+    };
+  };
+
+  // Helper to ensure grid table columns are synchronized with actual cell data
+  // Updates layout state if changes are needed and returns the synchronized layout
+  const ensureGridTablesSynchronized = (): TemplateLayout | null => {
+    if (!layout) return null;
+    
+    const { layout: syncedLayout, hasChanges } = synchronizeGridTableColumns(layout);
+    if (hasChanges) {
+      setLayout(syncedLayout);
+    }
+    return syncedLayout;
+  };
+
   const handleSave = async () => {
     if (!id || !layout) return;
     
@@ -1053,7 +1119,11 @@ export default function Editor() {
             <Button 
               variant={isPreviewMode ? "secondary" : "ghost"} 
               size="sm" 
-              onClick={() => setIsPreviewMode(true)}
+              onClick={() => {
+                // Synchronize grid table columns when entering preview/play mode
+                ensureGridTablesSynchronized();
+                setIsPreviewMode(true);
+              }}
               className="h-7 text-xs"
             >
               <Play className="w-3 h-3 mr-1.5" /> Play / Generate
@@ -1067,6 +1137,10 @@ export default function Editor() {
             size="sm" 
             onClick={() => {
               if (!layout) return;
+              
+              // Synchronize grid table columns before export
+              const exportLayout = ensureGridTablesSynchronized();
+              if (!exportLayout) return;
               
               // Parse sample data from string to object
               const parsedData = parseSampleData(sampleData);
@@ -1088,7 +1162,7 @@ export default function Editor() {
 </head>
 <body>
   <div class="page">
-    ${layout.elements.map(el => renderElementForExport(el, true, parsedData)).join('')}
+    ${exportLayout.elements.map(el => renderElementForExport(el, true, parsedData)).join('')}
   </div>
 </body>
 </html>`;
@@ -1108,6 +1182,10 @@ export default function Editor() {
             size="sm" 
             onClick={() => {
               if (!layout) return;
+              
+              // Synchronize grid table columns before export
+              const exportLayout = ensureGridTablesSynchronized();
+              if (!exportLayout) return;
               
               // Parse sample data from string to object
               const parsedData = parseSampleData(sampleData);
@@ -1134,7 +1212,7 @@ export default function Editor() {
 </head>
 <body>
   <div class="page">
-    ${layout.elements.map(el => renderElementForExport(el, true, parsedData)).join('')}
+    ${exportLayout.elements.map(el => renderElementForExport(el, true, parsedData)).join('')}
   </div>
   <script>
     window.onload = () => {
