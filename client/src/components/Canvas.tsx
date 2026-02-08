@@ -2772,7 +2772,27 @@ export function Canvas({
                   
                   const originalLabelValue = footerRow.label;
                   const originalValueValue = footerRow.value;
-                  const footerLabelValue = footerLabelCellData ? footerLabelCellData.content : originalLabelValue;
+                  
+                  // Handle footer label with binding resolution in preview mode
+                  let footerLabelValue;
+                  if (footerLabelCellData) {
+                    // Use inline edited data for label
+                    // In preview mode, resolve bindings within inline content
+                    if (isPreviewMode && footerLabelCellData.content.startsWith('{') && footerLabelCellData.content.endsWith('}') && footerLabelCellData.content.length > 2) {
+                      const binding = footerLabelCellData.content.slice(1, -1).trim();
+                      if (binding.length > 0) {
+                        const rawVal = getValue(sampleData, binding);
+                        footerLabelValue = rawVal !== undefined ? String(rawVal) : footerLabelCellData.content;
+                      } else {
+                        footerLabelValue = footerLabelCellData.content;
+                      }
+                    } else {
+                      footerLabelValue = footerLabelCellData.content;
+                    }
+                  } else {
+                    footerLabelValue = originalLabelValue;
+                  }
+                  
                   let footerDataValue;
                   
                   // Get footer cell styles if they exist
@@ -2782,7 +2802,29 @@ export function Canvas({
                   
                   if (footerValueCellData) {
                     // Use inline edited data for value (persists in both edit and preview modes)
-                    footerDataValue = footerValueCellData.content;
+                    // In preview mode, resolve bindings within inline content
+                    if (isPreviewMode && footerValueCellData.content.startsWith('{') && footerValueCellData.content.endsWith('}') && footerValueCellData.content.length > 2) {
+                      const binding = footerValueCellData.content.slice(1, -1).trim();
+                      if (binding.length > 0) {
+                        const rawVal = getValue(sampleData, binding);
+                        if (footerRow.format === 'currency') {
+                          const currency = config.currency || 'USD';
+                          if (currency === 'none') {
+                            footerDataValue = Number(rawVal) || 0;
+                          } else {
+                            footerDataValue = new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(rawVal) || 0);
+                          }
+                        } else if (footerRow.format === 'number') {
+                          footerDataValue = new Intl.NumberFormat('en-US').format(Number(rawVal) || 0);
+                        } else {
+                          footerDataValue = rawVal;
+                        }
+                      } else {
+                        footerDataValue = footerValueCellData.content;
+                      }
+                    } else {
+                      footerDataValue = footerValueCellData.content;
+                    }
                   } else if (isPreviewMode) {
                     // Try to parse as binding first - check for pattern {bindingName}
                     if (footerRow.value.startsWith('{') && footerRow.value.endsWith('}') && footerRow.value.length > 2) {

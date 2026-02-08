@@ -165,6 +165,30 @@ const doubleBindingTests = [
   }
 ];
 
+// Test inline edited content with bindings (as used in footer cells)
+const inlineBindingTests = [
+  {
+    name: "Inline content with single brace binding",
+    content: "{total}",
+    expected: 192.50
+  },
+  {
+    name: "Inline content with nested binding",
+    content: "{customer.name}",
+    expected: "John Doe"
+  },
+  {
+    name: "Inline content with non-existent binding",
+    content: "{nonexistent}",
+    expected: undefined
+  },
+  {
+    name: "Inline content without braces",
+    content: "Static Text",
+    expected: "Static Text"
+  }
+];
+
 // Run getValue tests
 console.log("=== Testing getValue Function ===\n");
 let passedTests = 0;
@@ -210,6 +234,31 @@ doubleBindingTests.forEach(test => {
   const result = test.content.replace(/\{\{([^}]+)\}\}/g, (match, binding) => {
     return getValue(sampleData, binding.trim(), match);
   });
+  const passed = result === test.expected;
+  
+  if (passed) {
+    passedTests++;
+    console.log(`✅ PASS: ${test.name}`);
+  } else {
+    failedTests++;
+    console.log(`❌ FAIL: ${test.name}`);
+    console.log(`   Expected: ${test.expected}`);
+    console.log(`   Got: ${result}`);
+  }
+});
+
+// Test inline edited content with bindings (as used in footer cells)
+console.log("\n=== Testing Inline Content with {binding} ===\n");
+
+inlineBindingTests.forEach(test => {
+  let result;
+  const binding = extractBinding(test.content);
+  if (binding) {
+    result = getValue(sampleData, binding, undefined);
+  } else {
+    result = test.content;
+  }
+  
   const passed = result === test.expected;
   
   if (passed) {
