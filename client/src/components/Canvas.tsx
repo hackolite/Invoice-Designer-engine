@@ -38,6 +38,19 @@ interface FooterCellData {
   content: string;
 }
 
+// Type for footer cell styles
+interface FooterCellStyle {
+  row: number;
+  field: 'label' | 'value' | 'middle';
+  col?: number; // Column index for middle cells
+  style?: {
+    textAlign?: string;
+    fontWeight?: string;
+    fontStyle?: string;
+    textDecoration?: string;
+  };
+}
+
 // Constants for table height normalization
 const HEIGHT_NORMALIZATION_THRESHOLD = 0.5; // Threshold in pixels for detecting height mismatches
 const INVOICE_TABLE_EDITOR_DATA_ROWS = 3; // Fixed number of sample data rows displayed in editor for invoice tables
