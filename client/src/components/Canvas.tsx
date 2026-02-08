@@ -2431,7 +2431,40 @@ export function Canvas({
                     const headerCellData = headerInlineData.find((cell) => cell.col === colIdx);
                     
                     const originalValue = col.header;
-                    const displayValue = headerCellData ? headerCellData.content : originalValue;
+                    let displayValue: string;
+                    
+                    // Determine display value based on mode and data
+                    if (headerCellData) {
+                      // Inline edited data takes precedence
+                      if (isPreviewMode) {
+                        // In preview mode, resolve bindings in inline content
+                        const binding = extractBinding(headerCellData.content);
+                        if (binding) {
+                          const resolvedVal = getValue(sampleData, binding);
+                          displayValue = resolvedVal !== undefined ? String(resolvedVal) : headerCellData.content;
+                        } else {
+                          displayValue = headerCellData.content;
+                        }
+                      } else {
+                        // In edit mode, show as-is
+                        displayValue = headerCellData.content;
+                      }
+                    } else {
+                      // No inline edit - use original header value
+                      if (isPreviewMode) {
+                        // In preview mode, resolve bindings in original header
+                        const binding = extractBinding(originalValue);
+                        if (binding) {
+                          const resolvedVal = getValue(sampleData, binding);
+                          displayValue = resolvedVal !== undefined ? String(resolvedVal) : originalValue;
+                        } else {
+                          displayValue = originalValue;
+                        }
+                      } else {
+                        // In edit mode, show as-is (including {binding} format)
+                        displayValue = originalValue;
+                      }
+                    }
                     
                     // Get header cell style if it exists
                     const headerStyles = config.headerStyles || [];
