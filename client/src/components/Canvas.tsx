@@ -2447,11 +2447,15 @@ export function Canvas({
                     // Determine display value based on mode and data
                     if (headerCellData) {
                       // Inline edited data takes precedence
+                      // In edit mode, show the binding path as-is (like row items)
+                      // In preview mode, resolve the binding
                       displayValue = isPreviewMode 
                         ? resolveBindingValue(headerCellData.content, sampleData)
                         : headerCellData.content;
                     } else {
                       // No inline edit - use original header value
+                      // In edit mode, show the binding path as-is (like row items)
+                      // In preview mode, resolve the binding
                       displayValue = isPreviewMode 
                         ? resolveBindingValue(originalValue, sampleData)
                         : originalValue;
@@ -2611,8 +2615,56 @@ export function Canvas({
                         
                         if (cellData) {
                           // Use inline edited data (persists in both edit and preview modes)
-                          cellValue = cellData.content;
-                          displayValue = cellData.content;
+                          // If the inline data contains a JSON path binding {path}, resolve it to show the value
+                          const binding = extractBinding(cellData.content);
+                          if (binding) {
+                            // User manually entered a JSON path - resolve it to show the value
+                            // Handle complete paths: if binding starts with dataSource prefix, strip it
+                            let bindingPath = binding;
+                            if (config.dataSource && binding.startsWith(config.dataSource + '.')) {
+                              bindingPath = binding.substring(config.dataSource.length + 1);
+                            }
+                            
+                            // Resolve against appropriate data source
+                            let dataToResolve;
+                            if (isPreviewMode) {
+                              dataToResolve = dataItem;
+                            } else {
+                              // In edit mode, get sample data for this row
+                              dataToResolve = {};
+                              if (sampleData && config.dataSource) {
+                                const realSourceData = getValue(sampleData, config.dataSource, []);
+                                if (Array.isArray(realSourceData) && realSourceData.length > rowIdx) {
+                                  dataToResolve = realSourceData[rowIdx];
+                                }
+                              }
+                            }
+                            
+                            const rawVal = getValue(dataToResolve, bindingPath);
+                            
+                            // Apply formatting if specified in column config
+                            if (col.format === 'currency') {
+                              const currency = config.currency || 'USD';
+                              if (currency === 'none') {
+                                // Use ?? to handle undefined/null explicitly
+                                cellValue = Number(rawVal ?? 0);
+                              } else {
+                                cellValue = new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(rawVal ?? 0));
+                              }
+                            } else if (col.format === 'number') {
+                              cellValue = new Intl.NumberFormat('en-US').format(Number(rawVal ?? 0));
+                            } else {
+                              // Show resolved value if available (including falsy values like 0, false, ''), 
+                              // otherwise show the binding path
+                              // Note: empty string ('') is a valid value and will be displayed as empty
+                              cellValue = (rawVal !== undefined && rawVal !== null) ? rawVal : cellData.content;
+                            }
+                            displayValue = cellValue;
+                          } else {
+                            // No binding in inline data - show content as-is
+                            cellValue = cellData.content;
+                            displayValue = cellData.content;
+                          }
                         } else if (col.binding) {
                           // In edit mode for invoice table data rows, show JSON path instead of resolved values
                           // In preview/generate/export mode, show resolved values
@@ -2809,10 +2861,11 @@ export function Canvas({
                   const originalLabelValue = footerRow.label;
                   const originalValueValue = footerRow.value;
                   
-                  // Handle footer label with binding resolution in preview mode
+                  // Handle footer label with binding resolution ONLY in preview mode
                   let footerLabelValue;
                   if (footerLabelCellData) {
                     // Use inline edited data for label
+                    // In edit mode, show the binding path as-is (like row items)
                     // In preview mode, resolve bindings within inline content
                     if (isPreviewMode) {
                       const binding = extractBinding(footerLabelCellData.content);
@@ -2823,9 +2876,11 @@ export function Canvas({
                         footerLabelValue = footerLabelCellData.content;
                       }
                     } else {
+                      // Edit mode: show content as-is (including {binding} syntax)
                       footerLabelValue = footerLabelCellData.content;
                     }
                   } else {
+                    // No inline edit - use original label value (including {binding} syntax in edit mode)
                     footerLabelValue = originalLabelValue;
                   }
                   
@@ -2838,6 +2893,7 @@ export function Canvas({
                   
                   if (footerValueCellData) {
                     // Use inline edited data for value (persists in both edit and preview modes)
+                    // In edit mode, show the binding path as-is (like row items)
                     // In preview mode, resolve bindings within inline content
                     if (isPreviewMode) {
                       const binding = extractBinding(footerValueCellData.content);
@@ -2859,9 +2915,11 @@ export function Canvas({
                         footerDataValue = footerValueCellData.content;
                       }
                     } else {
+                      // Edit mode: show content as-is (including {binding} syntax)
                       footerDataValue = footerValueCellData.content;
                     }
                   } else if (isPreviewMode) {
+                    // PREVIEW MODE ONLY: Try to parse as binding and resolve
                     // Try to parse as binding first - check for pattern {bindingName}
                     if (footerRow.value.startsWith('{') && footerRow.value.endsWith('}') && footerRow.value.length > 2) {
                       const binding = footerRow.value.slice(1, -1).trim();
@@ -2887,6 +2945,7 @@ export function Canvas({
                       footerDataValue = footerRow.value;
                     }
                   } else {
+                    // EDIT MODE: Show original value as-is (including {binding} syntax)
                     footerDataValue = originalValueValue;
                   }
                   
@@ -3034,10 +3093,11 @@ export function Canvas({
                         // Store original content for revert functionality
                         const originalMiddleContent = middleCellData ? middleCellData.content : '';
                         
-                        // Resolve binding and format value in preview mode
+                        // Resolve binding and format value ONLY in preview mode
                         let displayContent = originalMiddleContent;
                         
                         // In preview mode, resolve bindings in middle cells
+                        // In edit mode, show the binding path as-is (like row items)
                         if (isPreviewMode && displayContent) {
                           const binding = extractBinding(displayContent);
                           if (binding) {
@@ -3047,6 +3107,7 @@ export function Canvas({
                             displayContent = rawVal !== undefined ? String(rawVal) : displayContent;
                           }
                         }
+                        // Note: In edit mode, displayContent remains as originalMiddleContent (including {binding} syntax)
                         
                         // Get style for middle cell
                         const footerStyles: FooterCellStyle[] = config.footerStyles || [];
