@@ -483,7 +483,7 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
             content = String(getNestedValue(sampleData, cell.binding, cell.content || ''));
           } else {
             // Show static content or binding placeholder
-            content = cell.content || (cell.binding ? `{{${cell.binding}}}` : '');
+            content = cell.content || (cell.binding ? `{${cell.binding}}` : '');
           }
         }
         

@@ -3571,7 +3571,7 @@ export function Canvas({
                     
                     // Handle data binding in preview mode
                     if (isPreviewMode && cell?.binding) {
-                      content = getValue(sampleData, cell.binding, `{{${cell.binding}}}`);
+                      content = getValue(sampleData, cell.binding, `{${cell.binding}}`);
                     }
                     
                     // Process content to replace bindings with values in preview mode
