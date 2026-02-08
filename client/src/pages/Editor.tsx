@@ -231,6 +231,13 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
       
       const rows = Array.isArray(data) ? data : [data];
       
+      // Get inline data for cells (persists in both edit and preview modes)
+      const inlineData: { row: number; col: number; content: string; }[] = config.inlineData || [];
+      const cellInlineDataMap = new Map<string, string>();
+      inlineData.forEach(cell => {
+        cellInlineDataMap.set(`${cell.row}-${cell.col}`, cell.content);
+      });
+      
       // Build footer HTML if footerRows exist (for invoice tables)
       let footerHtml = '';
       if (config.footerRows && config.footerRows.length > 0) {
@@ -239,12 +246,12 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
         const currency = config.currency || 'USD';
         
         // Create lookup maps for O(1) access
-        const inlineDataMap = new Map<string, string>();
+        const footerInlineDataMap = new Map<string, string>();
         footerInlineData.forEach(cell => {
           if (cell.field === 'middle') {
-            inlineDataMap.set(`${cell.row}-${cell.field}-${cell.col}`, cell.content);
+            footerInlineDataMap.set(`${cell.row}-${cell.field}-${cell.col}`, cell.content);
           } else {
-            inlineDataMap.set(`${cell.row}-${cell.field}`, cell.content);
+            footerInlineDataMap.set(`${cell.row}-${cell.field}`, cell.content);
           }
         });
         
@@ -264,7 +271,7 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
           
           // Determine label content
           let footerLabelValue: string;
-          const inlineLabel = inlineDataMap.get(labelKey);
+          const inlineLabel = footerInlineDataMap.get(labelKey);
           
           if (inlineLabel) {
             // Use inline edited data for label (persists in both edit and preview modes)
@@ -300,7 +307,7 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
           
           // Determine value content
           let footerDataValue: string;
-          const inlineValue = inlineDataMap.get(valueKey);
+          const inlineValue = footerInlineDataMap.get(valueKey);
           
           if (inlineValue) {
             // Use inline edited data for value (persists in both edit and preview modes)
@@ -368,7 +375,7 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
           // Build middle cells (columns 2 to n-1)
           const middleCellsHtml = config.columns.slice(1, -1).map((_, colIdx) => {
             const middleCellKey = `${idx}-middle-${colIdx + 1}`;
-            const middleCellData = inlineDataMap.get(middleCellKey) || '';
+            const middleCellData = footerInlineDataMap.get(middleCellKey) || '';
             const middleCellStyle = stylesMap.get(middleCellKey) || {};
             
             // Resolve binding if present in preview mode
@@ -414,12 +421,34 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
               ${config.columns.map((col, cIdx) => {
                 let cellValue: string;
                 
-                if (isPreviewMode) {
-                  const rawVal = getNestedValue(row, col.binding);
+                // Check if we have inline edited data for this cell (persists in both edit and preview modes)
+                const cellData = cellInlineDataMap.get(`${rIdx}-${cIdx}`);
+                
+                if (cellData !== undefined) {
+                  // Use inline edited data
+                  cellValue = cellData;
+                } else if (isPreviewMode) {
+                  // In preview mode, resolve binding from data
+                  // Handle complete paths: if binding starts with dataSource prefix, strip it
+                  // e.g., "items.name" -> "name" when accessing individual item
+                  let bindingPath = col.binding;
+                  if (config.dataSource && col.binding && col.binding.startsWith(config.dataSource + '.')) {
+                    bindingPath = col.binding.substring(config.dataSource.length + 1);
+                  }
+                  
+                  const rawVal = getNestedValue(row, bindingPath);
                   if (col.format === 'currency') {
-                    cellValue = formatCurrency(rawVal);
+                    const currency = config.currency || 'USD';
+                    if (currency === 'none') {
+                      cellValue = String(Number(rawVal) || 0);
+                    } else {
+                      cellValue = new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(rawVal) || 0);
+                    }
+                  } else if (col.format === 'number') {
+                    cellValue = new Intl.NumberFormat('en-US').format(Number(rawVal) || 0);
                   } else {
-                    cellValue = String(rawVal);
+                    // Show resolved value if available (including explicit null), otherwise show binding path
+                    cellValue = rawVal != null ? String(rawVal) : `{${col.binding}}`;
                   }
                 } else {
                   cellValue = `{${col.binding}}`;
