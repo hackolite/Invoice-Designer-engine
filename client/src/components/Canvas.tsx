@@ -2626,16 +2626,19 @@ export function Canvas({
                             }
                             
                             // Resolve against appropriate data source
-                            const dataToResolve = isPreviewMode ? dataItem : (() => {
+                            let dataToResolve;
+                            if (isPreviewMode) {
+                              dataToResolve = dataItem;
+                            } else {
                               // In edit mode, get sample data for this row
+                              dataToResolve = {};
                               if (sampleData && config.dataSource) {
                                 const realSourceData = getValue(sampleData, config.dataSource, []);
                                 if (Array.isArray(realSourceData) && realSourceData.length > rowIdx) {
-                                  return realSourceData[rowIdx];
+                                  dataToResolve = realSourceData[rowIdx];
                                 }
                               }
-                              return {};
-                            })();
+                            }
                             
                             const rawVal = getValue(dataToResolve, bindingPath);
                             
@@ -2650,8 +2653,9 @@ export function Canvas({
                             } else if (col.format === 'number') {
                               cellValue = new Intl.NumberFormat('en-US').format(Number(rawVal) || 0);
                             } else {
-                              // Show resolved value if available, otherwise show the binding path
-                              cellValue = rawVal != null ? rawVal : cellData.content;
+                              // Show resolved value if available (including falsy values like 0, false, ''), 
+                              // otherwise show the binding path
+                              cellValue = (rawVal !== undefined && rawVal !== null) ? rawVal : cellData.content;
                             }
                             displayValue = cellValue;
                           } else {
