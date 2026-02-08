@@ -103,7 +103,7 @@ const tests = [
   { 
     name: "Empty binding",
     binding: "",
-    expected: undefined // Empty path returns undefined as split('') creates array with one empty string
+    expected: undefined // Empty path: split('.') creates [''], then obj[''] returns undefined
   }
 ];
 
