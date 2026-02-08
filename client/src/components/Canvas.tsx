@@ -82,6 +82,17 @@ function extractBinding(value: string): string | null {
   return null;
 }
 
+// Helper function to resolve binding in content or return original content
+// Extracts binding from {path} format and resolves it against sampleData
+function resolveBindingValue(content: string, sampleData: any): string {
+  const binding = extractBinding(content);
+  if (binding) {
+    const resolvedVal = getValue(sampleData, binding);
+    return resolvedVal !== undefined ? String(resolvedVal) : content;
+  }
+  return content;
+}
+
 // Normalize row heights to fit exactly within container using integer pixels
 // This prevents floating-point rounding gaps between fused tables
 function normalizeRowHeights(rowHeights: number[], containerHeight: number): number[] {
@@ -2436,34 +2447,14 @@ export function Canvas({
                     // Determine display value based on mode and data
                     if (headerCellData) {
                       // Inline edited data takes precedence
-                      if (isPreviewMode) {
-                        // In preview mode, resolve bindings in inline content
-                        const binding = extractBinding(headerCellData.content);
-                        if (binding) {
-                          const resolvedVal = getValue(sampleData, binding);
-                          displayValue = resolvedVal !== undefined ? String(resolvedVal) : headerCellData.content;
-                        } else {
-                          displayValue = headerCellData.content;
-                        }
-                      } else {
-                        // In edit mode, show as-is
-                        displayValue = headerCellData.content;
-                      }
+                      displayValue = isPreviewMode 
+                        ? resolveBindingValue(headerCellData.content, sampleData)
+                        : headerCellData.content;
                     } else {
                       // No inline edit - use original header value
-                      if (isPreviewMode) {
-                        // In preview mode, resolve bindings in original header
-                        const binding = extractBinding(originalValue);
-                        if (binding) {
-                          const resolvedVal = getValue(sampleData, binding);
-                          displayValue = resolvedVal !== undefined ? String(resolvedVal) : originalValue;
-                        } else {
-                          displayValue = originalValue;
-                        }
-                      } else {
-                        // In edit mode, show as-is (including {binding} format)
-                        displayValue = originalValue;
-                      }
+                      displayValue = isPreviewMode 
+                        ? resolveBindingValue(originalValue, sampleData)
+                        : originalValue;
                     }
                     
                     // Get header cell style if it exists
