@@ -79,13 +79,14 @@ A comprehensive test suite was created in `test-binding-conversion.js` to verify
 5. ✅ Edge cases (empty bindings, null values)
 6. ✅ Single brace extraction
 7. ✅ Double brace pattern replacement
+8. ✅ Inline edited content with bindings
 
-**Results:** ✅ **All 20 tests passed**
+**Results:** ✅ **All 24 tests passed**
 
 ```
 === Test Summary ===
-Total Tests: 20
-Passed: 20
+Total Tests: 24
+Passed: 24
 Failed: 0
 
 ✅ All tests passed! Binding path conversion is working correctly.
@@ -211,10 +212,11 @@ Sample data is stored in `template.sampleData` as JSON:
 **Verification Status: ✅ PASSED**
 
 The binding path conversion functionality is working correctly:
-1. ✅ All automated tests pass (20/20)
+1. ✅ All automated tests pass (24/24)
 2. ✅ Binding paths are properly extracted from brace syntax
 3. ✅ JSON values are correctly resolved for nested paths
 4. ✅ No regressions in existing functionality
 5. ✅ Edge cases are handled appropriately
+6. ✅ Inline edited content with bindings is properly resolved
 
 The implementation correctly converts binding paths between braces to their associated JSON values in preview mode, while preserving the binding syntax in edit mode for user editing.

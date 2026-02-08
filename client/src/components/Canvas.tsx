@@ -2778,9 +2778,9 @@ export function Canvas({
                   if (footerLabelCellData) {
                     // Use inline edited data for label
                     // In preview mode, resolve bindings within inline content
-                    if (isPreviewMode && footerLabelCellData.content.startsWith('{') && footerLabelCellData.content.endsWith('}') && footerLabelCellData.content.length > 2) {
-                      const binding = footerLabelCellData.content.slice(1, -1).trim();
-                      if (binding.length > 0) {
+                    if (isPreviewMode) {
+                      const binding = extractBinding(footerLabelCellData.content);
+                      if (binding) {
                         const rawVal = getValue(sampleData, binding);
                         footerLabelValue = rawVal !== undefined ? String(rawVal) : footerLabelCellData.content;
                       } else {
@@ -2803,21 +2803,21 @@ export function Canvas({
                   if (footerValueCellData) {
                     // Use inline edited data for value (persists in both edit and preview modes)
                     // In preview mode, resolve bindings within inline content
-                    if (isPreviewMode && footerValueCellData.content.startsWith('{') && footerValueCellData.content.endsWith('}') && footerValueCellData.content.length > 2) {
-                      const binding = footerValueCellData.content.slice(1, -1).trim();
-                      if (binding.length > 0) {
+                    if (isPreviewMode) {
+                      const binding = extractBinding(footerValueCellData.content);
+                      if (binding) {
                         const rawVal = getValue(sampleData, binding);
                         if (footerRow.format === 'currency') {
                           const currency = config.currency || 'USD';
                           if (currency === 'none') {
-                            footerDataValue = Number(rawVal) || 0;
+                            footerDataValue = String(Number(rawVal) || 0);
                           } else {
                             footerDataValue = new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(rawVal) || 0);
                           }
                         } else if (footerRow.format === 'number') {
                           footerDataValue = new Intl.NumberFormat('en-US').format(Number(rawVal) || 0);
                         } else {
-                          footerDataValue = rawVal;
+                          footerDataValue = rawVal !== undefined ? String(rawVal) : footerValueCellData.content;
                         }
                       } else {
                         footerDataValue = footerValueCellData.content;
