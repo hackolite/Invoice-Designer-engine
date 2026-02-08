@@ -422,11 +422,9 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
                 let cellValue: string;
                 
                 // Check if we have inline edited data for this cell (persists in both edit and preview modes)
-                const cellData = cellInlineDataMap.get(`${rIdx}-${cIdx}`);
-                
-                if (cellData !== undefined) {
+                if (cellInlineDataMap.has(`${rIdx}-${cIdx}`)) {
                   // Use inline edited data
-                  cellValue = cellData;
+                  cellValue = cellInlineDataMap.get(`${rIdx}-${cIdx}`)!;
                 } else if (isPreviewMode) {
                   // In preview mode, resolve binding from data
                   // Handle complete paths: if binding starts with dataSource prefix, strip it
