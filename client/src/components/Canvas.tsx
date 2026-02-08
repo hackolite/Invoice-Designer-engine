@@ -2590,7 +2590,9 @@ export function Canvas({
                           cellValue = cellData.content;
                           displayValue = cellData.content;
                         } else if (col.binding) {
-                          // Resolve binding in both preview and edit modes to show actual data
+                          // Resolve binding in both preview and edit modes to show actual data.
+                          // This allows users to see real sample values in edit mode, making it easier
+                          // to understand what their invoice will look like with actual data.
                           // Handle complete paths: if binding starts with dataSource prefix, strip it
                           // e.g., "items.name" -> "name" when accessing individual item
                           let bindingPath = col.binding;
@@ -2619,12 +2621,14 @@ export function Canvas({
                           } else if (col.format === 'number') {
                             cellValue = new Intl.NumberFormat('en-US').format(Number(rawVal) || 0);
                           } else {
-                            cellValue = rawVal !== undefined ? rawVal : `{${col.binding}}`;
+                            // Show resolved value if available (including explicit null), otherwise show binding path
+                            cellValue = rawVal != null ? rawVal : `{${col.binding}}`;
                           }
                           displayValue = cellValue;
                         } else {
-                          cellValue = `{${col.binding || ''}}`;
-                          displayValue = cellValue;
+                          // No binding configured - show empty cell
+                          cellValue = '';
+                          displayValue = '';
                         }
                         
                         // Get cell styles
