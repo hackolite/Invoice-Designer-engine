@@ -245,6 +245,20 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
         cellInlineDataMap.set(`${cell.row}-${cell.col}`, cell.content);
       });
       
+      // Get inline data for header cells (persists in both edit and preview modes)
+      const headerInlineData: { col: number; content: string; }[] = config.headerInlineData || [];
+      const headerInlineDataMap = new Map<number, string>();
+      headerInlineData.forEach(cell => {
+        headerInlineDataMap.set(cell.col, cell.content);
+      });
+      
+      // Get styles for header cells
+      const headerStyles: { col: number; style?: Record<string, string | number>; }[] = config.headerStyles || [];
+      const headerStylesMap = new Map<number, Record<string, string | number>>();
+      headerStyles.forEach(cellStyle => {
+        headerStylesMap.set(cellStyle.col, cellStyle.style || {});
+      });
+      
       // Build footer HTML if footerRows exist (for invoice tables)
       let footerHtml = '';
       if (config.footerRows && config.footerRows.length > 0) {
@@ -417,9 +431,55 @@ const renderElementForExport = (el: TemplateElement, isPreviewMode: boolean, sam
       tableHtml = `<table style="width: 100%; border-collapse: collapse; border: ${gridBorderWidth}px solid ${gridBorderColor};">
         <thead>
           <tr>
-            ${config.columns.map((col, idx) => `
-              <th style="padding: 8px; background: #f3f4f6; border-bottom: ${gridBorderWidth}px solid ${gridBorderColor}; border-right: ${idx < config.columns.length - 1 ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none'};">${col.header}</th>
-            `).join('')}
+            ${config.columns.map((col, idx) => {
+              // Get inline edited data for this header cell
+              const headerCellData = headerInlineDataMap.get(idx);
+              const headerCellStyle = headerStylesMap.get(idx) || {};
+              
+              // Determine header display value
+              let headerValue: string;
+              if (headerCellData) {
+                // Use inline edited data
+                // In preview mode (which is always true for exports), resolve bindings
+                if (isPreviewMode) {
+                  const binding = extractBinding(headerCellData);
+                  if (binding) {
+                    const rawVal = getNestedValue(sampleData, binding);
+                    headerValue = rawVal !== undefined ? String(rawVal) : headerCellData;
+                  } else {
+                    headerValue = headerCellData;
+                  }
+                } else {
+                  headerValue = headerCellData;
+                }
+              } else {
+                // No inline edit - use original header value
+                // In preview mode, resolve the binding
+                if (isPreviewMode) {
+                  const binding = extractBinding(col.header);
+                  if (binding) {
+                    const rawVal = getNestedValue(sampleData, binding);
+                    headerValue = rawVal !== undefined ? String(rawVal) : col.header;
+                  } else {
+                    headerValue = col.header;
+                  }
+                } else {
+                  headerValue = col.header;
+                }
+              }
+              
+              // Apply styles
+              const textAlign = headerCellStyle.textAlign || 'left';
+              const fontWeight = headerCellStyle.fontWeight || '500';
+              const fontStyle = headerCellStyle.fontStyle || 'normal';
+              const textDecoration = headerCellStyle.textDecoration || 'none';
+              
+              const escapedHeaderValue = escapeHtml(headerValue);
+              
+              return `
+              <th style="padding: 8px; background: #f3f4f6; border-bottom: ${gridBorderWidth}px solid ${gridBorderColor}; border-right: ${idx < config.columns.length - 1 ? `${gridBorderWidth}px solid ${gridBorderColor}` : 'none'}; text-align: ${textAlign}; font-weight: ${fontWeight}; font-style: ${fontStyle}; text-decoration: ${textDecoration};">${escapedHeaderValue}</th>
+            `;
+            }).join('')}
           </tr>
         </thead>
         <tbody>
